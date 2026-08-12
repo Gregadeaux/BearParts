@@ -1,36 +1,63 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🐻 BearParts
 
-## Getting Started
+Part queue for an FRC machine shop. Designers drop DXFs in, machinists pull them up
+on their phones at the mill.
 
-First, run the development server:
+**What it does**
+
+- Upload a DXF → instant viewer + machining analysis (hole sizes, tap/clearance/bearing
+  matches, max endmill for pockets, sharp-corner warnings, unit detection)
+- Queue parts or assign them to a teammate; claim, start, finish from any device
+- Live queue via Supabase Realtime; push notifications (new part, assigned to you, done)
+- Installable PWA — works on Chrome and iOS home screen
+- `/inspect` — public, login-free DXF checker that never uploads anything
+
+## Stack
+
+Next.js (App Router) · Supabase (Postgres, Auth, Storage, Realtime) · shadcn/ui ·
+custom SVG DXF viewer · web-push. Architecture notes live in `.claude/skills/`.
+
+## Local dev
 
 ```bash
+npm install
+cp .env.example .env.local   # fill in values (see below)
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- Supabase project: **BearParts** (`lrufhxysqcrmthqzyqwq`). Schema changes go in
+  `supabase/migrations/` and apply with `npx supabase db push`.
+- Tests: `npx vitest run` (DXF analysis engine).
+- Sample parts to play with: `samples/*.dxf` (regenerate via `node scripts/generate-samples.mjs`).
+- Dev sign-in without Google: `node scripts/create-test-users.mjs`, then POST
+  `{email, password}` to `/api/dev-login` (disabled in production).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## One-time setup still needed
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+**Google OAuth** (the only manual step):
 
-## Learn More
+1. [Google Cloud Console](https://console.cloud.google.com/apis/credentials) → create
+   OAuth client (Web application).
+2. Authorized redirect URI: `https://lrufhxysqcrmthqzyqwq.supabase.co/auth/v1/callback`
+3. [Supabase Dashboard → Auth → Providers → Google](https://supabase.com/dashboard/project/lrufhxysqcrmthqzyqwq/auth/providers)
+   → enable, paste client ID + secret.
+4. Supabase Dashboard → Auth → URL Configuration → add your prod URL
+   (e.g. `https://bearparts.fly.dev`) to Redirect URLs.
 
-To learn more about Next.js, take a look at the following resources:
+## Deploy (Fly.io)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+`fly.toml` + `Dockerfile` are ready. Using the
+[Fly GitHub app](https://fly.io/docs/launch/continuous-deployment-with-github-actions/):
+connect the repo, then set server secrets once:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+fly secrets set SUPABASE_SERVICE_ROLE_KEY=... VAPID_PRIVATE_KEY=... VAPID_SUBJECT=mailto:you@example.com
+```
 
-## Deploy on Vercel
+Public keys (Supabase URL/anon, VAPID public) are baked in as build args in `fly.toml`.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Hole standards
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Classification table (`src/services/dxf/machining-standards.ts`): 10-32 tap/close/free,
+1/4-20 tap/close/free, 1.125" + 0.875" bearing bores, 1/2" + 3/8" shaft clearance.
+Match tolerance ±0.005". Add rows there to teach it new hardware.
