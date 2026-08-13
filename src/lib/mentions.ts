@@ -44,6 +44,25 @@ export function userMentionToken(name: string, userId: string): string {
   return `@[${name.replaceAll("]", "")}](user:${userId})`;
 }
 
+/**
+ * Convert readable draft text (`@Dana Designer thanks`) into stored tokens,
+ * using the names the composer's picker actually inserted. Names the user
+ * edited away (no longer an exact `@Name` match) simply stay plain text.
+ * Longest names first so "Dana Designer" wins over a hypothetical "Dana".
+ */
+export function serializeMentions(draft: string, pickedNames: Record<string, string>): string {
+  let out = draft;
+  const names = Object.keys(pickedNames).sort((a, b) => b.length - a.length);
+  for (const name of names) {
+    const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    out = out.replace(
+      new RegExp(`@${escaped}(?![\\w])`, "g"),
+      userMentionToken(name, pickedNames[name]),
+    );
+  }
+  return out;
+}
+
 /** Plain-text preview (tokens become @Name / @v2) for notification bodies. */
 export function commentPreview(body: string, maxLength = 90): string {
   const flat = parseComment(body)

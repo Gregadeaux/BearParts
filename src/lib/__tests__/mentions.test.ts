@@ -4,6 +4,7 @@ import {
   commentPreview,
   mentionedUserIds,
   parseComment,
+  serializeMentions,
   userMentionToken,
 } from "../mentions";
 
@@ -56,6 +57,28 @@ describe("commentPreview", () => {
   it("flattens tokens to readable text", () => {
     const body = `ping ${userMentionToken("Dana Designer", DANA)} about @v3`;
     expect(commentPreview(body)).toBe("ping @Dana Designer about @v3");
+  });
+});
+
+describe("serializeMentions", () => {
+  it("tokenizes picked names on submit", () => {
+    const out = serializeMentions("@Dana Designer check @v2", { "Dana Designer": DANA });
+    expect(out).toBe(`${userMentionToken("Dana Designer", DANA)} check @v2`);
+    expect(mentionedUserIds(out)).toEqual([DANA]);
+  });
+
+  it("prefers the longest matching name", () => {
+    const other = "9b9d6bcd-bbfd-4b2d-9b5d-ab8dfbbd4bee";
+    const out = serializeMentions("@Dana Designer hi", { Dana: other, "Dana Designer": DANA });
+    expect(mentionedUserIds(out)).toEqual([DANA]);
+  });
+
+  it("leaves edited-away names as plain text", () => {
+    expect(serializeMentions("@Dan hello", { "Dana Designer": DANA })).toBe("@Dan hello");
+  });
+
+  it("does not tokenize partial-word matches", () => {
+    expect(serializeMentions("@Danaboo", { Dana: DANA })).toBe("@Danaboo");
   });
 });
 

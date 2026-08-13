@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { AtSign, History, SendHorizontal } from "lucide-react";
-import { activeMentionQuery, userMentionToken } from "@/lib/mentions";
+import { activeMentionQuery, serializeMentions } from "@/lib/mentions";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -11,6 +11,7 @@ interface Suggestion {
   label: string;
   kind: "user" | "version";
   insert: string;
+  userId?: string;
 }
 
 interface Props {
@@ -27,6 +28,8 @@ export function MentionComposer({ team, versions, onSubmit, pending }: Props) {
   const [caret, setCaret] = useState(0);
   const [highlight, setHighlight] = useState(0);
   const [dismissed, setDismissed] = useState<string | null>(null);
+  // names the user picked this draft — serialized to stable tokens on submit
+  const [picked, setPicked] = useState<Record<string, string>>({});
 
   const active = activeMentionQuery(value, caret);
   const suggestions: Suggestion[] =
@@ -46,7 +49,8 @@ export function MentionComposer({ team, versions, onSubmit, pending }: Props) {
               key: m.id,
               label: m.display_name,
               kind: "user" as const,
-              insert: `${userMentionToken(m.display_name, m.id)} `,
+              insert: `@${m.display_name} `, // stays readable while typing
+              userId: m.id,
             })),
         ].slice(0, 6)
       : [];
@@ -58,6 +62,7 @@ export function MentionComposer({ team, versions, onSubmit, pending }: Props) {
     setValue(next);
     setCaret(newCaret);
     setHighlight(0);
+    if (s.userId) setPicked((p) => ({ ...p, [s.label]: s.userId! }));
     requestAnimationFrame(() => {
       textareaRef.current?.focus();
       textareaRef.current?.setSelectionRange(newCaret, newCaret);
@@ -65,11 +70,12 @@ export function MentionComposer({ team, versions, onSubmit, pending }: Props) {
   };
 
   const submit = async () => {
-    const body = value.trim();
+    const body = serializeMentions(value.trim(), picked);
     if (!body || pending) return;
     await onSubmit(body);
     setValue("");
     setCaret(0);
+    setPicked({});
   };
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
