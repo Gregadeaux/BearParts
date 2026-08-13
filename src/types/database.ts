@@ -246,6 +246,7 @@ export type Database = {
       parts: {
         Row: {
           analysis: Json | null
+          archived_at: string | null
           assigned_to: string | null
           created_at: string
           description: string | null
@@ -264,6 +265,7 @@ export type Database = {
         }
         Insert: {
           analysis?: Json | null
+          archived_at?: string | null
           assigned_to?: string | null
           created_at?: string
           description?: string | null
@@ -282,6 +284,7 @@ export type Database = {
         }
         Update: {
           analysis?: Json | null
+          archived_at?: string | null
           assigned_to?: string | null
           created_at?: string
           description?: string | null

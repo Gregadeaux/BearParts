@@ -30,12 +30,35 @@ export async function listParts(
   supabase: Client,
   filter?: { status?: PartStatus[]; assignedTo?: string },
 ): Promise<Part[]> {
-  let query = supabase.from("parts").select(PART_SELECT).order("created_at", { ascending: false });
+  let query = supabase
+    .from("parts")
+    .select(PART_SELECT)
+    .is("archived_at", null)
+    .order("created_at", { ascending: false });
   if (filter?.status?.length) query = query.in("status", filter.status);
   if (filter?.assignedTo) query = query.eq("assigned_to", filter.assignedTo);
   const { data, error } = await query;
   if (error) throw new Error(`Could not load parts: ${error.message}`);
   return data as unknown as Part[];
+}
+
+/** Archived parts, most recently archived first. */
+export async function listArchivedParts(supabase: Client): Promise<Part[]> {
+  const { data, error } = await supabase
+    .from("parts")
+    .select(PART_SELECT)
+    .not("archived_at", "is", null)
+    .order("archived_at", { ascending: false });
+  if (error) throw new Error(`Could not load archive: ${error.message}`);
+  return data as unknown as Part[];
+}
+
+export async function setArchived(supabase: Client, id: string, archived: boolean) {
+  const { error } = await supabase
+    .from("parts")
+    .update({ archived_at: archived ? new Date().toISOString() : null })
+    .eq("id", id);
+  if (error) throw new Error(`Could not ${archived ? "archive" : "restore"} part: ${error.message}`);
 }
 
 export async function getPart(supabase: Client, id: string): Promise<Part | null> {

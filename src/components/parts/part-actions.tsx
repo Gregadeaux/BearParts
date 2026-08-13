@@ -4,7 +4,12 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import type { Part, PartStatus, ProfileRow } from "@/types/part";
-import { assignPartAction, deletePartAction, updateStatusAction } from "@/app/actions/parts";
+import {
+  assignPartAction,
+  deletePartAction,
+  setArchivedAction,
+  updateStatusAction,
+} from "@/app/actions/parts";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -27,6 +32,8 @@ export function PartActions({ part, team, userId }: Props) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const status = part.status as PartStatus;
 
+  const archived = Boolean(part.archived_at);
+
   const run = (fn: () => Promise<unknown>, message: string) =>
     startTransition(async () => {
       try {
@@ -37,6 +44,21 @@ export function PartActions({ part, team, userId }: Props) {
         toast.error(e instanceof Error ? e.message : "Something went wrong");
       }
     });
+
+  if (archived) {
+    return (
+      <div className="flex flex-wrap items-center gap-2">
+        <Button
+          variant="secondary"
+          disabled={pending}
+          onClick={() => run(() => setArchivedAction(part.id, false), "Restored to the board")}
+        >
+          Restore
+        </Button>
+        <span className="text-sm text-muted-foreground">This part is archived.</span>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -94,6 +116,15 @@ export function PartActions({ part, team, userId }: Props) {
           ))}
         </SelectContent>
       </Select>
+
+      <Button
+        variant="ghost"
+        size="sm"
+        disabled={pending}
+        onClick={() => run(() => setArchivedAction(part.id, true), "Archived")}
+      >
+        Archive
+      </Button>
 
       <Button
         variant={confirmDelete ? "destructive" : "ghost"}

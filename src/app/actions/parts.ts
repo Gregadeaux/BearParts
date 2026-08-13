@@ -78,6 +78,13 @@ export async function updateStatusAction(partId: string, status: PartStatus) {
   revalidatePath(`/parts/${partId}`);
 }
 
+export async function setArchivedAction(partId: string, archived: boolean) {
+  const { supabase } = await requireUser();
+  await partsService.setArchived(supabase, partId, archived);
+  revalidatePath("/");
+  revalidatePath(`/parts/${partId}`);
+}
+
 export async function deletePartAction(partId: string) {
   const { supabase } = await requireUser();
   const part = await partsService.getPart(supabase, partId);
