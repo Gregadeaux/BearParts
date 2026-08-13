@@ -6,8 +6,8 @@ import { createClient } from "@/lib/supabase/client";
 import { searchLibrary } from "@/services/library.service";
 import { getFileUrl } from "@/services/storage.service";
 
-/** Debounced whole-library search with signed thumbnail URLs. */
-export function useLibrarySearch(query: string) {
+/** Debounced library search scoped to a folder subtree (null = whole library). */
+export function useLibrarySearch(query: string, rootFolderId: string | null) {
   const [results, setResults] = useState<LibrarySearchResult | null>(null);
   const [thumbUrls, setThumbUrls] = useState<Record<string, string>>({});
   const [searching, setSearching] = useState(false);
@@ -22,7 +22,7 @@ export function useLibrarySearch(query: string) {
     const timer = setTimeout(async () => {
       try {
         const supabase = createClient();
-        const found = await searchLibrary(supabase, trimmed);
+        const found = await searchLibrary(supabase, trimmed, rootFolderId);
         setResults(found);
         const entries = await Promise.all(
           found.parts
@@ -43,7 +43,7 @@ export function useLibrarySearch(query: string) {
       }
     }, 250);
     return () => clearTimeout(timer);
-  }, [query]);
+  }, [query, rootFolderId]);
 
   return { results, thumbUrls, searching };
 }

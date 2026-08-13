@@ -50,7 +50,7 @@ export function LibraryBrowser({ currentFolderId, ancestry, folders, parts, thum
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<PartFileType | "all">("all");
-  const search = useLibrarySearch(query);
+  const search = useLibrarySearch(query, currentFolderId);
 
   const matchesType = (p: LibraryPartListing) =>
     typeFilter === "all" || p.latest?.file_type === typeFilter;
@@ -83,7 +83,7 @@ export function LibraryBrowser({ currentFolderId, ancestry, folders, parts, thum
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search the whole library…"
+            placeholder={currentFolderId ? "Search this folder…" : "Search the library…"}
             className="pl-8"
           />
         </div>

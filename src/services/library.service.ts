@@ -42,18 +42,34 @@ export interface LibrarySearchResult {
   folders: { id: string; name: string }[];
 }
 
-/** Name search across the whole library — parts (with latest version) and folders. */
-export async function searchLibrary(supabase: Client, query: string): Promise<LibrarySearchResult> {
+/**
+ * Name search over parts (with latest version) and folders.
+ * With rootFolderId, results are limited to that folder's subtree —
+ * searching inside "Cyclone" never surfaces sibling or parent folders.
+ */
+export async function searchLibrary(
+  supabase: Client,
+  query: string,
+  rootFolderId?: string | null,
+): Promise<LibrarySearchResult> {
   const like = `%${query.replaceAll("%", "\\%")}%`;
-  const [partsRes, foldersRes] = await Promise.all([
-    supabase
-      .from("library_parts")
-      .select(`*, folder:folders (name), versions:part_versions (${VERSION_SELECT})`)
-      .ilike("name", like)
-      .order("updated_at", { ascending: false })
-      .limit(40),
-    supabase.from("folders").select("id, name").ilike("name", like).order("name").limit(12),
-  ]);
+  const subtree = rootFolderId ? await subtreeFolderIds(supabase, rootFolderId) : null;
+
+  let partsQuery = supabase
+    .from("library_parts")
+    .select(`*, folder:folders (name), versions:part_versions (${VERSION_SELECT})`)
+    .ilike("name", like)
+    .order("updated_at", { ascending: false })
+    .limit(40);
+  if (subtree) partsQuery = partsQuery.in("folder_id", subtree);
+
+  let foldersQuery = supabase.from("folders").select("id, name").ilike("name", like).order("name").limit(12);
+  if (subtree) {
+    // exclude the folder being searched from its own results
+    foldersQuery = foldersQuery.in("id", subtree.filter((id) => id !== rootFolderId));
+  }
+
+  const [partsRes, foldersRes] = await Promise.all([partsQuery, foldersQuery]);
   if (partsRes.error) throw new Error(`Search failed: ${partsRes.error.message}`);
   if (foldersRes.error) throw new Error(`Search failed: ${foldersRes.error.message}`);
 
@@ -73,6 +89,29 @@ export async function searchLibrary(supabase: Client, query: string): Promise<Li
   });
 
   return { parts, folders: foldersRes.data };
+}
+
+/** A folder plus all of its descendants (BFS over the whole small folder table). */
+async function subtreeFolderIds(supabase: Client, rootId: string): Promise<string[]> {
+  const { data, error } = await supabase.from("folders").select("id, parent_id");
+  if (error) throw new Error(`Search failed: ${error.message}`);
+
+  const childrenOf = new Map<string, string[]>();
+  for (const f of data) {
+    if (!f.parent_id) continue;
+    const list = childrenOf.get(f.parent_id) ?? [];
+    list.push(f.id);
+    childrenOf.set(f.parent_id, list);
+  }
+
+  const subtree: string[] = [];
+  const queue = [rootId];
+  while (queue.length > 0) {
+    const id = queue.pop()!;
+    subtree.push(id);
+    queue.push(...(childrenOf.get(id) ?? []));
+  }
+  return subtree;
 }
 
 /** Full detail: versions newest-first + fab queue history. */
