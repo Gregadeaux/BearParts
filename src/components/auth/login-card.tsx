@@ -21,7 +21,6 @@ export function LoginCard() {
   return (
     <Card className="w-full max-w-sm text-center">
       <CardHeader>
-        <div className="mx-auto mb-2 text-5xl">🐻</div>
         <CardTitle className="text-2xl">BearParts</CardTitle>
         <CardDescription>Part queue for the shop</CardDescription>
       </CardHeader>

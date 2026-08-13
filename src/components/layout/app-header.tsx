@@ -33,9 +33,8 @@ export function AppHeader({ userName, userAvatar }: Props) {
   return (
     <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur">
       <div className="mx-auto flex h-14 max-w-5xl items-center gap-3 px-4">
-        <Link href="/" className="flex items-center gap-2 font-semibold">
-          <span className="text-xl">🐻</span>
-          <span>BearParts</span>
+        <Link href="/" className="font-semibold">
+          BearParts
         </Link>
         <div className="flex-1" />
         <Button size="sm" nativeButton={false} render={<Link href="/parts/new" />}>
