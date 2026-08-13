@@ -13,8 +13,9 @@ export async function uploadToPath(
   path: string,
   fileType: PartFileType,
 ) {
+  const contentTypes = { dxf: "application/dxf", stl: "model/stl", pdf: "application/pdf" };
   const { error } = await supabase.storage.from(BUCKET).upload(path, file, {
-    contentType: fileType === "dxf" ? "application/dxf" : "model/stl",
+    contentType: contentTypes[fileType],
     upsert: true,
   });
   if (error) throw new Error(`Upload failed: ${error.message}`);

@@ -11,6 +11,7 @@ function fileTypeOf(name: string): PartFileType | null {
   const lower = name.toLowerCase();
   if (lower.endsWith(".dxf")) return "dxf";
   if (lower.endsWith(".stl")) return "stl";
+  if (lower.endsWith(".pdf")) return "pdf";
   return null;
 }
 
@@ -44,12 +45,12 @@ export function UploadDropzone({ onFile }: Props) {
       }`}
     >
       <span className="text-3xl">📄</span>
-      <span className="font-medium">Drop a DXF or STL here</span>
-      <span className="text-xs text-muted-foreground">machined · 3D printed</span>
+      <span className="font-medium">Drop a DXF, STL, or PDF here</span>
+      <span className="text-xs text-muted-foreground">machined · 3D printed · drawing</span>
       <input
         ref={inputRef}
         type="file"
-        accept=".dxf,.stl"
+        accept=".dxf,.stl,.pdf"
         className="hidden"
         onChange={(e) => accept(e.target.files?.[0])}
       />

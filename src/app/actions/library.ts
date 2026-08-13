@@ -34,12 +34,9 @@ export async function deleteFolderAction(folderId: string) {
 
 /** Build version metadata from an uploaded file; DXF gets analyzed server-side. */
 async function versionInputFromFile(file: File, note?: string): Promise<NewVersionInput & { fileType: PartFileType }> {
-  const fileType: PartFileType | null = file.name.toLowerCase().endsWith(".dxf")
-    ? "dxf"
-    : file.name.toLowerCase().endsWith(".stl")
-      ? "stl"
-      : null;
-  if (!fileType) throw new Error("Only .dxf and .stl files are supported");
+  const ext = file.name.toLowerCase().match(/\.(dxf|stl|pdf)$/)?.[1];
+  const fileType = (ext ?? null) as PartFileType | null;
+  if (!fileType) throw new Error("Only .dxf, .stl, and .pdf files are supported");
 
   if (fileType === "dxf") {
     const { analysis } = analyzeDxfText(await file.text());

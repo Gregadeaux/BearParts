@@ -18,6 +18,7 @@ import { UploadVersionDialog } from "./upload-version-dialog";
 import { CommentsPanel } from "@/components/comments/comments-panel";
 import { DxfWorkspace } from "@/components/viewer/dxf-workspace";
 import { StlWorkspace } from "@/components/viewer/stl-workspace";
+import { PdfWorkspace } from "@/components/viewer/pdf-workspace";
 import { StatusBadge } from "@/components/parts/status-badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -72,9 +73,9 @@ export function LibraryPartView({ part, ancestry, team, userId, initialComments,
         const res = await fetch(url);
         if (!res.ok) throw new Error();
         const value =
-          selected.file_type === "stl"
-            ? { buffer: await res.arrayBuffer() }
-            : { text: await res.text() };
+          selected.file_type === "dxf"
+            ? { text: await res.text() }
+            : { buffer: await res.arrayBuffer() };
         if (!cancelled) setContent(value);
       } catch {
         if (!cancelled) setError(true);
@@ -118,6 +119,8 @@ export function LibraryPartView({ part, ancestry, team, userId, initialComments,
         <p className="text-sm text-destructive">Could not load this version&apos;s file.</p>
       ) : !content ? (
         <Skeleton className="h-72 w-full" />
+      ) : content.buffer && selected.file_type === "pdf" ? (
+        <PdfWorkspace pdfBuffer={content.buffer} />
       ) : content.buffer ? (
         <StlWorkspace stlBuffer={content.buffer} />
       ) : (

@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import type { Part, ProfileRow } from "@/types/part";
 import { DxfWorkspace } from "@/components/viewer/dxf-workspace";
 import { StlWorkspace } from "@/components/viewer/stl-workspace";
+import { PdfWorkspace } from "@/components/viewer/pdf-workspace";
 import { PartActions } from "./part-actions";
 import { StatusBadge, PriorityBadge } from "./status-badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -20,21 +21,22 @@ interface Props {
 
 /** Full part page: header info, actions, and the right viewer for the file type. */
 export function PartDetail({ part, team, userId, fileUrl }: Props) {
-  const isStl = part.file_type === "stl";
+  const fileType = part.file_type as "dxf" | "stl" | "pdf";
+  const isBinary = fileType !== "dxf";
   const [dxfText, setDxfText] = useState<string | null>(null);
-  const [stlBuffer, setStlBuffer] = useState<ArrayBuffer | null>(null);
+  const [buffer, setBuffer] = useState<ArrayBuffer | null>(null);
   const [error, setError] = useState(false);
 
   useEffect(() => {
     fetch(fileUrl)
       .then((r) => {
         if (!r.ok) return Promise.reject();
-        return isStl ? r.arrayBuffer().then(setStlBuffer) : r.text().then(setDxfText);
+        return isBinary ? r.arrayBuffer().then(setBuffer) : r.text().then(setDxfText);
       })
       .catch(() => setError(true));
-  }, [fileUrl, isStl]);
+  }, [fileUrl, isBinary]);
 
-  const loaded = isStl ? stlBuffer : dxfText;
+  const loaded = isBinary ? buffer : dxfText;
 
   return (
     <div className="space-y-4">
@@ -43,7 +45,8 @@ export function PartDetail({ part, team, userId, fileUrl }: Props) {
           <h1 className="text-lg font-semibold">{part.name}</h1>
           <StatusBadge status={part.status as never} />
           <PriorityBadge priority={part.priority as never} />
-          {isStl && <span className="text-xs text-muted-foreground">3D print</span>}
+          {fileType === "stl" && <span className="text-xs text-muted-foreground">3D print</span>}
+          {fileType === "pdf" && <span className="text-xs text-muted-foreground">drawing</span>}
           {part.quantity > 1 && <span className="text-sm text-muted-foreground">×{part.quantity}</span>}
         </div>
         <p className="text-sm text-muted-foreground">
@@ -70,8 +73,10 @@ export function PartDetail({ part, team, userId, fileUrl }: Props) {
         <p className="text-sm text-destructive">Could not load the part file.</p>
       ) : !loaded ? (
         <Skeleton className="h-72 w-full" />
-      ) : isStl ? (
-        <StlWorkspace stlBuffer={stlBuffer!} />
+      ) : fileType === "stl" ? (
+        <StlWorkspace stlBuffer={buffer!} />
+      ) : fileType === "pdf" ? (
+        <PdfWorkspace pdfBuffer={buffer!} />
       ) : (
         <DxfWorkspace
           dxfText={dxfText!}
@@ -85,7 +90,7 @@ export function PartDetail({ part, team, userId, fileUrl }: Props) {
         nativeButton={false}
         render={<a href={fileUrl} download={`${part.name}.${part.file_type}`} />}
       >
-        Download {isStl ? "STL" : "DXF"}
+        Download {fileType.toUpperCase()}
       </Button>
     </div>
   );

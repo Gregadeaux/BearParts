@@ -13,6 +13,7 @@ import { createPartAction } from "@/app/actions/parts";
 import { UploadDropzone } from "./upload-dropzone";
 import { DxfWorkspace } from "@/components/viewer/dxf-workspace";
 import { StlWorkspace } from "@/components/viewer/stl-workspace";
+import { PdfWorkspace } from "@/components/viewer/pdf-workspace";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -49,8 +50,8 @@ export function NewPartForm({ team }: { team: ProfileRow[] }) {
     setFile(f);
     setFileType(type);
     if (type === "dxf") setDxfText(await f.text());
-    else setStlBuffer(await f.arrayBuffer());
-    if (!name) setName(f.name.replace(/\.(dxf|stl)$/i, ""));
+    else setStlBuffer(await f.arrayBuffer()); // stl or pdf — both view from bytes
+    if (!name) setName(f.name.replace(/\.(dxf|stl|pdf)$/i, ""));
   };
 
   const reset = () => {
@@ -60,7 +61,7 @@ export function NewPartForm({ team }: { team: ProfileRow[] }) {
     setResult(null);
   };
 
-  const ready = file && (fileType === "stl" ? stlBuffer : result);
+  const ready = file && (fileType === "dxf" ? result : stlBuffer);
 
   const submit = () =>
     startTransition(async () => {
@@ -98,6 +99,8 @@ export function NewPartForm({ team }: { team: ProfileRow[] }) {
           unitOverride={unitOverride === "auto" ? undefined : unitOverride}
           onAnalyzed={setResult}
         />
+      ) : fileType === "pdf" && stlBuffer ? (
+        <PdfWorkspace pdfBuffer={stlBuffer} />
       ) : (
         stlBuffer && <StlWorkspace stlBuffer={stlBuffer} />
       )}
