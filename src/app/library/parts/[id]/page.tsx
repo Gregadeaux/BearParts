@@ -37,7 +37,7 @@ export default async function LibraryPartPage({
         userName={profile?.display_name ?? "Teammate"}
         userAvatar={profile?.avatar_url ?? null}
       />
-      <main className="mx-auto max-w-6xl space-y-4 p-4">
+      <main className="space-y-4 p-4">
         <LibraryPartView
           part={part}
           ancestry={ancestry}
