@@ -1,24 +1,20 @@
-# Fly.io config — deploy via the Fly GitHub app or `fly deploy`.
-app = "bearparts"
-primary_region = "yul" # closest to the Supabase project (ca-central-1)
+# fly.toml app configuration file generated for bearparts on 2026-08-13T15:35:49Z
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'bearparts'
+primary_region = 'ord'
 
 [build]
-  # NEXT_PUBLIC_* values are baked into the client bundle at build time
-  [build.args]
-    NEXT_PUBLIC_SUPABASE_URL = "https://lrufhxysqcrmthqzyqwq.supabase.co"
-    NEXT_PUBLIC_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxydWZoeHlzcWNybXRocXp5cXdxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY1NTY2NzYsImV4cCI6MjEwMjEzMjY3Nn0.WZzz__zCPyVKWiWaQbOHnqtbZxDxsH_UP8UNFNUyrow"
-    NEXT_PUBLIC_VAPID_PUBLIC_KEY = "BKJPzD-NMR2h9hR-VUYGlH4e_pXJ61I7lWRnr5IBLhM5r7sELORE2UyYyT6XVqiPX-YLbRr8-Q4d-_fNPEt8ZKw"
 
 [http_service]
-  internal_port = 3000
+  internal_port = 8080
   force_https = true
-  auto_stop_machines = "stop"
+  auto_stop_machines = 'stop'
   auto_start_machines = true
   min_machines_running = 0
 
 [[vm]]
-  size = "shared-cpu-1x"
-  memory = "512mb"
-
-# Secrets to set once (server-only, never in this file):
-#   fly secrets set SUPABASE_SERVICE_ROLE_KEY=... VAPID_PRIVATE_KEY=... VAPID_SUBJECT=mailto:you@example.com
+  size = 'shared-cpu-1x'
+  memory = '512mb'
