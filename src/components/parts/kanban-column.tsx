@@ -18,7 +18,7 @@ export function KanbanColumn({ title, parts, onDropPart, onCardDragStart }: Prop
 
   return (
     <div
-      className={`flex w-[78vw] shrink-0 snap-start flex-col rounded-lg bg-muted/70 dark:bg-muted/50 sm:w-64 lg:w-auto lg:flex-1 ${
+      className={`flex w-[78vw] shrink-0 snap-start flex-col rounded-lg bg-muted/70 dark:bg-muted/50 sm:w-64 lg:w-auto lg:min-w-0 lg:flex-1 ${
         over ? "ring-2 ring-primary/50" : ""
       }`}
       onDragOver={(e) => {
