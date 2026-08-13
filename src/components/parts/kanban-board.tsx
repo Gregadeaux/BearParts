@@ -66,7 +66,7 @@ export function KanbanBoard({ initialParts, userId }: { initialParts: Part[]; us
   };
 
   return (
-    <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 lg:snap-none">
+    <div className="-m-1 flex snap-x snap-mandatory gap-3 overflow-x-auto p-1 pb-2 lg:snap-none">
       {COLUMNS.map((col) => (
         <KanbanColumn
           key={col.key}
