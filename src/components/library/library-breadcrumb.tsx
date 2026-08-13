@@ -1,5 +1,6 @@
 "use client";
 
+import { Fragment } from "react";
 import Link from "next/link";
 import type { FolderRow } from "@/types/library";
 import {
@@ -24,16 +25,18 @@ export function LibraryBreadcrumb({ ancestry }: { ancestry: FolderRow[] }) {
           )}
         </BreadcrumbItem>
         {ancestry.map((folder, i) => (
-          <BreadcrumbItem key={folder.id}>
+          <Fragment key={folder.id}>
             <BreadcrumbSeparator />
-            {i === ancestry.length - 1 ? (
-              <BreadcrumbPage>{folder.name}</BreadcrumbPage>
-            ) : (
-              <BreadcrumbLink render={<Link href={`/library?f=${folder.id}`} />}>
-                {folder.name}
-              </BreadcrumbLink>
-            )}
-          </BreadcrumbItem>
+            <BreadcrumbItem>
+              {i === ancestry.length - 1 ? (
+                <BreadcrumbPage>{folder.name}</BreadcrumbPage>
+              ) : (
+                <BreadcrumbLink render={<Link href={`/library?f=${folder.id}`} />}>
+                  {folder.name}
+                </BreadcrumbLink>
+              )}
+            </BreadcrumbItem>
+          </Fragment>
         ))}
       </BreadcrumbList>
     </Breadcrumb>
