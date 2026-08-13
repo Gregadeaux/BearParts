@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { listParts } from "@/services/parts.service";
 import { getProfile } from "@/services/profiles.service";
 import { AppHeader } from "@/components/layout/app-header";
-import { PartList } from "@/components/parts/part-list";
+import { KanbanBoard } from "@/components/parts/kanban-board";
 
 export default async function QueuePage() {
   const supabase = await createClient();
@@ -22,8 +22,8 @@ export default async function QueuePage() {
         userName={profile?.display_name ?? "Teammate"}
         userAvatar={profile?.avatar_url ?? null}
       />
-      <main className="mx-auto max-w-5xl p-4">
-        <PartList initialParts={parts} userId={user.id} />
+      <main className="mx-auto max-w-6xl p-4">
+        <KanbanBoard initialParts={parts} userId={user.id} />
       </main>
     </>
   );

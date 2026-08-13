@@ -14,7 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { PushToggle } from "@/components/notifications/push-toggle";
-import { initials } from "@/components/parts/part-card";
+import { initials } from "@/lib/format";
 
 interface Props {
   userName: string;
