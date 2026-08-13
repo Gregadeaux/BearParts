@@ -5,7 +5,8 @@ import type { NormalizedEntity, Point } from "@/types/geometry";
 import type { DxfAnalysis } from "@/types/analysis";
 import { entitiesToSvgPaths } from "@/services/dxf/render.service";
 import {
-  curveAtPoint,
+  collectArcSegments,
+  curveAmongSegments,
   snapToFeature,
   type CurveHit,
   type SnapResult,
@@ -60,10 +61,12 @@ export function DxfViewer({
   } = usePanZoom(analysis.boundingBox);
   const [selectedHole, setSelectedHole] = useState<number | null>(null);
   const [selectedCurve, setSelectedCurve] = useState<CurveHit | null>(null);
+  const [hoveringCurve, setHoveringCurve] = useState(false);
   const [showMarkers, setShowMarkers] = useState(true);
   const [annotating, setAnnotating] = useState(false);
 
   const paths = useMemo(() => entitiesToSvgPaths(entities), [entities]);
+  const curveSegments = useMemo(() => collectArcSegments(entities), [entities]);
   const upp = unitsPerPx();
 
   // zoom onto a pinned feature: frame ~5 feature-diameters for holes,
@@ -87,9 +90,15 @@ export function DxfViewer({
       setAnnotating(false);
       return;
     }
-    const curve = curveAtPoint(entities, world, 8 * upp);
+    const curve = curveAmongSegments(curveSegments, world, 8 * upp);
     setSelectedCurve(curve);
     setSelectedHole(null);
+  };
+
+  const handleHover = (e: React.PointerEvent) => {
+    if (e.pointerType !== "mouse" || e.buttons !== 0) return;
+    const world = clientToWorld(e.clientX, e.clientY);
+    setHoveringCurve(curveAmongSegments(curveSegments, world, 8 * upp) !== null);
   };
 
   return (
@@ -101,9 +110,15 @@ export function DxfViewer({
       <svg
         ref={svgRef}
         viewBox={viewBox}
-        className="h-full w-full touch-none select-none"
+        className={`h-full w-full touch-none select-none ${
+          hoveringCurve && !annotating ? "cursor-pointer" : ""
+        }`}
         onClick={handleClick}
         {...handlers}
+        onPointerMove={(e) => {
+          handlers.onPointerMove(e);
+          handleHover(e);
+        }}
       >
         {/* geometry is CAD y-up; flip it here */}
         <g transform="scale(1,-1)">

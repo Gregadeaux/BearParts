@@ -55,8 +55,17 @@ export function curveAtPoint(
   point: Point,
   toleranceIn: number,
 ): CurveHit | null {
+  return curveAmongSegments(collectArcSegments(entities), point, toleranceIn);
+}
+
+/** Same test against a precomputed segment list — memoize for hover tracking. */
+export function curveAmongSegments(
+  segments: Extract<Segment, { kind: "arc" }>[],
+  point: Point,
+  toleranceIn: number,
+): CurveHit | null {
   let best: { hit: CurveHit; d: number } | null = null;
-  for (const seg of arcSegments(entities)) {
+  for (const seg of segments) {
     const d = Math.abs(dist(point, seg.center) - seg.radius);
     if (d > toleranceIn || (best && d >= best.d)) continue;
     if (!angleOnArc(seg, point)) continue;
@@ -65,7 +74,10 @@ export function curveAtPoint(
   return best?.hit ?? null;
 }
 
-function arcSegments(entities: NormalizedEntity[]): Extract<Segment, { kind: "arc" }>[] {
+/** Every tappable arc: standalone ARC entities + polyline fillet bulges. */
+export function collectArcSegments(
+  entities: NormalizedEntity[],
+): Extract<Segment, { kind: "arc" }>[] {
   const segs: Extract<Segment, { kind: "arc" }>[] = [];
   for (const e of entities) {
     if (e.kind === "arc") {
