@@ -97,6 +97,7 @@ export type Database = {
       }
       part_comments: {
         Row: {
+          anchor: Json | null
           author_id: string
           body: string
           created_at: string
@@ -104,6 +105,7 @@ export type Database = {
           library_part_id: string
         }
         Insert: {
+          anchor?: Json | null
           author_id: string
           body: string
           created_at?: string
@@ -111,6 +113,7 @@ export type Database = {
           library_part_id: string
         }
         Update: {
+          anchor?: Json | null
           author_id?: string
           body?: string
           created_at?: string

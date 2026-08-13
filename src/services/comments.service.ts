@@ -4,11 +4,20 @@ import type { ProfileRow } from "@/types/part";
 
 type Client = SupabaseClient<Database>;
 
+/** A comment pinned to a point on a specific version's geometry (inches). */
+export interface CommentAnchor {
+  x: number;
+  y: number;
+  versionId: string;
+  label?: string;
+}
+
 export interface PartComment {
   id: string;
   library_part_id: string;
   author_id: string;
   body: string;
+  anchor: CommentAnchor | null;
   created_at: string;
   author: Pick<ProfileRow, "id" | "display_name" | "avatar_url"> | null;
 }
@@ -31,10 +40,16 @@ export async function createComment(
   userId: string,
   libraryPartId: string,
   body: string,
+  anchor?: CommentAnchor,
 ): Promise<PartComment> {
   const { data, error } = await supabase
     .from("part_comments")
-    .insert({ library_part_id: libraryPartId, author_id: userId, body })
+    .insert({
+      library_part_id: libraryPartId,
+      author_id: userId,
+      body,
+      anchor: (anchor ?? null) as never,
+    })
     .select(COMMENT_SELECT)
     .single();
   if (error) throw new Error(`Could not post comment: ${error.message}`);

@@ -4,8 +4,9 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import type { FolderRow, LibraryPartDetail, PartVersion } from "@/types/library";
 import type { ProfileRow } from "@/types/part";
-import type { PartComment } from "@/services/comments.service";
+import type { CommentAnchor, PartComment } from "@/services/comments.service";
 import type { PartEvent } from "@/services/events.service";
+import { useComments } from "@/components/comments/use-comments";
 import { createClient } from "@/lib/supabase/client";
 import { getFileUrl } from "@/services/storage.service";
 import { useMediaQuery } from "@/lib/use-media-query";
@@ -40,6 +41,20 @@ export function LibraryPartView({ part, ancestry, team, userId, initialComments,
   const [selected, setSelected] = useState<PartVersion>(part.versions[0]);
   const [content, setContent] = useState<{ text?: string; buffer?: ArrayBuffer } | null>(null);
   const [error, setError] = useState(false);
+
+  const { comments, pending, post, remove } = useComments(part.id, part.name, initialComments);
+  const [pendingAnchor, setPendingAnchor] = useState<CommentAnchor | null>(null);
+  const [focusedCommentId, setFocusedCommentId] = useState<string | null>(null);
+
+  // pins shown on the currently selected version, numbered by comment order
+  const anchored = comments.filter((c) => c.anchor?.versionId === selected?.id);
+  const pinNumbers = Object.fromEntries(anchored.map((c, i) => [c.id, i + 1]));
+  const annotations = anchored.map((c, i) => ({
+    id: c.id,
+    x: c.anchor!.x,
+    y: c.anchor!.y,
+    index: i + 1,
+  }));
 
   useEffect(() => {
     let cancelled = false;
@@ -103,6 +118,13 @@ export function LibraryPartView({ part, ancestry, team, userId, initialComments,
         <DxfWorkspace
           dxfText={content.text!}
           unitOverride={selected.units === "unknown" ? undefined : selected.units}
+          annotations={annotations}
+          selectedAnnotationId={focusedCommentId}
+          onSelectAnnotation={setFocusedCommentId}
+          draftAnnotation={pendingAnchor}
+          onAnnotate={(snap) =>
+            setPendingAnchor({ x: snap.x, y: snap.y, versionId: selected.id, label: snap.label })
+          }
         />
       )}
     </div>
@@ -112,13 +134,29 @@ export function LibraryPartView({ part, ancestry, team, userId, initialComments,
 
   const discussion = (className?: string) => (
     <CommentsPanel
-      libraryPartId={part.id}
-      partName={part.name}
+      comments={comments}
+      pending={pending}
+      onPost={async (body) => {
+        const ok = await post(body, pendingAnchor ?? undefined);
+        if (ok) setPendingAnchor(null);
+        return ok;
+      }}
+      onRemove={remove}
       userId={userId}
       team={team}
       versions={part.versions.map((v) => v.version)}
-      initialComments={initialComments}
       onSelectVersion={selectByNumber}
+      pinNumbers={pinNumbers}
+      selectedCommentId={focusedCommentId}
+      onFocusAnnotation={(comment) => {
+        if (comment.anchor) {
+          const version = part.versions.find((v) => v.id === comment.anchor!.versionId);
+          if (version) setSelected(version);
+        }
+        setFocusedCommentId(comment.id);
+      }}
+      pendingAnchor={pendingAnchor}
+      onClearAnchor={() => setPendingAnchor(null)}
       className={className}
     />
   );

@@ -2,17 +2,23 @@
 
 import { createClient } from "@/lib/supabase/server";
 import * as comments from "@/services/comments.service";
+import type { CommentAnchor } from "@/services/comments.service";
 import { sendPush } from "@/services/notifications.service";
 import { commentPreview, mentionedUserIds } from "@/lib/mentions";
 
-export async function addCommentAction(libraryPartId: string, body: string, partName: string) {
+export async function addCommentAction(
+  libraryPartId: string,
+  body: string,
+  partName: string,
+  anchor?: CommentAnchor,
+) {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) throw new Error("Not signed in");
 
-  const comment = await comments.createComment(supabase, user.id, libraryPartId, body);
+  const comment = await comments.createComment(supabase, user.id, libraryPartId, body, anchor);
 
   const mentioned = mentionedUserIds(body).filter((id) => id !== user.id);
   if (mentioned.length > 0) {

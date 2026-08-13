@@ -1,12 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
-import { toast } from "sonner";
-import { X } from "lucide-react";
-import type { PartComment } from "@/services/comments.service";
-import { createClient } from "@/lib/supabase/client";
-import { listComments } from "@/services/comments.service";
-import { addCommentAction, deleteCommentAction } from "@/app/actions/comments";
+import { useEffect, useRef } from "react";
+import { MapPin, X } from "lucide-react";
+import type { CommentAnchor, PartComment } from "@/services/comments.service";
 import { MentionComposer } from "./mention-composer";
 import { CommentBody } from "./comment-body";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -14,79 +10,46 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatDate, initials } from "@/lib/format";
 
 interface Props {
-  libraryPartId: string;
-  partName: string;
+  comments: PartComment[];
+  pending: boolean;
+  onPost: (body: string) => Promise<boolean>;
+  onRemove: (id: string) => void;
   userId: string;
   team: { id: string; display_name: string }[];
   versions: number[];
-  initialComments: PartComment[];
   onSelectVersion?: (version: number) => void;
+  /** comment id → pin number for anchored comments on the visible version */
+  pinNumbers?: Record<string, number>;
+  selectedCommentId?: string | null;
+  onFocusAnnotation?: (comment: PartComment) => void;
+  /** anchor staged for the next posted comment */
+  pendingAnchor?: CommentAnchor | null;
+  onClearAnchor?: () => void;
   className?: string;
 }
 
-/** Live discussion stream: realtime comments + mention composer. */
+/** Discussion stream: mention composer, pins, live comments (state lives in useComments). */
 export function CommentsPanel({
-  libraryPartId,
-  partName,
+  comments,
+  pending,
+  onPost,
+  onRemove,
   userId,
   team,
   versions,
-  initialComments,
   onSelectVersion,
+  pinNumbers = {},
+  selectedCommentId = null,
+  onFocusAnnotation,
+  pendingAnchor,
+  onClearAnchor,
   className,
 }: Props) {
-  const [comments, setComments] = useState(initialComments);
-  const [pending, startTransition] = useTransition();
   const endRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const supabase = createClient();
-    const channel = supabase
-      .channel(`comments-${libraryPartId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "part_comments",
-          filter: `library_part_id=eq.${libraryPartId}`,
-        },
-        () => {
-          listComments(supabase, libraryPartId).then(setComments).catch(console.error);
-        },
-      )
-      .subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [libraryPartId]);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ block: "nearest" });
   }, [comments.length]);
-
-  const post = (body: string) =>
-    new Promise<void>((resolve) => {
-      startTransition(async () => {
-        try {
-          const comment = await addCommentAction(libraryPartId, body, partName);
-          setComments((cs) => (cs.some((c) => c.id === comment.id) ? cs : [...cs, comment]));
-        } catch (e) {
-          toast.error(e instanceof Error ? e.message : "Could not post comment");
-        }
-        resolve();
-      });
-    });
-
-  const remove = (id: string) =>
-    startTransition(async () => {
-      try {
-        await deleteCommentAction(id);
-        setComments((cs) => cs.filter((c) => c.id !== id));
-      } catch (e) {
-        toast.error(e instanceof Error ? e.message : "Could not delete comment");
-      }
-    });
 
   return (
     <div className={`flex min-h-0 flex-col rounded-lg border ${className ?? ""}`}>
@@ -105,7 +68,12 @@ export function CommentsPanel({
             </p>
           )}
           {comments.map((comment) => (
-            <div key={comment.id} className="group flex gap-2">
+            <div
+              key={comment.id}
+              className={`group flex gap-2 rounded-md p-1 -m-1 ${
+                comment.id === selectedCommentId ? "bg-amber-50 dark:bg-amber-950/40" : ""
+              }`}
+            >
               <Avatar className="mt-0.5 size-6 shrink-0">
                 {comment.author?.avatar_url && (
                   <AvatarImage src={comment.author.avatar_url} referrerPolicy="no-referrer" />
@@ -126,13 +94,24 @@ export function CommentsPanel({
                     <button
                       type="button"
                       aria-label="Delete comment"
-                      onClick={() => remove(comment.id)}
+                      onClick={() => onRemove(comment.id)}
                       className="ml-auto hidden text-muted-foreground hover:text-destructive group-hover:block"
                     >
                       <X className="size-3.5" />
                     </button>
                   )}
                 </div>
+                {comment.anchor && (
+                  <button
+                    type="button"
+                    onClick={() => onFocusAnnotation?.(comment)}
+                    className="mb-0.5 inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-700 hover:bg-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:hover:bg-amber-900"
+                  >
+                    <MapPin className="size-3" />
+                    {pinNumbers[comment.id] ? `#${pinNumbers[comment.id]} · ` : ""}
+                    {comment.anchor.label ?? "pinned"}
+                  </button>
+                )}
                 <CommentBody
                   body={comment.body}
                   knownVersions={versions}
@@ -145,8 +124,25 @@ export function CommentsPanel({
         </div>
       </ScrollArea>
 
-      <div className="border-t p-2">
-        <MentionComposer team={team} versions={versions} onSubmit={post} pending={pending} />
+      <div className="space-y-1.5 border-t p-2">
+        {pendingAnchor && (
+          <div className="flex items-center gap-1.5 text-xs">
+            <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 font-medium text-amber-700 dark:bg-amber-950 dark:text-amber-300">
+              <MapPin className="size-3" />
+              {pendingAnchor.label ?? "pinned"}
+            </span>
+            <span className="text-muted-foreground">will be attached to your comment</span>
+            <button
+              type="button"
+              aria-label="Remove pin"
+              onClick={onClearAnchor}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <X className="size-3.5" />
+            </button>
+          </div>
+        )}
+        <MentionComposer team={team} versions={versions} onSubmit={onPost} pending={pending} />
       </div>
     </div>
   );

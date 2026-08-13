@@ -2,8 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { Units } from "@/types/analysis";
+import type { Point } from "@/types/geometry";
 import { analyzeDxfText, type AnalyzedDxf } from "@/services/dxf/analysis.service";
+import type { SnapResult } from "@/services/dxf/snap.service";
 import { DxfViewer } from "./dxf-viewer";
+import type { ViewerAnnotation } from "./annotation-pins";
 import { AnalysisPanel } from "./analysis-panel";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -12,10 +15,15 @@ interface Props {
   dxfText: string;
   unitOverride?: Units;
   onAnalyzed?: (result: AnalyzedDxf) => void;
+  annotations?: ViewerAnnotation[];
+  selectedAnnotationId?: string | null;
+  onSelectAnnotation?: (id: string) => void;
+  onAnnotate?: (snap: SnapResult) => void;
+  draftAnnotation?: Point | null;
 }
 
 /** Viewer + analysis side by side (stacked on phones). */
-export function DxfWorkspace({ dxfText, unitOverride, onAnalyzed }: Props) {
+export function DxfWorkspace({ dxfText, unitOverride, onAnalyzed, ...viewerProps }: Props) {
   const [error, setError] = useState<string | null>(null);
 
   const result = useMemo(() => {
@@ -48,6 +56,7 @@ export function DxfWorkspace({ dxfText, unitOverride, onAnalyzed }: Props) {
         entities={result.entities}
         analysis={result.analysis}
         className="h-[55svh] min-h-64 lg:h-[60svh]"
+        {...viewerProps}
       />
       <AnalysisPanel analysis={result.analysis} />
     </div>

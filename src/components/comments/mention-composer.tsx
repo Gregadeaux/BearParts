@@ -17,7 +17,8 @@ interface Suggestion {
 interface Props {
   team: { id: string; display_name: string }[];
   versions: number[];
-  onSubmit: (body: string) => Promise<void>;
+  /** resolves true when the comment posted — composer clears only then */
+  onSubmit: (body: string) => Promise<boolean>;
   pending: boolean;
 }
 
@@ -72,10 +73,12 @@ export function MentionComposer({ team, versions, onSubmit, pending }: Props) {
   const submit = async () => {
     const body = serializeMentions(value.trim(), picked);
     if (!body || pending) return;
-    await onSubmit(body);
-    setValue("");
-    setCaret(0);
-    setPicked({});
+    const ok = await onSubmit(body);
+    if (ok) {
+      setValue("");
+      setCaret(0);
+      setPicked({});
+    }
   };
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {

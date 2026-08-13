@@ -154,6 +154,11 @@ export function usePanZoom(bbox: BoundingBox) {
       const rect = svgRef.current?.getBoundingClientRect();
       return rect ? Math.max(view.w / rect.width, view.h / rect.height) : 0.01;
     },
+    /** client px → CAD coordinates (y-up, inches) */
+    clientToWorld: (clientX: number, clientY: number) => {
+      const p = toSvg(clientX, clientY, view);
+      return { x: p.x, y: -p.y };
+    },
     handlers: { onWheel, onPointerDown, onPointerMove, onPointerUp, onPointerCancel: onPointerUp },
     /** true if the last gesture was a drag (suppress click-through) */
     wasDrag: () => moved.current,
