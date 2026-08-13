@@ -4,6 +4,7 @@ import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { DevLoginPanel } from "./dev-login-panel";
 
 export function LoginCard() {
   const params = useSearchParams();
@@ -31,6 +32,7 @@ export function LoginCard() {
         <Button className="w-full" size="lg" onClick={signIn}>
           Sign in with Google
         </Button>
+        {process.env.NODE_ENV !== "production" && <DevLoginPanel />}
       </CardContent>
     </Card>
   );
