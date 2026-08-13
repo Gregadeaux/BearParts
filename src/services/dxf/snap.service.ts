@@ -1,6 +1,6 @@
-import type { NormalizedEntity, Point } from "@/types/geometry";
+import type { NormalizedEntity, Point, Segment } from "@/types/geometry";
 import type { AnalyzedHole } from "@/types/analysis";
-import { dist } from "./geometry";
+import { arcSweep, bulgeToArc, dist, normalizeAngle } from "./geometry";
 
 export interface SnapResult {
   x: number;
@@ -37,6 +37,67 @@ export function snapToFeature(
   }
 
   return { x: point.x, y: point.y, label: "point" };
+}
+
+export interface CurveHit {
+  radius: number;
+  center: Point;
+  /** the arc segment itself, for highlighting */
+  segment: Extract<Segment, { kind: "arc" }>;
+}
+
+/**
+ * The curved edge (arc or polyline fillet) under a tap, if any: the point must
+ * be within tolerance of the arc's radius AND inside its angular sweep.
+ */
+export function curveAtPoint(
+  entities: NormalizedEntity[],
+  point: Point,
+  toleranceIn: number,
+): CurveHit | null {
+  let best: { hit: CurveHit; d: number } | null = null;
+  for (const seg of arcSegments(entities)) {
+    const d = Math.abs(dist(point, seg.center) - seg.radius);
+    if (d > toleranceIn || (best && d >= best.d)) continue;
+    if (!angleOnArc(seg, point)) continue;
+    best = { hit: { radius: seg.radius, center: seg.center, segment: seg }, d };
+  }
+  return best?.hit ?? null;
+}
+
+function arcSegments(entities: NormalizedEntity[]): Extract<Segment, { kind: "arc" }>[] {
+  const segs: Extract<Segment, { kind: "arc" }>[] = [];
+  for (const e of entities) {
+    if (e.kind === "arc") {
+      segs.push({
+        kind: "arc",
+        a: { x: e.center.x + e.radius * Math.cos(e.startAngle), y: e.center.y + e.radius * Math.sin(e.startAngle) },
+        b: { x: e.center.x + e.radius * Math.cos(e.endAngle), y: e.center.y + e.radius * Math.sin(e.endAngle) },
+        center: e.center,
+        radius: e.radius,
+        ccw: true,
+      });
+    } else if (e.kind === "polyline") {
+      const n = e.vertices.length;
+      const count = e.closed ? n : n - 1;
+      for (let i = 0; i < count; i++) {
+        const v = e.vertices[i];
+        const w = e.vertices[(i + 1) % n];
+        if (Math.abs(v.bulge) < 1e-9) continue;
+        const seg = bulgeToArc({ x: v.x, y: v.y }, { x: w.x, y: w.y }, v.bulge);
+        if (seg.kind === "arc") segs.push(seg);
+      }
+    }
+  }
+  return segs;
+}
+
+function angleOnArc(seg: Extract<Segment, { kind: "arc" }>, point: Point): boolean {
+  const a0 = Math.atan2(seg.a.y - seg.center.y, seg.a.x - seg.center.x);
+  const ap = Math.atan2(point.y - seg.center.y, point.x - seg.center.x);
+  let rel = seg.ccw ? ap - a0 : a0 - ap;
+  rel = ((normalizeAngle(rel) % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+  return rel <= arcSweep(seg) + 1e-6;
 }
 
 /** clicking anywhere inside a hole should snap to it */

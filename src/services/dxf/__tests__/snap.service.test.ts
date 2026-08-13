@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { snapToFeature } from "../snap.service";
+import { curveAtPoint, snapToFeature } from "../snap.service";
 import { analyzeDxfText } from "../analysis.service";
-import { circle, dxf, rect } from "./fixtures";
+import { arc, circle, dxf, filletedRect, rect } from "./fixtures";
 
 const TOL = 0.1;
 
@@ -43,5 +43,39 @@ describe("snapToFeature", () => {
     const { entities, analysis } = analyzeDxfText(text);
     const snap = snapToFeature(entities, analysis.holes, { x: 0.12, y: 0.12 }, TOL);
     expect(snap.label).toContain("hole");
+  });
+});
+
+describe("curveAtPoint", () => {
+  it("hits a standalone arc and reports its radius", () => {
+    // quarter arc r=0.5 centered at (2,2), 0°→90°; mid-arc point is at 45°
+    const text = dxf({ insunits: 1, entities: [arc(2, 2, 0.5, 0, 90)] });
+    const { entities } = analyzeDxfText(text);
+    const hit = curveAtPoint(entities, { x: 2.36, y: 2.36 }, 0.05);
+    expect(hit).not.toBeNull();
+    expect(hit!.radius).toBeCloseTo(0.5, 5);
+    expect(hit!.center.x).toBeCloseTo(2, 5);
+  });
+
+  it("misses points off the arc's sweep even at the right radius", () => {
+    const text = dxf({ insunits: 1, entities: [arc(2, 2, 0.5, 0, 90)] });
+    const { entities } = analyzeDxfText(text);
+    // (1.5, 2) is at 180° — right distance, wrong side
+    expect(curveAtPoint(entities, { x: 1.5, y: 2 }, 0.05)).toBeNull();
+  });
+
+  it("hits polyline fillet bulges", () => {
+    // filletedRect(0,0,2,1,0.25): first fillet center (1.75,0.25); mid at -45°
+    const text = dxf({ insunits: 1, entities: [filletedRect(0, 0, 2, 1, 0.25)] });
+    const { entities } = analyzeDxfText(text);
+    const hit = curveAtPoint(entities, { x: 1.927, y: 0.073 }, 0.05);
+    expect(hit).not.toBeNull();
+    expect(hit!.radius).toBeCloseTo(0.25, 3);
+  });
+
+  it("returns null away from any curve", () => {
+    const text = dxf({ insunits: 1, entities: [filletedRect(0, 0, 2, 1, 0.25)] });
+    const { entities } = analyzeDxfText(text);
+    expect(curveAtPoint(entities, { x: 1, y: 0.5 }, 0.05)).toBeNull();
   });
 });

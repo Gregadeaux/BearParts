@@ -4,10 +4,17 @@ import { useEffect, useMemo, useState } from "react";
 import type { NormalizedEntity, Point } from "@/types/geometry";
 import type { DxfAnalysis } from "@/types/analysis";
 import { entitiesToSvgPaths } from "@/services/dxf/render.service";
-import { snapToFeature, type SnapResult } from "@/services/dxf/snap.service";
+import {
+  curveAtPoint,
+  snapToFeature,
+  type CurveHit,
+  type SnapResult,
+} from "@/services/dxf/snap.service";
+import { arcSweep } from "@/services/dxf/geometry";
 import { usePanZoom } from "./use-pan-zoom";
 import { HoleMarkers } from "./hole-markers";
 import { HoleInfoChip } from "./hole-info-chip";
+import { CurveInfoChip } from "./curve-info-chip";
 import { ViewerToolbar } from "./viewer-toolbar";
 import { AnnotationPins, type ViewerAnnotation } from "./annotation-pins";
 
@@ -52,6 +59,7 @@ export function DxfViewer({
     reset,
   } = usePanZoom(analysis.boundingBox);
   const [selectedHole, setSelectedHole] = useState<number | null>(null);
+  const [selectedCurve, setSelectedCurve] = useState<CurveHit | null>(null);
   const [showMarkers, setShowMarkers] = useState(true);
   const [annotating, setAnnotating] = useState(false);
 
@@ -73,12 +81,14 @@ export function DxfViewer({
 
   const handleClick = (e: React.MouseEvent) => {
     if (wasDrag()) return;
+    const world = clientToWorld(e.clientX, e.clientY);
     if (annotating && onAnnotate) {
-      const world = clientToWorld(e.clientX, e.clientY);
       onAnnotate(snapToFeature(entities, analysis.holes, world, 14 * upp));
       setAnnotating(false);
       return;
     }
+    const curve = curveAtPoint(entities, world, 8 * upp);
+    setSelectedCurve(curve);
     setSelectedHole(null);
   };
 
@@ -108,6 +118,16 @@ export function DxfViewer({
               strokeLinejoin="round"
             />
           ))}
+          {selectedCurve && (
+            <path
+              d={arcHighlightPath(selectedCurve)}
+              fill="none"
+              stroke="#10b981"
+              strokeWidth={3.5 * upp}
+              strokeLinecap="round"
+              opacity={0.85}
+            />
+          )}
         </g>
         {showMarkers && (
           <HoleMarkers
@@ -115,6 +135,7 @@ export function DxfViewer({
             selectedIndex={selectedHole}
             onSelect={(i) => {
               if (annotating) return;
+              setSelectedCurve(null);
               setSelectedHole(i === selectedHole ? null : i);
             }}
             unitsPerPx={upp}
@@ -174,6 +195,18 @@ export function DxfViewer({
       {!annotating && selectedHole !== null && analysis.holes[selectedHole] && (
         <HoleInfoChip hole={analysis.holes[selectedHole]} onClose={() => setSelectedHole(null)} />
       )}
+      {!annotating && selectedHole === null && selectedCurve && (
+        <CurveInfoChip curve={selectedCurve} onClose={() => setSelectedCurve(null)} />
+      )}
     </div>
   );
+}
+
+/** SVG path for the selected arc, in CAD coordinates (rendered inside the y-flip group). */
+function arcHighlightPath(curve: CurveHit): string {
+  const s = curve.segment;
+  const sweep = arcSweep(s);
+  const large = sweep > Math.PI ? 1 : 0;
+  const flag = s.ccw ? 1 : 0;
+  return `M ${s.a.x} ${s.a.y} A ${s.radius} ${s.radius} 0 ${large} ${flag} ${s.b.x} ${s.b.y}`;
 }
