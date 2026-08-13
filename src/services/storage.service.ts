@@ -6,20 +6,29 @@ const BUCKET = "dxf"; // historical name — holds all part files (dxf + stl)
 
 type Client = SupabaseClient<Database>;
 
-/** Upload a part file and return its storage path. */
-export async function uploadPartFile(
+/** Upload a file to an explicit bucket path. */
+export async function uploadToPath(
   supabase: Client,
   file: File | Blob,
-  partId: string,
+  path: string,
   fileType: PartFileType,
 ) {
-  const path = `parts/${partId}.${fileType}`;
   const { error } = await supabase.storage.from(BUCKET).upload(path, file, {
     contentType: fileType === "dxf" ? "application/dxf" : "model/stl",
     upsert: true,
   });
   if (error) throw new Error(`Upload failed: ${error.message}`);
   return path;
+}
+
+/** Upload a standalone queue part file and return its storage path. */
+export async function uploadPartFile(
+  supabase: Client,
+  file: File | Blob,
+  partId: string,
+  fileType: PartFileType,
+) {
+  return uploadToPath(supabase, file, `parts/${partId}.${fileType}`, fileType);
 }
 
 /** Short-lived signed URL for downloading a part file. */

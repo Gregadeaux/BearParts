@@ -13,6 +13,11 @@ export interface Part extends Omit<PartRow, "analysis"> {
   analysis: DxfAnalysis | null;
   submitter: Pick<ProfileRow, "id" | "display_name" | "avatar_url"> | null;
   assignee: Pick<ProfileRow, "id" | "display_name" | "avatar_url"> | null;
+  source_version: {
+    id: string;
+    version: number;
+    library_part: { id: string; name: string } | null;
+  } | null;
 }
 
 export const PART_STATUSES: { value: PartStatus; label: string }[] = [

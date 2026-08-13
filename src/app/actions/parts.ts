@@ -82,6 +82,9 @@ export async function deletePartAction(partId: string) {
   const { supabase } = await requireUser();
   const part = await partsService.getPart(supabase, partId);
   await partsService.deletePart(supabase, partId);
-  if (part?.file_path) await storageService.deletePartFile(supabase, part.file_path);
+  // library-sourced entries share the version's file — never delete those from storage
+  if (part?.file_path && !part.source_version_id) {
+    await storageService.deletePartFile(supabase, part.file_path);
+  }
   revalidatePath("/");
 }

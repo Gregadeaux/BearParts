@@ -1,0 +1,90 @@
+"use client";
+
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { Upload } from "lucide-react";
+import { createLibraryPartAction } from "@/app/actions/library";
+import { UploadDropzone } from "@/components/parts/upload-dropzone";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+
+/** Upload a new part (v1) into the current folder. */
+export function UploadPartDialog({ folderId }: { folderId: string }) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
+  const [name, setName] = useState("");
+  const [pending, startTransition] = useTransition();
+
+  const submit = () =>
+    startTransition(async () => {
+      if (!file) return;
+      try {
+        const formData = new FormData();
+        formData.set("file", file);
+        formData.set("folderId", folderId);
+        formData.set("name", name);
+        const { id } = await createLibraryPartAction(formData);
+        toast.success("Part added to library");
+        setOpen(false);
+        router.push(`/library/parts/${id}`);
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "Upload failed");
+      }
+    });
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(v) => {
+        setOpen(v);
+        if (!v) {
+          setFile(null);
+          setName("");
+        }
+      }}
+    >
+      <DialogTrigger render={<Button size="sm" nativeButton />}>
+        <Upload /> Upload part
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Upload part</DialogTitle>
+        </DialogHeader>
+        {!file ? (
+          <UploadDropzone
+            onFile={(f) => {
+              setFile(f);
+              if (!name) setName(f.name.replace(/\.(dxf|stl)$/i, ""));
+            }}
+          />
+        ) : (
+          <div className="space-y-3">
+            <p className="truncate rounded-md bg-muted px-3 py-2 text-sm">{file.name}</p>
+            <div className="space-y-1.5">
+              <Label>Part name</Label>
+              <Input value={name} onChange={(e) => setName(e.target.value)} />
+            </div>
+            <div className="flex gap-2">
+              <Button disabled={pending} onClick={submit}>
+                {pending ? "Uploading…" : "Add to library"}
+              </Button>
+              <Button variant="ghost" disabled={pending} onClick={() => setFile(null)}>
+                Different file
+              </Button>
+            </div>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}

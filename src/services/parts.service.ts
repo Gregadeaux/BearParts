@@ -7,7 +7,8 @@ type Client = SupabaseClient<Database>;
 
 const PART_SELECT = `*,
   submitter:profiles!parts_submitted_by_fkey (id, display_name, avatar_url),
-  assignee:profiles!parts_assigned_to_fkey (id, display_name, avatar_url)`;
+  assignee:profiles!parts_assigned_to_fkey (id, display_name, avatar_url),
+  source_version:part_versions (id, version, library_part:library_parts (id, name))`;
 
 export interface NewPartInput {
   name: string;
@@ -21,6 +22,8 @@ export interface NewPartInput {
   /** DXF only — STL parts carry no analysis */
   units?: Units;
   analysis?: DxfAnalysis;
+  /** set when this queue entry was created from a library version */
+  sourceVersionId?: string;
 }
 
 export async function listParts(
@@ -57,6 +60,7 @@ export async function createPart(supabase: Client, userId: string, input: NewPar
       file_type: input.fileType,
       units: input.units ?? "unknown",
       analysis: (input.analysis ?? null) as never,
+      source_version_id: input.sourceVersionId ?? null,
     })
     .select(PART_SELECT)
     .single();

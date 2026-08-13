@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { Part, ProfileRow } from "@/types/part";
 import { DxfWorkspace } from "@/components/viewer/dxf-workspace";
@@ -48,6 +49,17 @@ export function PartDetail({ part, team, userId, fileUrl }: Props) {
         <p className="text-sm text-muted-foreground">
           {part.material && <span>{part.material} · </span>}
           {part.submitter?.display_name ?? "Unknown"} · {formatDate(part.created_at)}
+          {part.source_version?.library_part && (
+            <>
+              {" · from "}
+              <Link
+                href={`/library/parts/${part.source_version.library_part.id}`}
+                className="underline underline-offset-2 hover:text-foreground"
+              >
+                {part.source_version.library_part.name} v{part.source_version.version}
+              </Link>
+            </>
+          )}
         </p>
         {part.description && <p className="text-sm">{part.description}</p>}
       </div>

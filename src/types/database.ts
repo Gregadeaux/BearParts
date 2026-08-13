@@ -14,6 +14,141 @@ export type Database = {
   }
   public: {
     Tables: {
+      folders: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+          parent_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+          parent_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+          parent_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "folders_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "folders_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "folders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      library_parts: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          folder_id: string
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          folder_id: string
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          folder_id?: string
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "library_parts_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "library_parts_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "folders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      part_versions: {
+        Row: {
+          analysis: Json | null
+          created_at: string
+          file_path: string
+          file_type: string
+          id: string
+          library_part_id: string
+          note: string | null
+          units: string
+          uploaded_by: string | null
+          version: number
+        }
+        Insert: {
+          analysis?: Json | null
+          created_at?: string
+          file_path: string
+          file_type: string
+          id?: string
+          library_part_id: string
+          note?: string | null
+          units?: string
+          uploaded_by?: string | null
+          version: number
+        }
+        Update: {
+          analysis?: Json | null
+          created_at?: string
+          file_path?: string
+          file_type?: string
+          id?: string
+          library_part_id?: string
+          note?: string | null
+          units?: string
+          uploaded_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "part_versions_library_part_id_fkey"
+            columns: ["library_part_id"]
+            isOneToOne: false
+            referencedRelation: "library_parts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "part_versions_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       parts: {
         Row: {
           analysis: Json | null
@@ -27,6 +162,7 @@ export type Database = {
           name: string
           priority: string
           quantity: number
+          source_version_id: string | null
           status: string
           submitted_by: string
           units: string
@@ -44,6 +180,7 @@ export type Database = {
           name: string
           priority?: string
           quantity?: number
+          source_version_id?: string | null
           status?: string
           submitted_by: string
           units?: string
@@ -61,6 +198,7 @@ export type Database = {
           name?: string
           priority?: string
           quantity?: number
+          source_version_id?: string | null
           status?: string
           submitted_by?: string
           units?: string
@@ -72,6 +210,13 @@ export type Database = {
             columns: ["assigned_to"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parts_source_version_id_fkey"
+            columns: ["source_version_id"]
+            isOneToOne: false
+            referencedRelation: "part_versions"
             referencedColumns: ["id"]
           },
           {

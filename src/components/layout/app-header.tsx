@@ -36,6 +36,14 @@ export function AppHeader({ userName, userAvatar }: Props) {
         <Link href="/" className="font-semibold">
           BearParts
         </Link>
+        <nav className="ml-2 flex items-center gap-1 text-sm">
+          <Link href="/" className="rounded-md px-2 py-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
+            Board
+          </Link>
+          <Link href="/library" className="rounded-md px-2 py-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
+            Library
+          </Link>
+        </nav>
         <div className="flex-1" />
         <Button size="sm" nativeButton={false} render={<Link href="/parts/new" />}>
           + New part
