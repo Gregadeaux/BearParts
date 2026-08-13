@@ -24,10 +24,12 @@ interface Props {
   ancestry: FolderRow[];
   folders: FolderRow[];
   parts: LibraryPartListing[];
+  /** part id → signed URL of the latest version's preview PNG */
+  thumbUrls?: Record<string, string>;
 }
 
 /** Folder browser: breadcrumb, toolbar, grid of folders + parts. */
-export function LibraryBrowser({ currentFolderId, ancestry, folders, parts }: Props) {
+export function LibraryBrowser({ currentFolderId, ancestry, folders, parts, thumbUrls = {} }: Props) {
   const router = useRouter();
 
   const deleteFolder = async (folder: FolderRow) => {
@@ -78,11 +80,26 @@ export function LibraryBrowser({ currentFolderId, ancestry, folders, parts }: Pr
           {parts.map((part) => (
             <Link key={part.id} href={`/library/parts/${part.id}`} className="block">
               <Card className="gap-2 p-3 shadow-sm transition-all hover:bg-accent/50 hover:shadow-md">
+                <div className="flex h-24 items-center justify-center overflow-hidden rounded-md bg-white">
+                  {thumbUrls[part.id] ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={thumbUrls[part.id]}
+                      alt={`${part.name} preview`}
+                      className="max-h-full max-w-full object-contain"
+                      loading="lazy"
+                    />
+                  ) : part.latest?.file_type === "stl" ? (
+                    <Box className="size-8 text-violet-300" />
+                  ) : (
+                    <FileText className="size-8 text-sky-300" />
+                  )}
+                </div>
                 <div className="flex items-center gap-2.5">
                   {part.latest?.file_type === "stl" ? (
-                    <Box className="size-5 shrink-0 text-violet-500" />
+                    <Box className="size-4 shrink-0 text-violet-500" />
                   ) : (
-                    <FileText className="size-5 shrink-0 text-sky-500" />
+                    <FileText className="size-4 shrink-0 text-sky-500" />
                   )}
                   <span className="truncate text-sm font-medium">{part.name}</span>
                 </div>

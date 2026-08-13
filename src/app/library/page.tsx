@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/services/profiles.service";
 import { listFolders, getAncestry } from "@/services/folders.service";
 import { listLibraryParts } from "@/services/library.service";
+import { getFileUrl } from "@/services/storage.service";
 import { AppHeader } from "@/components/layout/app-header";
 import { LibraryBrowser } from "@/components/library/library-browser";
 
@@ -24,6 +25,20 @@ export default async function LibraryPage({
     folderId ? getAncestry(supabase, folderId) : Promise.resolve([]),
   ]);
 
+  // signed URLs for the latest-version previews
+  const thumbEntries = await Promise.all(
+    parts
+      .filter((p) => p.latest?.thumb_path)
+      .map(async (p) => {
+        try {
+          return [p.id, await getFileUrl(supabase, p.latest!.thumb_path!)] as const;
+        } catch {
+          return null;
+        }
+      }),
+  );
+  const thumbUrls = Object.fromEntries(thumbEntries.filter((e): e is [string, string] => e !== null));
+
   return (
     <>
       <AppHeader
@@ -36,6 +51,7 @@ export default async function LibraryPage({
           ancestry={ancestry}
           folders={subfolders}
           parts={parts}
+          thumbUrls={thumbUrls}
         />
       </main>
     </>

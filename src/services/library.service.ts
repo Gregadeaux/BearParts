@@ -14,6 +14,7 @@ export interface NewVersionInput {
   units?: Units;
   analysis?: DxfAnalysis;
   note?: string;
+  thumbPath?: string;
 }
 
 /** Parts in a folder, each with its latest version attached. */
@@ -123,6 +124,7 @@ export async function insertVersion(
       units: input.units ?? "unknown",
       analysis: (input.analysis ?? null) as never,
       note: input.note?.trim() || null,
+      thumb_path: input.thumbPath ?? null,
       uploaded_by: userId,
     })
     .select(VERSION_SELECT)
@@ -134,4 +136,9 @@ export async function insertVersion(
 /** Storage path for a library version file. */
 export function versionFilePath(libraryPartId: string, version: number, fileType: PartFileType) {
   return `library/${libraryPartId}/v${version}.${fileType}`;
+}
+
+/** Storage path for a version's preview PNG. */
+export function versionThumbPath(libraryPartId: string, version: number) {
+  return `library/${libraryPartId}/v${version}.thumb.png`;
 }

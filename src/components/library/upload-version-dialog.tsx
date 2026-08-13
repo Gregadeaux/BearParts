@@ -4,7 +4,9 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { FilePlus2 } from "lucide-react";
+import type { PartFileType } from "@/types/part";
 import { addVersionAction } from "@/app/actions/library";
+import { generateThumbnail } from "@/lib/thumbnails";
 import { UploadDropzone } from "@/components/parts/upload-dropzone";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,6 +24,7 @@ export function UploadVersionDialog({ libraryPartId }: { libraryPartId: string }
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [file, setFile] = useState<File | null>(null);
+  const [fileType, setFileType] = useState<PartFileType>("dxf");
   const [note, setNote] = useState("");
   const [pending, startTransition] = useTransition();
 
@@ -33,6 +36,8 @@ export function UploadVersionDialog({ libraryPartId }: { libraryPartId: string }
         formData.set("file", file);
         formData.set("libraryPartId", libraryPartId);
         formData.set("note", note);
+        const thumb = await generateThumbnail(file, fileType);
+        if (thumb) formData.set("thumb", new File([thumb], "thumb.png", { type: "image/png" }));
         const { version } = await addVersionAction(formData);
         toast.success(`v${version} uploaded`);
         setOpen(false);
@@ -61,7 +66,12 @@ export function UploadVersionDialog({ libraryPartId }: { libraryPartId: string }
           <DialogTitle>Upload new version</DialogTitle>
         </DialogHeader>
         {!file ? (
-          <UploadDropzone onFile={setFile} />
+          <UploadDropzone
+            onFile={(f, type) => {
+              setFile(f);
+              setFileType(type);
+            }}
+          />
         ) : (
           <div className="space-y-3">
             <p className="truncate rounded-md bg-muted px-3 py-2 text-sm">{file.name}</p>

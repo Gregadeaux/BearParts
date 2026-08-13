@@ -45,6 +45,24 @@ async function versionInputFromFile(file: File, note?: string): Promise<NewVersi
   return { filePath: "", fileType, note };
 }
 
+/** Store the client-rendered preview PNG if the form included one. */
+async function maybeUploadThumb(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  formData: FormData,
+  libraryPartId: string,
+  version: number,
+): Promise<string | undefined> {
+  const thumb = formData.get("thumb");
+  if (!(thumb instanceof File) || thumb.size === 0) return undefined;
+  try {
+    const path = library.versionThumbPath(libraryPartId, version);
+    await uploadToPath(supabase, thumb, path, "png");
+    return path;
+  } catch {
+    return undefined; // a missing preview never fails an upload
+  }
+}
+
 /** Upload a new part into a folder (creates the part + v1). */
 export async function createLibraryPartAction(formData: FormData) {
   const { supabase, user } = await requireUser();
@@ -58,10 +76,11 @@ export async function createLibraryPartAction(formData: FormData) {
     supabase,
     user.id,
     folderId,
-    name || file.name.replace(/\.(dxf|stl)$/i, ""),
+    name || file.name.replace(/\.(dxf|stl|pdf)$/i, ""),
   );
   input.filePath = library.versionFilePath(part.id, 1, input.fileType);
   await uploadToPath(supabase, file, input.filePath, input.fileType);
+  input.thumbPath = await maybeUploadThumb(supabase, formData, part.id, 1);
   await library.insertVersion(supabase, user.id, part.id, 1, input);
 
   revalidatePath("/library");
@@ -80,6 +99,7 @@ export async function addVersionAction(formData: FormData) {
   const versionNumber = await library.nextVersionNumber(supabase, libraryPartId);
   input.filePath = library.versionFilePath(libraryPartId, versionNumber, input.fileType);
   await uploadToPath(supabase, file, input.filePath, input.fileType);
+  input.thumbPath = await maybeUploadThumb(supabase, formData, libraryPartId, versionNumber);
   await library.insertVersion(supabase, user.id, libraryPartId, versionNumber, input);
 
   revalidatePath(`/library/parts/${libraryPartId}`);

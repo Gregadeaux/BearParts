@@ -201,6 +201,7 @@ export type Database = {
           id: string
           library_part_id: string
           note: string | null
+          thumb_path: string | null
           units: string
           uploaded_by: string | null
           version: number
@@ -213,6 +214,7 @@ export type Database = {
           id?: string
           library_part_id: string
           note?: string | null
+          thumb_path?: string | null
           units?: string
           uploaded_by?: string | null
           version: number
@@ -225,6 +227,7 @@ export type Database = {
           id?: string
           library_part_id?: string
           note?: string | null
+          thumb_path?: string | null
           units?: string
           uploaded_by?: string | null
           version?: number

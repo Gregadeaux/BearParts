@@ -6,16 +6,22 @@ const BUCKET = "dxf"; // historical name — holds all part files (dxf + stl)
 
 type Client = SupabaseClient<Database>;
 
-/** Upload a file to an explicit bucket path. */
+const CONTENT_TYPES: Record<string, string> = {
+  dxf: "application/dxf",
+  stl: "model/stl",
+  pdf: "application/pdf",
+  png: "image/png",
+};
+
+/** Upload a file to an explicit bucket path; kind picks the content type. */
 export async function uploadToPath(
   supabase: Client,
   file: File | Blob,
   path: string,
-  fileType: PartFileType,
+  kind: PartFileType | "png",
 ) {
-  const contentTypes = { dxf: "application/dxf", stl: "model/stl", pdf: "application/pdf" };
   const { error } = await supabase.storage.from(BUCKET).upload(path, file, {
-    contentType: contentTypes[fileType],
+    contentType: CONTENT_TYPES[kind],
     upsert: true,
   });
   if (error) throw new Error(`Upload failed: ${error.message}`);
