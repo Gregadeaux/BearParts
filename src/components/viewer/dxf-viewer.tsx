@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { NormalizedEntity, Point } from "@/types/geometry";
 import type { DxfAnalysis } from "@/types/analysis";
 import { entitiesToSvgPaths } from "@/services/dxf/render.service";
@@ -23,6 +23,8 @@ interface Props {
   onAnnotate?: (snap: SnapResult) => void;
   /** in-progress pin location */
   draftAnnotation?: Point | null;
+  /** bump nonce to smoothly zoom the view onto a feature */
+  focusTarget?: { x: number; y: number; size?: number; nonce: number } | null;
 }
 
 /** Interactive DXF viewer: pan, pinch-zoom, tappable hole markers, comment pins. */
@@ -35,15 +37,39 @@ export function DxfViewer({
   onSelectAnnotation,
   onAnnotate,
   draftAnnotation,
+  focusTarget,
 }: Props) {
-  const { svgRef, viewBox, handlers, unitsPerPx, clientToWorld, wasDrag, zoomIn, zoomOut, reset } =
-    usePanZoom(analysis.boundingBox);
+  const {
+    svgRef,
+    viewBox,
+    handlers,
+    unitsPerPx,
+    clientToWorld,
+    focusOn,
+    wasDrag,
+    zoomIn,
+    zoomOut,
+    reset,
+  } = usePanZoom(analysis.boundingBox);
   const [selectedHole, setSelectedHole] = useState<number | null>(null);
   const [showMarkers, setShowMarkers] = useState(true);
   const [annotating, setAnnotating] = useState(false);
 
   const paths = useMemo(() => entitiesToSvgPaths(entities), [entities]);
   const upp = unitsPerPx();
+
+  // zoom onto a pinned feature: frame ~5 feature-diameters for holes,
+  // a fifth of the part for corners/points — never past the fit view
+  useEffect(() => {
+    if (!focusTarget) return;
+    const maxDim = Math.max(analysis.boundingBox.width, analysis.boundingBox.height, 0.5);
+    const span = Math.min(
+      focusTarget.size ? Math.max(focusTarget.size * 5, 0.5) : Math.max(maxDim * 0.2, 1),
+      maxDim * 1.2,
+    );
+    focusOn(focusTarget.x, focusTarget.y, span);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusTarget?.nonce]);
 
   const handleClick = (e: React.MouseEvent) => {
     if (wasDrag()) return;

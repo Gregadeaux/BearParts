@@ -45,6 +45,12 @@ export function LibraryPartView({ part, ancestry, team, userId, initialComments,
   const { comments, pending, post, remove } = useComments(part.id, part.name, initialComments);
   const [pendingAnchor, setPendingAnchor] = useState<CommentAnchor | null>(null);
   const [focusedCommentId, setFocusedCommentId] = useState<string | null>(null);
+  const [focusTarget, setFocusTarget] = useState<{
+    x: number;
+    y: number;
+    size?: number;
+    nonce: number;
+  } | null>(null);
 
   // pins shown on the currently selected version, numbered by comment order
   const anchored = comments.filter((c) => c.anchor?.versionId === selected?.id);
@@ -122,8 +128,15 @@ export function LibraryPartView({ part, ancestry, team, userId, initialComments,
           selectedAnnotationId={focusedCommentId}
           onSelectAnnotation={setFocusedCommentId}
           draftAnnotation={pendingAnchor}
+          focusTarget={focusTarget}
           onAnnotate={(snap) =>
-            setPendingAnchor({ x: snap.x, y: snap.y, versionId: selected.id, label: snap.label })
+            setPendingAnchor({
+              x: snap.x,
+              y: snap.y,
+              versionId: selected.id,
+              label: snap.label,
+              size: snap.size,
+            })
           }
         />
       )}
@@ -149,9 +162,11 @@ export function LibraryPartView({ part, ancestry, team, userId, initialComments,
       pinNumbers={pinNumbers}
       selectedCommentId={focusedCommentId}
       onFocusAnnotation={(comment) => {
-        if (comment.anchor) {
-          const version = part.versions.find((v) => v.id === comment.anchor!.versionId);
+        const anchor = comment.anchor;
+        if (anchor) {
+          const version = part.versions.find((v) => v.id === anchor.versionId);
           if (version) setSelected(version);
+          setFocusTarget({ x: anchor.x, y: anchor.y, size: anchor.size, nonce: Date.now() });
         }
         setFocusedCommentId(comment.id);
       }}

@@ -7,6 +7,8 @@ export interface SnapResult {
   y: number;
   /** human label for the snapped feature, e.g. `⌀0.196" hole` */
   label: string;
+  /** characteristic feature size (hole diameter), inches */
+  size?: number;
 }
 
 /**
@@ -26,7 +28,7 @@ export function snapToFeature(
   );
   if (hole && hole.d <= Math.max(toleranceIn, holeRadiusAt(holes, hole.p))) {
     const h = holes.find((c) => c.center === hole.p)!;
-    return { x: h.center.x, y: h.center.y, label: `⌀${fmt(h.diameter)}" hole` };
+    return { x: h.center.x, y: h.center.y, label: `⌀${fmt(h.diameter)}" hole`, size: h.diameter };
   }
 
   const vertex = nearest(entityVertices(entities), point);

@@ -20,6 +20,7 @@ interface Props {
   onSelectAnnotation?: (id: string) => void;
   onAnnotate?: (snap: SnapResult) => void;
   draftAnnotation?: Point | null;
+  focusTarget?: { x: number; y: number; size?: number; nonce: number } | null;
 }
 
 /** Viewer + analysis side by side (stacked on phones). */

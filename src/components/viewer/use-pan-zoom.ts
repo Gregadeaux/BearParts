@@ -30,6 +30,9 @@ export function usePanZoom(bbox: BoundingBox) {
   }, [bbox]);
 
   const [view, setView] = useState<ViewBox>(fit);
+  const viewRef = useRef(view);
+  viewRef.current = view;
+  const animRef = useRef<number | null>(null);
   const pointers = useRef(new Map<number, { x: number; y: number }>());
   const pinchStart = useRef<{ dist: number; view: ViewBox; mid: { x: number; y: number } } | null>(null);
   const moved = useRef(false);
@@ -68,19 +71,53 @@ export function usePanZoom(bbox: BoundingBox) {
     [fit, toSvg],
   );
 
+  const cancelAnimation = useCallback(() => {
+    if (animRef.current !== null) {
+      cancelAnimationFrame(animRef.current);
+      animRef.current = null;
+    }
+  }, []);
+
+  /** Smoothly frame a world point (CAD y-up) with the given span (user units). */
+  const focusOn = useCallback(
+    (wx: number, wy: number, span: number) => {
+      cancelAnimation();
+      const from = viewRef.current;
+      const to: ViewBox = { x: wx - span / 2, y: -wy - span / 2, w: span, h: span };
+      const started = performance.now();
+      const duration = 300;
+      const ease = (t: number) => (t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2);
+      const step = (now: number) => {
+        const t = Math.min(1, (now - started) / duration);
+        const k = ease(t);
+        setView({
+          x: from.x + (to.x - from.x) * k,
+          y: from.y + (to.y - from.y) * k,
+          w: from.w + (to.w - from.w) * k,
+          h: from.h + (to.h - from.h) * k,
+        });
+        animRef.current = t < 1 ? requestAnimationFrame(step) : null;
+      };
+      animRef.current = requestAnimationFrame(step);
+    },
+    [cancelAnimation],
+  );
+
   const onWheel = useCallback(
     (e: React.WheelEvent) => {
+      cancelAnimation();
       zoomAt(e.clientX, e.clientY, e.deltaY > 0 ? 1.15 : 1 / 1.15);
     },
-    [zoomAt],
+    [zoomAt, cancelAnimation],
   );
 
   const onPointerDown = useCallback((e: React.PointerEvent) => {
+    cancelAnimation();
     (e.target as Element).setPointerCapture?.(e.pointerId);
     pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
     moved.current = false;
     pinchStart.current = null;
-  }, []);
+  }, [cancelAnimation]);
 
   const onPointerMove = useCallback(
     (e: React.PointerEvent) => {
@@ -159,6 +196,7 @@ export function usePanZoom(bbox: BoundingBox) {
       const p = toSvg(clientX, clientY, view);
       return { x: p.x, y: -p.y };
     },
+    focusOn,
     handlers: { onWheel, onPointerDown, onPointerMove, onPointerUp, onPointerCancel: onPointerUp },
     /** true if the last gesture was a drag (suppress click-through) */
     wasDrag: () => moved.current,

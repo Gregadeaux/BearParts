@@ -10,6 +10,8 @@ export interface CommentAnchor {
   y: number;
   versionId: string;
   label?: string;
+  /** characteristic feature size (hole diameter), inches */
+  size?: number;
 }
 
 export interface PartComment {
