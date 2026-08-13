@@ -47,7 +47,7 @@ export function DxfWorkspace({ dxfText, unitOverride, onAnalyzed }: Props) {
       <DxfViewer
         entities={result.entities}
         analysis={result.analysis}
-        className="h-[55svh] min-h-64 lg:h-[70svh]"
+        className="h-[55svh] min-h-64 lg:h-[60svh]"
       />
       <AnalysisPanel analysis={result.analysis} />
     </div>

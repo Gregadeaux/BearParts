@@ -8,7 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 // three.js is heavy — only load it when an STL is actually on screen
 const StlViewer = dynamic(() => import("./stl-viewer").then((m) => m.StlViewer), {
   ssr: false,
-  loading: () => <Skeleton className="h-[55svh] min-h-64 w-full lg:h-[70svh]" />,
+  loading: () => <Skeleton className="h-[55svh] min-h-64 w-full lg:h-[60svh]" />,
 });
 
 /** 3D preview for STL parts. No machining analysis — printers don't care. */
@@ -28,5 +28,5 @@ export function StlWorkspace({ stlBuffer }: { stlBuffer: ArrayBuffer }) {
       </div>
     );
   }
-  return <StlViewer mesh={result.mesh!} className="h-[55svh] min-h-64 lg:h-[70svh]" />;
+  return <StlViewer mesh={result.mesh!} className="h-[55svh] min-h-64 lg:h-[60svh]" />;
 }

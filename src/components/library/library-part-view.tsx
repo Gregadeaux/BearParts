@@ -105,9 +105,10 @@ export function LibraryPartView({ part, ancestry, team, userId, initialComments,
           unitOverride={selected.units === "unknown" ? undefined : selected.units}
         />
       )}
-      <PartTimeline versions={part.versions} events={events} />
     </div>
   );
+
+  const timeline = <PartTimeline versions={part.versions} events={events} />;
 
   const discussion = (className?: string) => (
     <CommentsPanel
@@ -130,17 +131,22 @@ export function LibraryPartView({ part, ancestry, team, userId, initialComments,
 
       {isDesktop ? (
         <ResizablePanelGroup className="h-[calc(100svh-11rem)] items-stretch">
-          <ResizablePanel defaultSize={70} minSize={45}>
-            <ScrollArea className="h-full pr-4">{workspace}</ScrollArea>
+          <ResizablePanel defaultSize={55} minSize={38}>
+            <ScrollArea className="h-full pr-3">{workspace}</ScrollArea>
           </ResizablePanel>
           <ResizableHandle withHandle className="mx-1" />
-          <ResizablePanel defaultSize={30} minSize={20}>
+          <ResizablePanel defaultSize={20} minSize={13}>
+            <ScrollArea className="h-full pr-3">{timeline}</ScrollArea>
+          </ResizablePanel>
+          <ResizableHandle withHandle className="mx-1" />
+          <ResizablePanel defaultSize={25} minSize={18}>
             {discussion("h-full")}
           </ResizablePanel>
         </ResizablePanelGroup>
       ) : (
         <div className="space-y-4">
           {workspace}
+          {timeline}
           {discussion("h-96")}
         </div>
       )}
