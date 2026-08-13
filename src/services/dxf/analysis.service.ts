@@ -5,6 +5,7 @@ import { detectUnits } from "./units.service";
 import { buildLoops } from "./loop-builder";
 import { findHoles, groupHoles } from "./hole-analysis.service";
 import { analyzePockets, overallMaxEndmill } from "./pocket-analysis.service";
+import { planEndmills } from "./endmill.service";
 import { entitiesBBox, scaleEntity } from "./render.service";
 
 export interface AnalyzedDxf {
@@ -48,6 +49,11 @@ export function analyzeDxfText(text: string, unitOverride?: Units): AnalyzedDxf 
   const holes = findHoles(entities, loops);
   const pockets = analyzePockets(loops);
   const { maxEndmillDiameter, sharpCornerCount } = overallMaxEndmill(pockets);
+  const endmills = planEndmills(holes, pockets);
+
+  if ((holes.length > 0 || maxEndmillDiameter !== null) && !endmills.single) {
+    warnings.push("Some feature is smaller than a 1mm endmill — check the tiniest holes.");
+  }
 
   if (sharpCornerCount > 0) {
     warnings.push(
@@ -65,6 +71,7 @@ export function analyzeDxfText(text: string, unitOverride?: Units): AnalyzedDxf 
       holeGroups: groupHoles(holes),
       pockets,
       maxEndmillDiameter,
+      endmills,
       sharpCornerCount,
       entityCounts: doc.entityCounts,
       warnings,

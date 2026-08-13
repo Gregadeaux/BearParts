@@ -39,6 +39,20 @@ export interface PocketAnalysis {
   sharpCorners: Point[];
 }
 
+/** A concrete endmill from the shop's metric catalog. */
+export interface EndmillOption {
+  sizeMm: number;
+  diameterIn: number;
+}
+
+/** Tooling recommendation — holes are interpolated with endmills, not drilled. */
+export interface EndmillPlan {
+  /** largest single endmill that can cut everything, including bolt holes */
+  single: EndmillOption | null;
+  /** two-tool option: small endmill for bolt holes, larger one for the rest */
+  split: { boltHoles: EndmillOption; rest: EndmillOption } | null;
+}
+
 export interface DxfAnalysis {
   units: Units;
   unitsSource: "header" | "heuristic" | "assumed";
@@ -46,8 +60,9 @@ export interface DxfAnalysis {
   holes: AnalyzedHole[];
   holeGroups: HoleGroup[];
   pockets: PocketAnalysis[];
-  /** overall largest endmill able to cut every internal corner, inches */
+  /** overall largest endmill able to cut every internal corner, inches (raw geometric limit) */
   maxEndmillDiameter: number | null;
+  endmills: EndmillPlan;
   sharpCornerCount: number;
   entityCounts: Record<string, number>;
   warnings: string[];

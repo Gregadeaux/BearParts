@@ -23,10 +23,17 @@ Decisions that must stay consistent:
    fillet radius. Loops are normalized CCW; for internal cutouts concave = left
    turns (`concaveSign = 1`), for the outer profile concave = right turns
    (`concaveSign = -1`). Sharp concave corners are flagged, never averaged in.
-6. **Holes can be circles OR closed loops of same-center arcs** (`loopAsCircle`).
+6. **Endmill recommendations are metric** (`endmill.service.ts`): snap raw inch
+   limits DOWN to the shop's catalog (1–12mm) and display "5mm", never inches.
+   The shop interpolates ALL holes with endmills (no drill bits), so hole
+   diameters (−0.001" clearance) constrain tooling too. Always offer two plans:
+   a single do-everything tool, and a bolt-holes-tool + bigger-rest-tool split
+   (bolt hole = tap/close/free match, or unmatched ≤0.28"); omit the split when
+   the rest tool wouldn't be bigger. Bearing bores count as "rest", not bolt.
+7. **Holes can be circles OR closed loops of same-center arcs** (`loopAsCircle`).
    Full-circle loops are excluded from pocket analysis.
-7. **Domain layer is pure and isomorphic** — no React, no Supabase, no Node APIs in
+8. **Domain layer is pure and isomorphic** — no React, no Supabase, no Node APIs in
    `src/services/dxf`. It runs in browser and server identically. Keep it that way
    so upload preview (client) and any server-side re-analysis agree.
-8. **Tests use the fixture builder** (`__tests__/fixtures.ts`) to author DXF text —
+9. **Tests use the fixture builder** (`__tests__/fixtures.ts`) to author DXF text —
    don't check in binary DXF fixtures.

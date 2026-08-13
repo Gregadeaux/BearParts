@@ -4,9 +4,9 @@ import type { DxfAnalysis } from "@/types/analysis";
 import { Badge } from "@/components/ui/badge";
 import { formatInches } from "@/lib/format";
 
-/** Compact machining summary: size, endmill limit, hole table, warnings. */
+/** Compact machining summary: size, endmill options, hole table, warnings. */
 export function AnalysisPanel({ analysis }: { analysis: DxfAnalysis }) {
-  const { boundingBox: bb, holeGroups, maxEndmillDiameter, sharpCornerCount, warnings } = analysis;
+  const { boundingBox: bb, holeGroups, endmills, sharpCornerCount, warnings } = analysis;
 
   return (
     <div className="space-y-3 text-sm">
@@ -15,13 +15,30 @@ export function AnalysisPanel({ analysis }: { analysis: DxfAnalysis }) {
           {formatInches(bb.width)} × {formatInches(bb.height)}
         </Badge>
         <Badge variant="outline">units: {analysis.units}</Badge>
-        {maxEndmillDiameter !== null && (
-          <Badge variant="outline">max endmill ⌀{formatInches(maxEndmillDiameter)}</Badge>
-        )}
         {sharpCornerCount > 0 && (
           <Badge variant="destructive">{sharpCornerCount} sharp corners</Badge>
         )}
       </div>
+
+      {(endmills?.single || endmills?.split) && (
+        <div className="space-y-1 rounded-md border p-2.5">
+          <p className="text-xs font-medium text-muted-foreground">Endmills</p>
+          {endmills.single && (
+            <p>
+              <span className="font-medium tabular-nums">{endmills.single.sizeMm}mm</span>
+              <span className="text-muted-foreground"> — does everything</span>
+            </p>
+          )}
+          {endmills.split && (
+            <p>
+              <span className="font-medium tabular-nums">{endmills.split.rest.sizeMm}mm</span>
+              <span className="text-muted-foreground"> + </span>
+              <span className="font-medium tabular-nums">{endmills.split.boltHoles.sizeMm}mm</span>
+              <span className="text-muted-foreground"> for bolt holes</span>
+            </p>
+          )}
+        </div>
+      )}
 
       {holeGroups.length > 0 && (
         <table className="w-full text-left">
