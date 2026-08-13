@@ -5,11 +5,13 @@ import { useCallback, useEffect, useState } from "react";
 import type { FolderRow, LibraryPartDetail, PartVersion } from "@/types/library";
 import type { ProfileRow } from "@/types/part";
 import type { PartComment } from "@/services/comments.service";
+import type { PartEvent } from "@/services/events.service";
 import { createClient } from "@/lib/supabase/client";
 import { getFileUrl } from "@/services/storage.service";
 import { useMediaQuery } from "@/lib/use-media-query";
 import { LibraryBreadcrumb } from "./library-breadcrumb";
 import { VersionHistory } from "./version-history";
+import { PartTimeline } from "./part-timeline";
 import { AddToQueueDialog } from "./add-to-queue-dialog";
 import { UploadVersionDialog } from "./upload-version-dialog";
 import { CommentsPanel } from "@/components/comments/comments-panel";
@@ -23,18 +25,17 @@ import {
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { formatDate } from "@/lib/format";
-
 interface Props {
   part: LibraryPartDetail;
   ancestry: FolderRow[];
   team: ProfileRow[];
   userId: string;
   initialComments: PartComment[];
+  events: PartEvent[];
 }
 
 /** Library part detail: versions + viewer beside a live discussion panel. */
-export function LibraryPartView({ part, ancestry, team, userId, initialComments }: Props) {
+export function LibraryPartView({ part, ancestry, team, userId, initialComments, events }: Props) {
   const isDesktop = useMediaQuery("(min-width: 1024px)");
   const [selected, setSelected] = useState<PartVersion>(part.versions[0]);
   const [content, setContent] = useState<{ text?: string; buffer?: ArrayBuffer } | null>(null);
@@ -104,7 +105,7 @@ export function LibraryPartView({ part, ancestry, team, userId, initialComments 
           unitOverride={selected.units === "unknown" ? undefined : selected.units}
         />
       )}
-      <QueueHistory part={part} />
+      <PartTimeline versions={part.versions} events={events} />
     </div>
   );
 
@@ -125,6 +126,7 @@ export function LibraryPartView({ part, ancestry, team, userId, initialComments 
     <div className="space-y-4">
       <LibraryBreadcrumb ancestry={ancestry} />
       {header}
+      <ActiveQueueEntries part={part} />
 
       {isDesktop ? (
         <ResizablePanelGroup className="h-[calc(100svh-11rem)] items-stretch">
@@ -146,33 +148,23 @@ export function LibraryPartView({ part, ancestry, team, userId, initialComments 
   );
 }
 
-function QueueHistory({ part }: { part: LibraryPartDetail }) {
-  if (part.queueEntries.length === 0) return null;
+function ActiveQueueEntries({ part }: { part: LibraryPartDetail }) {
+  const active = part.queueEntries.filter(
+    (e) => e.status !== "done" && e.status !== "rejected",
+  );
+  if (active.length === 0) return null;
   return (
-    <div className="space-y-2">
-      <h2 className="text-sm font-medium text-muted-foreground">Fab queue history</h2>
-      <div className="divide-y rounded-lg border">
-        {part.queueEntries.map((entry) => {
-          const version = part.versions.find((v) => v.id === entry.source_version_id);
-          return (
-            <Link
-              key={entry.id}
-              href={`/parts/${entry.id}`}
-              className="flex items-center gap-2.5 px-3 py-2 text-sm transition-colors first:rounded-t-lg last:rounded-b-lg hover:bg-accent/50"
-            >
-              <StatusBadge status={entry.status as never} />
-              {version && <span className="text-xs text-muted-foreground">v{version.version}</span>}
-              {entry.quantity > 1 && (
-                <span className="text-xs text-muted-foreground">×{entry.quantity}</span>
-              )}
-              <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
-                {entry.assignee?.display_name ?? ""}
-              </span>
-              <span className="text-xs text-muted-foreground">{formatDate(entry.created_at)}</span>
-            </Link>
-          );
-        })}
-      </div>
+    <div className="flex flex-wrap items-center gap-2">
+      <span className="text-xs text-muted-foreground">On the board:</span>
+      {active.map((entry) => {
+        const version = part.versions.find((v) => v.id === entry.source_version_id);
+        return (
+          <Link key={entry.id} href={`/parts/${entry.id}`} className="flex items-center gap-1">
+            <StatusBadge status={entry.status as never} />
+            {version && <span className="text-xs text-muted-foreground">v{version.version}</span>}
+          </Link>
+        );
+      })}
     </div>
   );
 }

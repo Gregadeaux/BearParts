@@ -134,6 +134,61 @@ export type Database = {
           },
         ]
       }
+      part_events: {
+        Row: {
+          actor_id: string | null
+          created_at: string
+          detail: Json | null
+          event: string
+          id: string
+          library_part_id: string
+          part_id: string | null
+          version: number | null
+        }
+        Insert: {
+          actor_id?: string | null
+          created_at?: string
+          detail?: Json | null
+          event: string
+          id?: string
+          library_part_id: string
+          part_id?: string | null
+          version?: number | null
+        }
+        Update: {
+          actor_id?: string | null
+          created_at?: string
+          detail?: Json | null
+          event?: string
+          id?: string
+          library_part_id?: string
+          part_id?: string | null
+          version?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "part_events_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "part_events_library_part_id_fkey"
+            columns: ["library_part_id"]
+            isOneToOne: false
+            referencedRelation: "library_parts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "part_events_part_id_fkey"
+            columns: ["part_id"]
+            isOneToOne: false
+            referencedRelation: "parts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       part_versions: {
         Row: {
           analysis: Json | null
