@@ -3,7 +3,6 @@
 import { useMemo } from "react";
 import dynamic from "next/dynamic";
 import { parseStl } from "@/services/stl/stl-parser";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 
 // three.js is heavy — only load it when an STL is actually on screen
@@ -29,21 +28,5 @@ export function StlWorkspace({ stlBuffer }: { stlBuffer: ArrayBuffer }) {
       </div>
     );
   }
-  const { boundingBox: bb, triangleCount } = result.mesh!;
-
-  return (
-    <div className="space-y-3">
-      <StlViewer mesh={result.mesh!} className="h-[55svh] min-h-64 lg:h-[70svh]" />
-      <div className="flex flex-wrap gap-2">
-        <Badge variant="outline" className="tabular-nums">
-          {fmt(bb.size.x)} × {fmt(bb.size.y)} × {fmt(bb.size.z)} (file units)
-        </Badge>
-        <Badge variant="outline" className="tabular-nums">
-          {triangleCount.toLocaleString()} triangles
-        </Badge>
-      </div>
-    </div>
-  );
+  return <StlViewer mesh={result.mesh!} className="h-[55svh] min-h-64 lg:h-[70svh]" />;
 }
-
-const fmt = (n: number) => parseFloat(n.toFixed(2));

@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import * as THREE from "three";
 import { Canvas } from "@react-three/fiber";
-import { OrbitControls } from "@react-three/drei";
+import { GizmoHelper, GizmoViewcube, OrbitControls } from "@react-three/drei";
 import type { StlMesh } from "@/services/stl/stl-parser";
 
 interface Props {
@@ -33,6 +33,16 @@ export function StlViewer({ mesh, className }: Props) {
         <directionalLight position={[-camDist, camDist, -camDist]} intensity={0.4} />
         <StlModel mesh={mesh} />
         <OrbitControls makeDefault enableDamping dampingFactor={0.1} />
+        {/* CAD-style orientation cube — click faces/edges/corners to snap the view */}
+        <GizmoHelper alignment="top-right" margin={[56, 56]}>
+          <GizmoViewcube
+            color="#f4f4f5"
+            hoverColor="#fbbf24"
+            textColor="#27272a"
+            strokeColor="#71717a"
+            faces={["Right", "Left", "Back", "Front", "Top", "Bottom"]}
+          />
+        </GizmoHelper>
       </Canvas>
     </div>
   );
