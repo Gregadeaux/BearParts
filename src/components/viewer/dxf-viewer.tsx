@@ -121,9 +121,22 @@ export function DxfViewer({
           setSelectedHole(null);
         }}
         markersVisible={showMarkers}
-        onToggleMarkers={() => setShowMarkers((v) => !v)}
+        onToggleMarkers={() =>
+          setShowMarkers((v) => {
+            if (!v) setAnnotating(false); // markers on → annotate off
+            return !v;
+          })
+        }
         annotating={onAnnotate ? annotating : undefined}
-        onToggleAnnotate={onAnnotate ? () => setAnnotating((v) => !v) : undefined}
+        onToggleAnnotate={
+          onAnnotate
+            ? () =>
+                setAnnotating((v) => {
+                  if (!v) setShowMarkers(false); // annotate on → markers off
+                  return !v;
+                })
+            : undefined
+        }
       />
 
       {annotating && (
