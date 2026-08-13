@@ -20,7 +20,8 @@ export type Database = {
           assigned_to: string | null
           created_at: string
           description: string | null
-          dxf_path: string
+          file_path: string
+          file_type: string
           id: string
           material: string | null
           name: string
@@ -36,7 +37,8 @@ export type Database = {
           assigned_to?: string | null
           created_at?: string
           description?: string | null
-          dxf_path: string
+          file_path: string
+          file_type?: string
           id?: string
           material?: string | null
           name: string
@@ -52,7 +54,8 @@ export type Database = {
           assigned_to?: string | null
           created_at?: string
           description?: string | null
-          dxf_path?: string
+          file_path?: string
+          file_type?: string
           id?: string
           material?: string | null
           name?: string

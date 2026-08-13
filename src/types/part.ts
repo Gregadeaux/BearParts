@@ -6,6 +6,7 @@ export type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
 
 export type PartStatus = "queued" | "assigned" | "in_progress" | "done" | "rejected";
 export type PartPriority = "low" | "normal" | "high" | "urgent";
+export type PartFileType = "dxf" | "stl";
 
 /** Part joined with the profiles the UI always needs. */
 export interface Part extends Omit<PartRow, "analysis"> {

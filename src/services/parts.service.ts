@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database";
-import type { Part, PartPriority, PartStatus } from "@/types/part";
+import type { Part, PartFileType, PartPriority, PartStatus } from "@/types/part";
 import type { DxfAnalysis, Units } from "@/types/analysis";
 
 type Client = SupabaseClient<Database>;
@@ -16,9 +16,11 @@ export interface NewPartInput {
   quantity: number;
   priority: PartPriority;
   assignedTo?: string | null;
-  dxfPath: string;
-  units: Units;
-  analysis: DxfAnalysis;
+  filePath: string;
+  fileType: PartFileType;
+  /** DXF only — STL parts carry no analysis */
+  units?: Units;
+  analysis?: DxfAnalysis;
 }
 
 export async function listParts(
@@ -51,9 +53,10 @@ export async function createPart(supabase: Client, userId: string, input: NewPar
       status: input.assignedTo ? "assigned" : "queued",
       submitted_by: userId,
       assigned_to: input.assignedTo ?? null,
-      dxf_path: input.dxfPath,
-      units: input.units,
-      analysis: input.analysis as never,
+      file_path: input.filePath,
+      file_type: input.fileType,
+      units: input.units ?? "unknown",
+      analysis: (input.analysis ?? null) as never,
     })
     .select(PART_SELECT)
     .single();

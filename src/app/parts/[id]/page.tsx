@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getPart } from "@/services/parts.service";
-import { getDxfUrl } from "@/services/storage.service";
+import { getFileUrl } from "@/services/storage.service";
 import { listProfiles, getProfile } from "@/services/profiles.service";
 import { AppHeader } from "@/components/layout/app-header";
 import { PartDetail } from "@/components/parts/part-detail";
@@ -21,7 +21,7 @@ export default async function PartPage({ params }: { params: Promise<{ id: strin
   ]);
   if (!part) notFound();
 
-  const dxfUrl = await getDxfUrl(supabase, part.dxf_path);
+  const fileUrl = await getFileUrl(supabase, part.file_path);
 
   return (
     <>
@@ -30,7 +30,7 @@ export default async function PartPage({ params }: { params: Promise<{ id: strin
         userAvatar={profile?.avatar_url ?? null}
       />
       <main className="mx-auto max-w-5xl space-y-4 p-4">
-        <PartDetail part={part} team={team} userId={user.id} dxfUrl={dxfUrl} />
+        <PartDetail part={part} team={team} userId={user.id} fileUrl={fileUrl} />
       </main>
     </>
   );

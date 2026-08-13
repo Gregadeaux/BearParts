@@ -82,6 +82,6 @@ export async function deletePartAction(partId: string) {
   const { supabase } = await requireUser();
   const part = await partsService.getPart(supabase, partId);
   await partsService.deletePart(supabase, partId);
-  if (part?.dxf_path) await storageService.deleteDxf(supabase, part.dxf_path);
+  if (part?.file_path) await storageService.deletePartFile(supabase, part.file_path);
   revalidatePath("/");
 }

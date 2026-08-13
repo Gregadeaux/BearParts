@@ -1,35 +1,34 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database";
+import type { PartFileType } from "@/types/part";
 
-const BUCKET = "dxf";
+const BUCKET = "dxf"; // historical name — holds all part files (dxf + stl)
 
 type Client = SupabaseClient<Database>;
 
-/** Upload a DXF and return its storage path. */
-export async function uploadDxf(supabase: Client, file: File | Blob, partId: string) {
-  const path = `parts/${partId}.dxf`;
+/** Upload a part file and return its storage path. */
+export async function uploadPartFile(
+  supabase: Client,
+  file: File | Blob,
+  partId: string,
+  fileType: PartFileType,
+) {
+  const path = `parts/${partId}.${fileType}`;
   const { error } = await supabase.storage.from(BUCKET).upload(path, file, {
-    contentType: "application/dxf",
+    contentType: fileType === "dxf" ? "application/dxf" : "model/stl",
     upsert: true,
   });
-  if (error) throw new Error(`DXF upload failed: ${error.message}`);
+  if (error) throw new Error(`Upload failed: ${error.message}`);
   return path;
 }
 
-/** Short-lived signed URL for downloading a DXF. */
-export async function getDxfUrl(supabase: Client, path: string) {
+/** Short-lived signed URL for downloading a part file. */
+export async function getFileUrl(supabase: Client, path: string) {
   const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(path, 60 * 60);
-  if (error) throw new Error(`Could not sign DXF URL: ${error.message}`);
+  if (error) throw new Error(`Could not sign file URL: ${error.message}`);
   return data.signedUrl;
 }
 
-/** Fetch DXF text content via a signed URL. */
-export async function downloadDxfText(supabase: Client, path: string) {
-  const { data, error } = await supabase.storage.from(BUCKET).download(path);
-  if (error) throw new Error(`Could not download DXF: ${error.message}`);
-  return data.text();
-}
-
-export async function deleteDxf(supabase: Client, path: string) {
+export async function deletePartFile(supabase: Client, path: string) {
   await supabase.storage.from(BUCKET).remove([path]);
 }

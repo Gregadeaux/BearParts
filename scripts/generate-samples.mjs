@@ -81,7 +81,45 @@ const sharpPocket = dxf(1, [
   circle(3.5, 1, 0.266 / 2), // 1/4" free fit
 ]);
 
+// --- sample 4: L-bracket STL (mm), two overlapping boxes, binary format ---
+function boxTriangles([x0, y0, z0], [x1, y1, z1]) {
+  const v = (x, y, z) => [x, y, z];
+  const quads = [
+    [v(x0, y0, z0), v(x0, y1, z0), v(x1, y1, z0), v(x1, y0, z0)], // bottom
+    [v(x0, y0, z1), v(x1, y0, z1), v(x1, y1, z1), v(x0, y1, z1)], // top
+    [v(x0, y0, z0), v(x1, y0, z0), v(x1, y0, z1), v(x0, y0, z1)], // front
+    [v(x1, y0, z0), v(x1, y1, z0), v(x1, y1, z1), v(x1, y0, z1)], // right
+    [v(x1, y1, z0), v(x0, y1, z0), v(x0, y1, z1), v(x1, y1, z1)], // back
+    [v(x0, y1, z0), v(x0, y0, z0), v(x0, y0, z1), v(x0, y1, z1)], // left
+  ];
+  return quads.flatMap(([a, b, c, d]) => [
+    [a, b, c],
+    [a, c, d],
+  ]);
+}
+
+function binaryStl(triangles) {
+  const buf = Buffer.alloc(84 + triangles.length * 50);
+  buf.writeUInt32LE(triangles.length, 80);
+  triangles.forEach((tri, i) => {
+    let off = 84 + i * 50 + 12; // leave the normal zeroed — viewers recompute
+    for (const [x, y, z] of tri) {
+      buf.writeFloatLE(x, off);
+      buf.writeFloatLE(y, off + 4);
+      buf.writeFloatLE(z, off + 8);
+      off += 12;
+    }
+  });
+  return buf;
+}
+
+const bracket = binaryStl([
+  ...boxTriangles([0, 0, 0], [60, 30, 5]), // base plate
+  ...boxTriangles([0, 0, 0], [5, 30, 40]), // upright wall
+]);
+
 await mkdir("samples", { recursive: true });
+await writeFile("samples/l-bracket.stl", bracket);
 await writeFile("samples/bearing-plate.dxf", bearingPlate);
 await writeFile("samples/gusset-mm.dxf", gussetMm);
 await writeFile("samples/sharp-pocket.dxf", sharpPocket);
