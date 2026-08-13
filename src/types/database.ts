@@ -95,6 +95,45 @@ export type Database = {
           },
         ]
       }
+      part_comments: {
+        Row: {
+          author_id: string
+          body: string
+          created_at: string
+          id: string
+          library_part_id: string
+        }
+        Insert: {
+          author_id: string
+          body: string
+          created_at?: string
+          id?: string
+          library_part_id: string
+        }
+        Update: {
+          author_id?: string
+          body?: string
+          created_at?: string
+          id?: string
+          library_part_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "part_comments_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "part_comments_library_part_id_fkey"
+            columns: ["library_part_id"]
+            isOneToOne: false
+            referencedRelation: "library_parts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       part_versions: {
         Row: {
           analysis: Json | null
