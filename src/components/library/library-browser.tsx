@@ -2,22 +2,39 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { toast } from "sonner";
-import { Folder, FileText, Box } from "lucide-react";
+import { Folder, Search } from "lucide-react";
 import type { FolderRow, LibraryPartListing } from "@/types/library";
+import type { PartFileType } from "@/types/part";
 import { deleteFolderAction } from "@/app/actions/library";
 import { LibraryBreadcrumb } from "./library-breadcrumb";
+import { LibraryPartTile } from "./library-part-tile";
 import { NewFolderDialog } from "./new-folder-dialog";
 import { UploadPartDialog } from "./upload-part-dialog";
+import { useLibrarySearch } from "./use-library-search";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
-import { formatDate } from "@/lib/format";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+const TYPE_OPTIONS = [
+  { value: "all", label: "All types" },
+  { value: "dxf", label: "DXF" },
+  { value: "stl", label: "STL" },
+  { value: "pdf", label: "PDF" },
+];
 
 interface Props {
   currentFolderId: string | null;
@@ -28,9 +45,15 @@ interface Props {
   thumbUrls?: Record<string, string>;
 }
 
-/** Folder browser: breadcrumb, toolbar, grid of folders + parts. */
+/** Folder browser with whole-library search and type filtering. */
 export function LibraryBrowser({ currentFolderId, ancestry, folders, parts, thumbUrls = {} }: Props) {
   const router = useRouter();
+  const [query, setQuery] = useState("");
+  const [typeFilter, setTypeFilter] = useState<PartFileType | "all">("all");
+  const search = useLibrarySearch(query);
+
+  const matchesType = (p: LibraryPartListing) =>
+    typeFilter === "all" || p.latest?.file_type === typeFilter;
 
   const deleteFolder = async (folder: FolderRow) => {
     try {
@@ -42,6 +65,8 @@ export function LibraryBrowser({ currentFolderId, ancestry, folders, parts, thum
     }
   };
 
+  const searching = query.trim().length >= 2;
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
@@ -52,63 +77,146 @@ export function LibraryBrowser({ currentFolderId, ancestry, folders, parts, thum
         </div>
       </div>
 
-      {folders.length === 0 && parts.length === 0 ? (
-        <div className="flex flex-col items-center gap-1 py-16 text-sm text-muted-foreground">
-          <Folder className="mb-1 size-8 opacity-40" />
-          {currentFolderId ? "Nothing in this folder yet." : "No folders yet."}
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative min-w-0 flex-1 sm:max-w-xs">
+          <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search the whole library…"
+            className="pl-8"
+          />
         </div>
-      ) : (
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
-          {folders.map((folder) => (
-            <ContextMenu key={folder.id}>
-              <ContextMenuTrigger>
-                <Link href={`/library?f=${folder.id}`} className="block">
-                  <Card className="flex-row items-center gap-2.5 border-transparent bg-muted/60 p-3 transition-colors hover:bg-muted">
-                    <Folder className="size-5 shrink-0 fill-amber-200 text-amber-500" />
-                    <span className="truncate text-sm font-medium">{folder.name}</span>
-                  </Card>
-                </Link>
-              </ContextMenuTrigger>
-              <ContextMenuContent>
-                <ContextMenuItem variant="destructive" onClick={() => deleteFolder(folder)}>
-                  Delete folder
-                </ContextMenuItem>
-              </ContextMenuContent>
-            </ContextMenu>
-          ))}
+        <Select
+          value={typeFilter}
+          onValueChange={(v) => setTypeFilter((v as PartFileType | "all") ?? "all")}
+          items={TYPE_OPTIONS}
+        >
+          <SelectTrigger className="w-28">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {TYPE_OPTIONS.map((o) => (
+              <SelectItem key={o.value} value={o.value}>
+                {o.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
 
-          {parts.map((part) => (
-            <Link key={part.id} href={`/library/parts/${part.id}`} className="block">
-              <Card className="gap-2 p-3 shadow-sm transition-all hover:bg-accent/50 hover:shadow-md">
-                <div className="flex h-24 items-center justify-center overflow-hidden rounded-md bg-white">
-                  {thumbUrls[part.id] ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={thumbUrls[part.id]}
-                      alt={`${part.name} preview`}
-                      className="max-h-full max-w-full object-contain"
-                      loading="lazy"
-                    />
-                  ) : part.latest?.file_type === "stl" ? (
-                    <Box className="size-8 text-violet-300" />
-                  ) : (
-                    <FileText className="size-8 text-sky-300" />
-                  )}
-                </div>
-                <div className="flex items-center gap-2.5">
-                  {part.latest?.file_type === "stl" ? (
-                    <Box className="size-4 shrink-0 text-violet-500" />
-                  ) : (
-                    <FileText className="size-4 shrink-0 text-sky-500" />
-                  )}
-                  <span className="truncate text-sm font-medium">{part.name}</span>
-                </div>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  {part.latest && <Badge variant="secondary">v{part.latest.version}</Badge>}
-                  <span className="ml-auto">{formatDate(part.updated_at)}</span>
-                </div>
+      {searching ? (
+        <SearchResults
+          results={search.results}
+          searching={search.searching}
+          thumbUrls={search.thumbUrls}
+          matchesType={matchesType}
+        />
+      ) : (
+        <BrowseGrid
+          currentFolderId={currentFolderId}
+          folders={folders}
+          parts={parts.filter(matchesType)}
+          thumbUrls={thumbUrls}
+          onDeleteFolder={deleteFolder}
+        />
+      )}
+    </div>
+  );
+}
+
+function BrowseGrid({
+  currentFolderId,
+  folders,
+  parts,
+  thumbUrls,
+  onDeleteFolder,
+}: {
+  currentFolderId: string | null;
+  folders: FolderRow[];
+  parts: LibraryPartListing[];
+  thumbUrls: Record<string, string>;
+  onDeleteFolder: (folder: FolderRow) => void;
+}) {
+  if (folders.length === 0 && parts.length === 0) {
+    return (
+      <div className="flex flex-col items-center gap-1 py-16 text-sm text-muted-foreground">
+        <Folder className="mb-1 size-8 opacity-40" />
+        {currentFolderId ? "Nothing in this folder yet." : "No folders yet."}
+      </div>
+    );
+  }
+  return (
+    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+      {folders.map((folder) => (
+        <ContextMenu key={folder.id}>
+          <ContextMenuTrigger>
+            <Link href={`/library?f=${folder.id}`} className="block">
+              <Card className="flex-row items-center gap-2.5 border-transparent bg-muted/60 p-3 transition-colors hover:bg-muted">
+                <Folder className="size-5 shrink-0 fill-amber-200 text-amber-500" />
+                <span className="truncate text-sm font-medium">{folder.name}</span>
               </Card>
             </Link>
+          </ContextMenuTrigger>
+          <ContextMenuContent>
+            <ContextMenuItem variant="destructive" onClick={() => onDeleteFolder(folder)}>
+              Delete folder
+            </ContextMenuItem>
+          </ContextMenuContent>
+        </ContextMenu>
+      ))}
+      {parts.map((part) => (
+        <LibraryPartTile key={part.id} part={part} thumbUrl={thumbUrls[part.id]} />
+      ))}
+    </div>
+  );
+}
+
+function SearchResults({
+  results,
+  searching,
+  thumbUrls,
+  matchesType,
+}: {
+  results: ReturnType<typeof useLibrarySearch>["results"];
+  searching: boolean;
+  thumbUrls: Record<string, string>;
+  matchesType: (p: LibraryPartListing) => boolean;
+}) {
+  if (!results) {
+    return <p className="py-10 text-center text-sm text-muted-foreground">Searching…</p>;
+  }
+  const parts = results.parts.filter(matchesType);
+
+  return (
+    <div className="space-y-4">
+      {results.folders.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {results.folders.map((folder) => (
+            <Link
+              key={folder.id}
+              href={`/library?f=${folder.id}`}
+              className="inline-flex items-center gap-1.5 rounded-full border bg-muted/50 px-3 py-1 text-sm transition-colors hover:bg-muted"
+            >
+              <Folder className="size-3.5 fill-amber-200 text-amber-500" />
+              {folder.name}
+            </Link>
+          ))}
+        </div>
+      )}
+      {parts.length === 0 ? (
+        <p className="py-10 text-center text-sm text-muted-foreground">
+          {searching ? "Searching…" : "No matching parts."}
+        </p>
+      ) : (
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+          {parts.map((part) => (
+            <LibraryPartTile
+              key={part.id}
+              part={part}
+              thumbUrl={thumbUrls[part.id]}
+              folderName={part.folderName}
+            />
           ))}
         </div>
       )}

@@ -37,6 +37,44 @@ export async function listLibraryParts(
   );
 }
 
+export interface LibrarySearchResult {
+  parts: (LibraryPartListing & { folderName: string | null })[];
+  folders: { id: string; name: string }[];
+}
+
+/** Name search across the whole library — parts (with latest version) and folders. */
+export async function searchLibrary(supabase: Client, query: string): Promise<LibrarySearchResult> {
+  const like = `%${query.replaceAll("%", "\\%")}%`;
+  const [partsRes, foldersRes] = await Promise.all([
+    supabase
+      .from("library_parts")
+      .select(`*, folder:folders (name), versions:part_versions (${VERSION_SELECT})`)
+      .ilike("name", like)
+      .order("updated_at", { ascending: false })
+      .limit(40),
+    supabase.from("folders").select("id, name").ilike("name", like).order("name").limit(12),
+  ]);
+  if (partsRes.error) throw new Error(`Search failed: ${partsRes.error.message}`);
+  if (foldersRes.error) throw new Error(`Search failed: ${foldersRes.error.message}`);
+
+  const parts = (
+    partsRes.data as unknown as (LibraryPartListing & {
+      folder: { name: string } | null;
+      versions: PartVersion[];
+    })[]
+  ).map(({ versions, folder, ...part }) => {
+    const sorted = [...versions].sort((a, b) => b.version - a.version);
+    return {
+      ...part,
+      latest: sorted[0] ?? null,
+      versionCount: sorted.length,
+      folderName: folder?.name ?? null,
+    };
+  });
+
+  return { parts, folders: foldersRes.data };
+}
+
 /** Full detail: versions newest-first + fab queue history. */
 export async function getLibraryPart(
   supabase: Client,
