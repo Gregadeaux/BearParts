@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import type { Part, PartStatus } from "@/types/part";
 import { createClient } from "@/lib/supabase/client";
+import { useLiveTable } from "@/lib/use-live-table";
 import { listParts } from "@/services/parts.service";
 import {
   assignPartAction,
@@ -34,18 +35,10 @@ export function KanbanBoard({ initialParts, userId }: { initialParts: Part[]; us
   const [parts, setParts] = useState(initialParts);
   const [deleteTarget, setDeleteTarget] = useState<Part | null>(null);
 
-  useEffect(() => {
-    const supabase = createClient();
-    const channel = supabase
-      .channel("parts-changes")
-      .on("postgres_changes", { event: "*", schema: "public", table: "parts" }, () => {
-        listParts(supabase).then(setParts).catch(console.error);
-      })
-      .subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
+  useLiveTable({
+    table: "parts",
+    onChange: () => listParts(createClient()).then(setParts).catch(console.error),
+  });
 
   const movePart = async (partId: string, column: PartStatus) => {
     const part = parts.find((p) => p.id === partId);

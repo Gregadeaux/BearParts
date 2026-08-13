@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import type { CommentAnchor, PartComment } from "@/services/comments.service";
 import { createClient } from "@/lib/supabase/client";
+import { useLiveTable } from "@/lib/use-live-table";
 import { listComments } from "@/services/comments.service";
 import { addCommentAction, deleteCommentAction } from "@/app/actions/comments";
 
@@ -12,27 +13,12 @@ export function useComments(libraryPartId: string, partName: string, initial: Pa
   const [comments, setComments] = useState(initial);
   const [pending, startTransition] = useTransition();
 
-  useEffect(() => {
-    const supabase = createClient();
-    const channel = supabase
-      .channel(`comments-${libraryPartId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "part_comments",
-          filter: `library_part_id=eq.${libraryPartId}`,
-        },
-        () => {
-          listComments(supabase, libraryPartId).then(setComments).catch(console.error);
-        },
-      )
-      .subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [libraryPartId]);
+  useLiveTable({
+    table: "part_comments",
+    filter: `library_part_id=eq.${libraryPartId}`,
+    onChange: () =>
+      listComments(createClient(), libraryPartId).then(setComments).catch(console.error),
+  });
 
   const post = (body: string, anchor?: CommentAnchor) =>
     new Promise<boolean>((resolve) => {
