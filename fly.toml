@@ -7,6 +7,13 @@ app = 'bearparts'
 primary_region = 'ord'
 
 [build]
+  # NEXT_PUBLIC_* values are baked into the client bundle at build time.
+  # These are public-by-design (anon key is RLS-guarded); server secrets
+  # live in `fly secrets` only.
+  [build.args]
+    NEXT_PUBLIC_SUPABASE_URL = "https://lrufhxysqcrmthqzyqwq.supabase.co"
+    NEXT_PUBLIC_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxydWZoeHlzcWNybXRocXp5cXdxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY1NTY2NzYsImV4cCI6MjEwMjEzMjY3Nn0.WZzz__zCPyVKWiWaQbOHnqtbZxDxsH_UP8UNFNUyrow"
+    NEXT_PUBLIC_VAPID_PUBLIC_KEY = "BKJPzD-NMR2h9hR-VUYGlH4e_pXJ61I7lWRnr5IBLhM5r7sELORE2UyYyT6XVqiPX-YLbRr8-Q4d-_fNPEt8ZKw"
 
 [http_service]
   internal_port = 8080
