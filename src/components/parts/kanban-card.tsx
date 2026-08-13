@@ -4,18 +4,27 @@ import Link from "next/link";
 import type { Part } from "@/types/part";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
 import { PriorityBadge, StatusBadge } from "./status-badge";
 import { formatDate, formatInches, initials } from "@/lib/format";
 
 interface Props {
   part: Part;
   onDragStart?: (e: React.DragEvent) => void;
+  onArchive?: () => void;
+  onRequestDelete?: () => void;
 }
 
 /** One kanban card. Assignee's profile circle sits on the top-right corner. */
-export function KanbanCard({ part, onDragStart }: Props) {
+export function KanbanCard({ part, onDragStart, onArchive, onRequestDelete }: Props) {
   const bb = part.analysis?.boundingBox;
-  return (
+  const card = (
     <div className="relative" draggable={Boolean(onDragStart)} onDragStart={onDragStart}>
       <Link href={`/parts/${part.id}`} className="block" draggable={false}>
         <Card className="gap-1.5 border-border/80 p-3 shadow-sm transition-all hover:bg-accent/50 hover:shadow-md">
@@ -60,5 +69,22 @@ export function KanbanCard({ part, onDragStart }: Props) {
         </Avatar>
       )}
     </div>
+  );
+
+  if (!onArchive && !onRequestDelete) return card;
+
+  return (
+    <ContextMenu>
+      <ContextMenuTrigger>{card}</ContextMenuTrigger>
+      <ContextMenuContent>
+        {onArchive && <ContextMenuItem onClick={onArchive}>Archive</ContextMenuItem>}
+        {onArchive && onRequestDelete && <ContextMenuSeparator />}
+        {onRequestDelete && (
+          <ContextMenuItem variant="destructive" onClick={onRequestDelete}>
+            Delete…
+          </ContextMenuItem>
+        )}
+      </ContextMenuContent>
+    </ContextMenu>
   );
 }

@@ -10,10 +10,19 @@ interface Props {
   parts: Part[];
   onDropPart?: (partId: string) => void;
   onCardDragStart?: (e: React.DragEvent, part: Part) => void;
+  onArchive?: (part: Part) => void;
+  onRequestDelete?: (part: Part) => void;
 }
 
 /** One status lane. Accepts card drops (desktop drag-and-drop). */
-export function KanbanColumn({ title, parts, onDropPart, onCardDragStart }: Props) {
+export function KanbanColumn({
+  title,
+  parts,
+  onDropPart,
+  onCardDragStart,
+  onArchive,
+  onRequestDelete,
+}: Props) {
   const [over, setOver] = useState(false);
 
   return (
@@ -48,6 +57,8 @@ export function KanbanColumn({ title, parts, onDropPart, onCardDragStart }: Prop
               key={p.id}
               part={p}
               onDragStart={onCardDragStart ? (e) => onCardDragStart(e, p) : undefined}
+              onArchive={onArchive ? () => onArchive(p) : undefined}
+              onRequestDelete={onRequestDelete ? () => onRequestDelete(p) : undefined}
             />
           ))
         )}
