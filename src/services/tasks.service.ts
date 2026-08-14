@@ -8,20 +8,23 @@ const TASK_SELECT = `*,
   subgroup:subgroups (*),
   project:projects (*),
   task_assignees (user:profiles (id, display_name, avatar_url)),
-  task_tags (tag)`;
+  task_tags (tag),
+  task_subtasks (id, title, done, position)`;
 
 interface RawTask {
   task_assignees: { user: Task["assignees"][number] | null }[];
   task_tags: { tag: string }[];
+  task_subtasks: Task["subtasks"];
   [key: string]: unknown;
 }
 
 function shapeTask(raw: RawTask): Task {
-  const { task_assignees, task_tags, ...rest } = raw;
+  const { task_assignees, task_tags, task_subtasks, ...rest } = raw;
   return {
-    ...(rest as unknown as Omit<Task, "assignees" | "tags">),
+    ...(rest as unknown as Omit<Task, "assignees" | "tags" | "subtasks">),
     assignees: task_assignees.map((a) => a.user).filter((u): u is Task["assignees"][number] => u !== null),
     tags: task_tags.map((t) => t.tag).sort(),
+    subtasks: [...task_subtasks].sort((a, b) => a.position - b.position || a.id.localeCompare(b.id)),
   };
 }
 
@@ -131,6 +134,26 @@ export async function listAllTags(supabase: Client): Promise<string[]> {
   const { data, error } = await supabase.from("task_tags").select("tag");
   if (error) throw new Error(`Could not load tags: ${error.message}`);
   return [...new Set(data.map((r) => r.tag))].sort();
+}
+
+export async function addSubtask(supabase: Client, taskId: string, title: string, position: number) {
+  const { data, error } = await supabase
+    .from("task_subtasks")
+    .insert({ task_id: taskId, title: title.trim(), position })
+    .select("id, title, done, position")
+    .single();
+  if (error) throw new Error(`Could not add subtask: ${error.message}`);
+  return data;
+}
+
+export async function setSubtaskDone(supabase: Client, subtaskId: string, done: boolean) {
+  const { error } = await supabase.from("task_subtasks").update({ done }).eq("id", subtaskId);
+  if (error) throw new Error(`Could not update subtask: ${error.message}`);
+}
+
+export async function deleteSubtask(supabase: Client, subtaskId: string) {
+  const { error } = await supabase.from("task_subtasks").delete().eq("id", subtaskId);
+  if (error) throw new Error(`Could not delete subtask: ${error.message}`);
 }
 
 export async function listProjects(supabase: Client): Promise<ProjectRow[]> {

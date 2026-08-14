@@ -5,8 +5,16 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Trash2 } from "lucide-react";
 import type { Person, ProjectRow, SubgroupRow, Task, TaskStatus } from "@/types/task";
-import { createTaskAction, deleteTaskAction, updateTaskAction } from "@/app/actions/tasks";
+import {
+  addSubtaskAction,
+  createTaskAction,
+  deleteSubtaskAction,
+  deleteTaskAction,
+  setSubtaskDoneAction,
+  updateTaskAction,
+} from "@/app/actions/tasks";
 import { useMediaQuery } from "@/lib/use-media-query";
+import { randomId } from "@/lib/id";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -23,6 +31,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { TagInput } from "./tag-input";
+import { SubtaskList, type SubtaskItem } from "./subtask-list";
 import { TaskFormFields, type TaskDraft } from "./task-form-fields";
 
 export interface TaskDialogProps {
@@ -84,6 +93,7 @@ export function TaskDialog({
 }: TaskDialogProps): React.JSX.Element {
   const isMobile = useMediaQuery("(max-width: 639px)");
   const [draft, setDraft] = useState<TaskDraft>(() => emptyDraft(defaults));
+  const [subtasks, setSubtasks] = useState<SubtaskItem[]>([]);
   const [created, setCreated] = useState<SubgroupRow[]>([]);
   const [confirming, setConfirming] = useState(false);
   const [pending, startTransition] = useTransition();
@@ -91,9 +101,44 @@ export function TaskDialog({
 
   // reset only on the closed → open transition (props identity churns otherwise)
   useEffect(() => {
-    if (open && !wasOpen.current) setDraft(task ? draftFromTask(task) : emptyDraft(defaults));
+    if (open && !wasOpen.current) {
+      setDraft(task ? draftFromTask(task) : emptyDraft(defaults));
+      setSubtasks(task ? task.subtasks.map(({ id, title, done }) => ({ id, title, done })) : []);
+    }
     wasOpen.current = open;
   }, [open, task, defaults]);
+
+  // edit mode syncs subtasks to the server immediately; create mode holds them locally
+  const addSubtask = (title: string) => {
+    const temp: SubtaskItem = { id: randomId(), title, done: false };
+    setSubtasks((s) => [...s, temp]);
+    if (!task) return;
+    addSubtaskAction(task.id, title, subtasks.length)
+      .then((saved) => setSubtasks((s) => s.map((x) => (x.id === temp.id ? { ...x, id: saved.id } : x))))
+      .catch(() => {
+        toast.error("Could not add subtask");
+        setSubtasks((s) => s.filter((x) => x.id !== temp.id));
+      });
+  };
+
+  const toggleSubtask = (id: string, done: boolean) => {
+    setSubtasks((s) => s.map((x) => (x.id === id ? { ...x, done } : x)));
+    if (!task) return;
+    setSubtaskDoneAction(id, done).catch(() => {
+      toast.error("Could not update subtask");
+      setSubtasks((s) => s.map((x) => (x.id === id ? { ...x, done: !done } : x)));
+    });
+  };
+
+  const removeSubtask = (id: string) => {
+    const removed = subtasks.find((x) => x.id === id);
+    setSubtasks((s) => s.filter((x) => x.id !== id));
+    if (!task) return;
+    deleteSubtaskAction(id).catch(() => {
+      toast.error("Could not remove subtask");
+      if (removed) setSubtasks((s) => [...s, removed]);
+    });
+  };
 
   const patch = (p: Partial<TaskDraft>) => setDraft((d) => ({ ...d, ...p }));
   const known = new Set(subgroups.map((s) => s.id));
@@ -113,8 +158,16 @@ export function TaskDialog({
         dueDate: draft.dueDate,
       };
       try {
-        if (task) await updateTaskAction(task.id, input, draft.assigneeIds, draft.tags);
-        else await createTaskAction(input, draft.assigneeIds, draft.tags);
+        if (task) {
+          await updateTaskAction(task.id, input, draft.assigneeIds, draft.tags);
+        } else {
+          const { id } = await createTaskAction(input, draft.assigneeIds, draft.tags);
+          // locally staged subtasks land after the task exists
+          for (const [i, sub] of subtasks.entries()) {
+            const saved = await addSubtaskAction(id, sub.title, i);
+            if (sub.done) await setSubtaskDoneAction(saved.id, true);
+          }
+        }
         onOpenChange(false);
       } catch (e) {
         toast.error(e instanceof Error ? e.message : "Could not save task");
@@ -156,6 +209,12 @@ export function TaskDialog({
           subgroups={allSubgroups}
           projects={projects}
           onSubgroupCreated={(s) => setCreated((c) => [...c, s])}
+        />
+        <SubtaskList
+          items={subtasks}
+          onAdd={addSubtask}
+          onToggle={toggleSubtask}
+          onRemove={removeSubtask}
         />
         <div className="space-y-1">
           <span className="text-xs font-medium text-muted-foreground">Tags</span>

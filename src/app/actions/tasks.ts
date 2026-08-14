@@ -53,6 +53,25 @@ export async function deleteTaskAction(taskId: string) {
   revalidate();
 }
 
+export async function addSubtaskAction(taskId: string, title: string, position: number) {
+  const { supabase } = await requireUser();
+  const subtask = await tasks.addSubtask(supabase, taskId, title, position);
+  revalidate();
+  return subtask;
+}
+
+export async function setSubtaskDoneAction(subtaskId: string, done: boolean) {
+  const { supabase } = await requireUser();
+  await tasks.setSubtaskDone(supabase, subtaskId, done);
+  revalidate();
+}
+
+export async function deleteSubtaskAction(subtaskId: string) {
+  const { supabase } = await requireUser();
+  await tasks.deleteSubtask(supabase, subtaskId);
+  revalidate();
+}
+
 export async function createProjectAction(name: string) {
   const { supabase, user } = await requireUser();
   const project = await tasks.createProject(supabase, user.id, name);

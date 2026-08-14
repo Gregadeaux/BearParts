@@ -1,7 +1,7 @@
 ﻿"use client";
 
 import { useState } from "react";
-import { MoreHorizontal } from "lucide-react";
+import { CheckSquare2, MoreHorizontal } from "lucide-react";
 import type { Task, TaskStatus } from "@/types/task";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -68,6 +68,7 @@ export function TaskRow({ task, onOpen, onStatusChange, onDelete }: Props) {
         >
           {task.title}
         </button>
+        <SubtaskCount task={task} />
         <TagBadges tags={task.tags} />
         <AvatarStack people={task.assignees} />
         <span className={cn("w-12 shrink-0 text-right text-xs tabular-nums", dueClass)}>{due}</span>
@@ -108,6 +109,7 @@ export function TaskRow({ task, onOpen, onStatusChange, onDelete }: Props) {
             </Badge>
           )}
           {due && <span className={dueClass}>{due}</span>}
+          <SubtaskCount task={task} />
           <AvatarStack people={task.assignees} max={3} className="ml-auto" />
         </span>
       </button>
@@ -136,6 +138,20 @@ export function TaskRow({ task, onOpen, onStatusChange, onDelete }: Props) {
         </AlertDialogContent>
       </AlertDialog>
     </>
+  );
+}
+
+function SubtaskCount({ task }: { task: Task }) {
+  if (task.subtasks.length === 0) return null;
+  const done = task.subtasks.filter((s) => s.done).length;
+  return (
+    <span
+      className="flex shrink-0 items-center gap-0.5 text-xs tabular-nums text-muted-foreground"
+      title={`${done} of ${task.subtasks.length} subtasks done`}
+    >
+      <CheckSquare2 className="size-3.5" />
+      {done}/{task.subtasks.length}
+    </span>
   );
 }
 

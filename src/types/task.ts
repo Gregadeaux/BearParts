@@ -9,6 +9,13 @@ export type TaskStatus = "todo" | "in_progress" | "blocked" | "done";
 
 export type Person = Pick<ProfileRow, "id" | "display_name" | "avatar_url">;
 
+export interface Subtask {
+  id: string;
+  title: string;
+  done: boolean;
+  position: number;
+}
+
 /** Task with everything the UI needs joined in. */
 export interface Task extends Omit<TaskRow, "status"> {
   status: TaskStatus;
@@ -16,6 +23,7 @@ export interface Task extends Omit<TaskRow, "status"> {
   project: ProjectRow | null;
   assignees: Person[];
   tags: string[];
+  subtasks: Subtask[];
 }
 
 /** Fixed status set (see research spec) — subgroup owns hue, status stays a neutral dot. */
