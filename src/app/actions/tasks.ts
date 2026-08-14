@@ -53,6 +53,13 @@ export async function deleteTaskAction(taskId: string) {
   revalidate();
 }
 
+export async function createProjectAction(name: string) {
+  const { supabase, user } = await requireUser();
+  const project = await tasks.createProject(supabase, user.id, name);
+  revalidate();
+  return project;
+}
+
 export async function createSubgroupAction(name: string, color: string) {
   const { supabase } = await requireUser();
   const subgroup = await tasks.createSubgroup(supabase, name, color);

@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { getProfile, listProfiles } from "@/services/profiles.service";
-import { listAllTags, listSubgroups, listTasks } from "@/services/tasks.service";
+import { listAllTags, listProjects, listSubgroups, listTasks } from "@/services/tasks.service";
 import { AppShell } from "@/components/layout/app-shell";
 import { CalendarView } from "@/components/calendar/calendar-view";
 import { toDayKey } from "@/components/calendar/calendar-layout";
@@ -12,11 +12,12 @@ export default async function CalendarPage() {
   } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const [profile, team, tasks, subgroups, allTags] = await Promise.all([
+  const [profile, team, tasks, subgroups, projects, allTags] = await Promise.all([
     getProfile(supabase, user.id),
     listProfiles(supabase),
     listTasks(supabase),
     listSubgroups(supabase),
+    listProjects(supabase),
     listAllTags(supabase),
   ]);
 
@@ -31,6 +32,7 @@ export default async function CalendarPage() {
           initialTasks={tasks}
           subgroups={subgroups}
           team={team}
+          projects={projects}
           allTags={allTags}
           userId={user.id}
           initialToday={toDayKey(new Date())}

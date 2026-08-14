@@ -2,6 +2,7 @@ import type { Database } from "./database";
 import type { ProfileRow } from "./part";
 
 export type SubgroupRow = Database["public"]["Tables"]["subgroups"]["Row"];
+export type ProjectRow = Database["public"]["Tables"]["projects"]["Row"];
 export type TaskRow = Database["public"]["Tables"]["tasks"]["Row"];
 
 export type TaskStatus = "todo" | "in_progress" | "blocked" | "done";
@@ -12,6 +13,7 @@ export type Person = Pick<ProfileRow, "id" | "display_name" | "avatar_url">;
 export interface Task extends Omit<TaskRow, "status"> {
   status: TaskStatus;
   subgroup: SubgroupRow | null;
+  project: ProjectRow | null;
   assignees: Person[];
   tags: string[];
 }

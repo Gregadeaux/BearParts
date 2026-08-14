@@ -1,11 +1,12 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database";
-import type { SubgroupRow, Task, TaskStatus } from "@/types/task";
+import type { ProjectRow, SubgroupRow, Task, TaskStatus } from "@/types/task";
 
 type Client = SupabaseClient<Database>;
 
 const TASK_SELECT = `*,
   subgroup:subgroups (*),
+  project:projects (*),
   task_assignees (user:profiles (id, display_name, avatar_url)),
   task_tags (tag)`;
 
@@ -29,6 +30,7 @@ export interface TaskInput {
   description?: string | null;
   status?: TaskStatus;
   subgroupId?: string | null;
+  projectId?: string | null;
   startDate?: string | null; // ISO date (yyyy-mm-dd)
   dueDate?: string | null;
 }
@@ -57,6 +59,7 @@ export async function createTask(supabase: Client, userId: string, input: TaskIn
       description: input.description?.trim() || null,
       status: input.status ?? "todo",
       subgroup_id: input.subgroupId ?? null,
+      project_id: input.projectId ?? null,
       start_date: input.startDate ?? null,
       due_date: input.dueDate ?? null,
       created_by: userId,
@@ -73,6 +76,7 @@ export async function updateTask(supabase: Client, id: string, input: Partial<Ta
   if (input.description !== undefined) patch.description = input.description?.trim() || null;
   if (input.status !== undefined) patch.status = input.status;
   if (input.subgroupId !== undefined) patch.subgroup_id = input.subgroupId;
+  if (input.projectId !== undefined) patch.project_id = input.projectId;
   if (input.startDate !== undefined) patch.start_date = input.startDate;
   if (input.dueDate !== undefined) patch.due_date = input.dueDate;
   const { error } = await supabase.from("tasks").update(patch).eq("id", id);
@@ -127,6 +131,25 @@ export async function listAllTags(supabase: Client): Promise<string[]> {
   const { data, error } = await supabase.from("task_tags").select("tag");
   if (error) throw new Error(`Could not load tags: ${error.message}`);
   return [...new Set(data.map((r) => r.tag))].sort();
+}
+
+export async function listProjects(supabase: Client): Promise<ProjectRow[]> {
+  const { data, error } = await supabase.from("projects").select("*").order("name");
+  if (error) throw new Error(`Could not load projects: ${error.message}`);
+  return data;
+}
+
+export async function createProject(supabase: Client, userId: string, name: string): Promise<ProjectRow> {
+  const { data, error } = await supabase
+    .from("projects")
+    .insert({ name: name.trim(), created_by: userId })
+    .select()
+    .single();
+  if (error) {
+    if (error.code === "23505") throw new Error(`Project "${name}" already exists`);
+    throw new Error(`Could not create project: ${error.message}`);
+  }
+  return data;
 }
 
 export async function listSubgroups(supabase: Client): Promise<SubgroupRow[]> {

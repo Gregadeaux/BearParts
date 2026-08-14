@@ -4,7 +4,7 @@ import { useMemo, useState, useSyncExternalStore } from "react";
 import { addMonths, differenceInCalendarDays, format, parseISO, subDays } from "date-fns";
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 import { toast } from "sonner";
-import type { Person, SubgroupRow, Task } from "@/types/task";
+import type { Person, ProjectRow, SubgroupRow, Task } from "@/types/task";
 import { useMediaQuery } from "@/lib/use-media-query";
 import { updateTaskAction } from "@/app/actions/tasks";
 import { Button } from "@/components/ui/button";
@@ -31,6 +31,7 @@ interface Props {
   initialTasks: Task[];
   subgroups: SubgroupRow[];
   team: Person[];
+  projects: ProjectRow[];
   allTags: string[];
   userId: string | null;
   /** the server's today (yyyy-MM-dd); the browser's own takes over after hydration */
@@ -44,6 +45,7 @@ export function CalendarView({
   initialTasks,
   subgroups,
   team,
+  projects,
   allTags,
   userId,
   initialToday,
@@ -195,6 +197,7 @@ export function CalendarView({
           defaults={dialog.defaults}
           team={team}
           subgroups={subgroups}
+          projects={projects}
           allTags={allTags}
         />
       )}

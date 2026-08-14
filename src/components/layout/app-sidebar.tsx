@@ -1,10 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { CalendarDays, FolderOpen, ListTodo, LogOut, SquareKanban } from "lucide-react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { CalendarDays, FolderOpen, ListTodo, LogOut, Plus, SquareKanban } from "lucide-react";
+import type { ProjectRow } from "@/types/task";
 import { createClient } from "@/lib/supabase/client";
+import { listProjects } from "@/services/tasks.service";
 import { initials } from "@/lib/format";
+import { NewProjectDialog } from "@/components/tasks/new-project-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -24,6 +28,9 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
 import { PushToggle } from "@/components/notifications/push-toggle";
 
@@ -43,6 +50,14 @@ interface Props {
 export function AppSidebar({ userName, userAvatar }: Props) {
   const pathname = usePathname();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const activeProjectId = pathname.startsWith("/tasks") ? searchParams.get("project") : null;
+  const [projects, setProjects] = useState<ProjectRow[]>([]);
+  const [newProjectOpen, setNewProjectOpen] = useState(false);
+
+  useEffect(() => {
+    listProjects(createClient()).then(setProjects).catch(() => {});
+  }, []);
 
   const signOut = async () => {
     await createClient().auth.signOut();
@@ -79,13 +94,36 @@ export function AppSidebar({ userName, userAvatar }: Props) {
               {NAV.map((item) => (
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton
-                    isActive={isActive(item.href)}
+                    isActive={isActive(item.href) && !activeProjectId}
                     tooltip={item.label}
                     render={<Link href={item.href} />}
                   >
                     <item.icon />
                     <span>{item.label}</span>
                   </SidebarMenuButton>
+                  {item.href === "/tasks" && (
+                    <SidebarMenuSub>
+                      {projects.map((project) => (
+                        <SidebarMenuSubItem key={project.id}>
+                          <SidebarMenuSubButton
+                            isActive={activeProjectId === project.id}
+                            render={<Link href={`/tasks?project=${project.id}`} />}
+                          >
+                            <span className="truncate">{project.name}</span>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      ))}
+                      <SidebarMenuSubItem>
+                        <SidebarMenuSubButton
+                          className="text-muted-foreground"
+                          render={<button type="button" onClick={() => setNewProjectOpen(true)} />}
+                        >
+                          <Plus className="size-3.5" />
+                          <span>New project</span>
+                        </SidebarMenuSubButton>
+                      </SidebarMenuSubItem>
+                    </SidebarMenuSub>
+                  )}
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
@@ -119,6 +157,12 @@ export function AppSidebar({ userName, userAvatar }: Props) {
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
+
+      <NewProjectDialog
+        open={newProjectOpen}
+        onOpenChange={setNewProjectOpen}
+        onCreated={(p) => setProjects((ps) => [...ps, p as ProjectRow].sort((a, b) => a.name.localeCompare(b.name)))}
+      />
     </Sidebar>
   );
 }

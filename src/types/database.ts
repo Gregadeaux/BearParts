@@ -355,6 +355,35 @@ export type Database = {
         }
         Relationships: []
       }
+      projects: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projects_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       push_subscriptions: {
         Row: {
           auth: string
@@ -471,6 +500,7 @@ export type Database = {
           description: string | null
           due_date: string | null
           id: string
+          project_id: string | null
           start_date: string | null
           status: string
           subgroup_id: string | null
@@ -483,6 +513,7 @@ export type Database = {
           description?: string | null
           due_date?: string | null
           id?: string
+          project_id?: string | null
           start_date?: string | null
           status?: string
           subgroup_id?: string | null
@@ -495,6 +526,7 @@ export type Database = {
           description?: string | null
           due_date?: string | null
           id?: string
+          project_id?: string | null
           start_date?: string | null
           status?: string
           subgroup_id?: string | null
@@ -507,6 +539,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
           {

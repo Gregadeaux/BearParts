@@ -1,7 +1,13 @@
 ﻿"use client";
 
 import type { ReactNode } from "react";
-import { TASK_STATUSES, type Person, type SubgroupRow, type TaskStatus } from "@/types/task";
+import {
+  TASK_STATUSES,
+  type Person,
+  type ProjectRow,
+  type SubgroupRow,
+  type TaskStatus,
+} from "@/types/task";
 import { cn } from "@/lib/utils";
 import {
   Select,
@@ -24,6 +30,7 @@ export interface TaskDraft {
   description: string;
   status: TaskStatus;
   subgroupId: string | null;
+  projectId: string | null;
   assigneeIds: string[];
   tags: string[];
   startDate: string | null;
@@ -35,11 +42,18 @@ interface Props {
   onChange: (patch: Partial<TaskDraft>) => void;
   team: Person[];
   subgroups: SubgroupRow[];
+  projects: ProjectRow[];
   onSubgroupCreated: (subgroup: SubgroupRow) => void;
 }
 
-/** Status / subgroup / assignees / dates grid. Stacks to one column on phones. */
-export function TaskFormFields({ draft, onChange, team, subgroups, onSubgroupCreated }: Props) {
+const NO_PROJECT = "none";
+
+/** Status / subgroup / project / assignees / dates grid. Stacks to one column on phones. */
+export function TaskFormFields({ draft, onChange, team, subgroups, projects, onSubgroupCreated }: Props) {
+  const projectItems = [
+    { value: NO_PROJECT, label: "No project" },
+    ...projects.map((p) => ({ value: p.id, label: p.name })),
+  ];
   const picked = team.filter((p) => draft.assigneeIds.includes(p.id));
   const badRange = Boolean(draft.startDate && draft.dueDate && draft.startDate > draft.dueDate);
 
@@ -75,7 +89,26 @@ export function TaskFormFields({ draft, onChange, team, subgroups, onSubgroupCre
         />
       </Field>
 
-      <Field label="Assignees" className="sm:col-span-2">
+      <Field label="Project">
+        <Select
+          value={draft.projectId ?? NO_PROJECT}
+          items={projectItems}
+          onValueChange={(v) => onChange({ projectId: v === NO_PROJECT || v === null ? null : v })}
+        >
+          <SelectTrigger size="sm" className="w-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {projectItems.map((p) => (
+              <SelectItem key={p.value} value={p.value}>
+                {p.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </Field>
+
+      <Field label="Assignees">
         <AssigneePicker
           people={team}
           selected={draft.assigneeIds}

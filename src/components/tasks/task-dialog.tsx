@@ -4,7 +4,7 @@ import * as React from "react";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Trash2 } from "lucide-react";
-import type { Person, SubgroupRow, Task, TaskStatus } from "@/types/task";
+import type { Person, ProjectRow, SubgroupRow, Task, TaskStatus } from "@/types/task";
 import { createTaskAction, deleteTaskAction, updateTaskAction } from "@/app/actions/tasks";
 import { useMediaQuery } from "@/lib/use-media-query";
 import { Button } from "@/components/ui/button";
@@ -33,11 +33,13 @@ export interface TaskDialogProps {
   defaults?: {
     status?: TaskStatus;
     subgroupId?: string | null;
+    projectId?: string | null;
     dueDate?: string | null;
     startDate?: string | null;
   };
   team: Person[];
   subgroups: SubgroupRow[];
+  projects: ProjectRow[];
   allTags: string[];
 }
 
@@ -47,6 +49,7 @@ function emptyDraft(defaults: TaskDialogProps["defaults"]): TaskDraft {
     description: "",
     status: defaults?.status ?? "todo",
     subgroupId: defaults?.subgroupId ?? null,
+    projectId: defaults?.projectId ?? null,
     assigneeIds: [],
     tags: [],
     startDate: defaults?.startDate ?? null,
@@ -60,6 +63,7 @@ function draftFromTask(task: Task): TaskDraft {
     description: task.description ?? "",
     status: task.status,
     subgroupId: task.subgroup_id,
+    projectId: task.project_id,
     assigneeIds: task.assignees.map((a) => a.id),
     tags: task.tags,
     startDate: task.start_date,
@@ -75,6 +79,7 @@ export function TaskDialog({
   defaults,
   team,
   subgroups,
+  projects,
   allTags,
 }: TaskDialogProps): React.JSX.Element {
   const isMobile = useMediaQuery("(max-width: 639px)");
@@ -103,6 +108,7 @@ export function TaskDialog({
         description: draft.description,
         status: draft.status,
         subgroupId: draft.subgroupId,
+        projectId: draft.projectId,
         startDate: draft.startDate,
         dueDate: draft.dueDate,
       };
@@ -148,6 +154,7 @@ export function TaskDialog({
           onChange={patch}
           team={team}
           subgroups={allSubgroups}
+          projects={projects}
           onSubgroupCreated={(s) => setCreated((c) => [...c, s])}
         />
         <div className="space-y-1">
