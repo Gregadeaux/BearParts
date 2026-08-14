@@ -36,13 +36,21 @@ export function AppHeader({ userName, userAvatar }: Props) {
         <Link href="/" className="font-semibold">
           BearParts
         </Link>
-        <nav className="ml-2 flex items-center gap-1 text-sm">
-          <Link href="/" className="rounded-md px-2 py-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
-            Board
-          </Link>
-          <Link href="/library" className="rounded-md px-2 py-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
-            Library
-          </Link>
+        <nav className="ml-2 flex items-center gap-1 overflow-x-auto text-sm">
+          {[
+            { href: "/", label: "Board" },
+            { href: "/library", label: "Library" },
+            { href: "/tasks", label: "Tasks" },
+            { href: "/calendar", label: "Calendar" },
+          ].map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className="shrink-0 rounded-md px-2 py-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              {item.label}
+            </Link>
+          ))}
         </nav>
         <div className="flex-1" />
         <Button size="sm" nativeButton={false} render={<Link href="/parts/new" />}>
