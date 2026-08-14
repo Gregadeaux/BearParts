@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { listParts } from "@/services/parts.service";
 import { getProfile } from "@/services/profiles.service";
-import { AppHeader } from "@/components/layout/app-header";
+import { AppShell } from "@/components/layout/app-shell";
 import { KanbanBoard } from "@/components/parts/kanban-board";
 import { ArchivedSheet } from "@/components/parts/archived-sheet";
 
@@ -18,17 +18,17 @@ export default async function QueuePage() {
   ]);
 
   return (
-    <>
-      <AppHeader
-        userName={profile?.display_name ?? "Teammate"}
-        userAvatar={profile?.avatar_url ?? null}
-      />
+    <AppShell
+      userName={profile?.display_name ?? "Teammate"}
+      userAvatar={profile?.avatar_url ?? null}
+      title="Board"
+    >
       <main className="mx-auto max-w-6xl space-y-2 p-4">
         <div className="flex justify-end">
           <ArchivedSheet />
         </div>
         <KanbanBoard initialParts={parts} userId={user.id} />
       </main>
-    </>
+    </AppShell>
   );
 }

@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { listProfiles, getProfile } from "@/services/profiles.service";
-import { AppHeader } from "@/components/layout/app-header";
+import { AppShell } from "@/components/layout/app-shell";
 import { NewPartForm } from "@/components/parts/new-part-form";
 
 export default async function NewPartPage() {
@@ -16,15 +16,14 @@ export default async function NewPartPage() {
   ]);
 
   return (
-    <>
-      <AppHeader
-        userName={profile?.display_name ?? "Teammate"}
-        userAvatar={profile?.avatar_url ?? null}
-      />
+    <AppShell
+      userName={profile?.display_name ?? "Teammate"}
+      userAvatar={profile?.avatar_url ?? null}
+      title="New part"
+    >
       <main className="mx-auto max-w-5xl space-y-4 p-4">
-        <h1 className="text-lg font-semibold">New part</h1>
         <NewPartForm team={team} />
       </main>
-    </>
+    </AppShell>
   );
 }

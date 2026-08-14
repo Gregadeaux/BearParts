@@ -3,7 +3,7 @@ import { getProfile } from "@/services/profiles.service";
 import { listFolders, getAncestry } from "@/services/folders.service";
 import { listLibraryParts } from "@/services/library.service";
 import { getFileUrl } from "@/services/storage.service";
-import { AppHeader } from "@/components/layout/app-header";
+import { AppShell } from "@/components/layout/app-shell";
 import { LibraryBrowser } from "@/components/library/library-browser";
 
 export default async function LibraryPage({
@@ -40,11 +40,11 @@ export default async function LibraryPage({
   const thumbUrls = Object.fromEntries(thumbEntries.filter((e): e is [string, string] => e !== null));
 
   return (
-    <>
-      <AppHeader
-        userName={profile?.display_name ?? "Teammate"}
-        userAvatar={profile?.avatar_url ?? null}
-      />
+    <AppShell
+      userName={profile?.display_name ?? "Teammate"}
+      userAvatar={profile?.avatar_url ?? null}
+      title="Library"
+    >
       <main className="mx-auto max-w-6xl space-y-4 p-4">
         <LibraryBrowser
           currentFolderId={folderId ?? null}
@@ -54,6 +54,6 @@ export default async function LibraryPage({
           thumbUrls={thumbUrls}
         />
       </main>
-    </>
+    </AppShell>
   );
 }

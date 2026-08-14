@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getPart } from "@/services/parts.service";
 import { getFileUrl } from "@/services/storage.service";
 import { listProfiles, getProfile } from "@/services/profiles.service";
-import { AppHeader } from "@/components/layout/app-header";
+import { AppShell } from "@/components/layout/app-shell";
 import { PartDetail } from "@/components/parts/part-detail";
 
 export default async function PartPage({ params }: { params: Promise<{ id: string }> }) {
@@ -24,14 +24,14 @@ export default async function PartPage({ params }: { params: Promise<{ id: strin
   const fileUrl = await getFileUrl(supabase, part.file_path);
 
   return (
-    <>
-      <AppHeader
-        userName={profile?.display_name ?? "Teammate"}
-        userAvatar={profile?.avatar_url ?? null}
-      />
+    <AppShell
+      userName={profile?.display_name ?? "Teammate"}
+      userAvatar={profile?.avatar_url ?? null}
+      title={part.name}
+    >
       <main className="mx-auto max-w-5xl space-y-4 p-4">
         <PartDetail part={part} team={team} userId={user.id} fileUrl={fileUrl} />
       </main>
-    </>
+    </AppShell>
   );
 }

@@ -5,7 +5,7 @@ import { getLibraryPart } from "@/services/library.service";
 import { listComments } from "@/services/comments.service";
 import { listPartEvents } from "@/services/events.service";
 import { getAncestry } from "@/services/folders.service";
-import { AppHeader } from "@/components/layout/app-header";
+import { AppShell } from "@/components/layout/app-shell";
 import { LibraryPartView } from "@/components/library/library-part-view";
 
 export default async function LibraryPartPage({
@@ -32,11 +32,11 @@ export default async function LibraryPartPage({
   ]);
 
   return (
-    <>
-      <AppHeader
-        userName={profile?.display_name ?? "Teammate"}
-        userAvatar={profile?.avatar_url ?? null}
-      />
+    <AppShell
+      userName={profile?.display_name ?? "Teammate"}
+      userAvatar={profile?.avatar_url ?? null}
+      title={part.name}
+    >
       <main className="space-y-4 p-4">
         <LibraryPartView
           part={part}
@@ -47,6 +47,6 @@ export default async function LibraryPartPage({
           events={events}
         />
       </main>
-    </>
+    </AppShell>
   );
 }
