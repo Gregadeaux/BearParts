@@ -73,14 +73,21 @@ async function renderMeshThumb(
       ),
     );
     scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+
+    // frame the part's bounding sphere so thumbnails fill the image
+    const { size } = mesh.boundingBox;
+    const radius = Math.max(0.5 * Math.hypot(size.x, size.y, size.z), 0.001);
+    const vFov = (45 * Math.PI) / 180;
+    const hFov = 2 * Math.atan(Math.tan(vFov / 2) * (W / H));
+    const dist = (radius / Math.sin(Math.min(vFov, hFov) / 2)) * 1.05;
+
     const light = new THREE.DirectionalLight(0xffffff, 1.4);
-    const d = Math.max(mesh.boundingBox.size.x, mesh.boundingBox.size.y, mesh.boundingBox.size.z, 1) * 1.8;
-    light.position.set(d, -d, d * 2);
+    light.position.set(dist, -dist, dist * 2);
     scene.add(light);
 
-    const camera = new THREE.PerspectiveCamera(45, W / H, d / 100, d * 20);
+    const camera = new THREE.PerspectiveCamera(45, W / H, dist / 100, dist + radius * 4);
     camera.up.set(0, 0, 1);
-    camera.position.set(d, -d, d * 0.75);
+    camera.position.copy(new THREE.Vector3(1, -1, 0.75).normalize().multiplyScalar(dist));
     camera.lookAt(0, 0, 0);
 
     renderer.render(scene, camera);
