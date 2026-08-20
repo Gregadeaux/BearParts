@@ -65,7 +65,7 @@ function parseAscii(buffer: ArrayBuffer): Float32Array {
   return new Float32Array(out);
 }
 
-function computeBBox(p: Float32Array): StlMesh["boundingBox"] {
+export function computeBBox(p: Float32Array): StlMesh["boundingBox"] {
   const min = { x: Infinity, y: Infinity, z: Infinity };
   const max = { x: -Infinity, y: -Infinity, z: -Infinity };
   for (let i = 0; i < p.length; i += 3) {

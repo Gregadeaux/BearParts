@@ -51,7 +51,7 @@ export function NewPartForm({ team }: { team: ProfileRow[] }) {
     setFileType(type);
     if (type === "dxf") setDxfText(await f.text());
     else setStlBuffer(await f.arrayBuffer()); // stl or pdf — both view from bytes
-    if (!name) setName(f.name.replace(/\.(dxf|stl|pdf)$/i, ""));
+    if (!name) setName(f.name.replace(/\.(dxf|stl|pdf|step|stp)$/i, ""));
   };
 
   const reset = () => {

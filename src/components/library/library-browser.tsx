@@ -38,6 +38,7 @@ const TYPE_OPTIONS = [
   { value: "dxf", label: "DXF" },
   { value: "stl", label: "STL" },
   { value: "pdf", label: "PDF" },
+  { value: "step", label: "STEP" },
 ];
 
 interface Props {

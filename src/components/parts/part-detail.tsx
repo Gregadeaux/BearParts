@@ -6,6 +6,7 @@ import type { Part, ProfileRow } from "@/types/part";
 import { DxfWorkspace } from "@/components/viewer/dxf-workspace";
 import { StlWorkspace } from "@/components/viewer/stl-workspace";
 import { PdfWorkspace } from "@/components/viewer/pdf-workspace";
+import { StepWorkspace } from "@/components/viewer/step-workspace";
 import { PartActions } from "./part-actions";
 import { StatusBadge, PriorityBadge } from "./status-badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -21,7 +22,7 @@ interface Props {
 
 /** Full part page: header info, actions, and the right viewer for the file type. */
 export function PartDetail({ part, team, userId, fileUrl }: Props) {
-  const fileType = part.file_type as "dxf" | "stl" | "pdf";
+  const fileType = part.file_type as "dxf" | "stl" | "pdf" | "step";
   const isBinary = fileType !== "dxf";
   const [dxfText, setDxfText] = useState<string | null>(null);
   const [buffer, setBuffer] = useState<ArrayBuffer | null>(null);
@@ -47,6 +48,7 @@ export function PartDetail({ part, team, userId, fileUrl }: Props) {
           <PriorityBadge priority={part.priority as never} />
           {fileType === "stl" && <span className="text-xs text-muted-foreground">3D print</span>}
           {fileType === "pdf" && <span className="text-xs text-muted-foreground">drawing</span>}
+          {fileType === "step" && <span className="text-xs text-muted-foreground">CAD model</span>}
           {part.quantity > 1 && <span className="text-sm text-muted-foreground">×{part.quantity}</span>}
         </div>
         <p className="text-sm text-muted-foreground">
@@ -77,6 +79,8 @@ export function PartDetail({ part, team, userId, fileUrl }: Props) {
         <StlWorkspace stlBuffer={buffer!} />
       ) : fileType === "pdf" ? (
         <PdfWorkspace pdfBuffer={buffer!} />
+      ) : fileType === "step" ? (
+        <StepWorkspace stepBuffer={buffer!} />
       ) : (
         <DxfWorkspace
           dxfText={dxfText!}

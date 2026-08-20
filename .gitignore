@@ -43,3 +43,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# copied by postinstall from occt-import-js
+/public/occt-import-js.wasm

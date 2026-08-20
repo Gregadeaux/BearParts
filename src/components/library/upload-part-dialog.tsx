@@ -70,7 +70,7 @@ export function UploadPartDialog({ folderId }: { folderId: string }) {
             onFile={(f, type) => {
               setFile(f);
               setFileType(type);
-              if (!name) setName(f.name.replace(/\.(dxf|stl|pdf)$/i, ""));
+              if (!name) setName(f.name.replace(/\.(dxf|stl|pdf|step|stp)$/i, ""));
             }}
           />
         ) : (

@@ -19,6 +19,7 @@ import { CommentsPanel } from "@/components/comments/comments-panel";
 import { DxfWorkspace } from "@/components/viewer/dxf-workspace";
 import { StlWorkspace } from "@/components/viewer/stl-workspace";
 import { PdfWorkspace } from "@/components/viewer/pdf-workspace";
+import { StepWorkspace } from "@/components/viewer/step-workspace";
 import { StatusBadge } from "@/components/parts/status-badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -40,8 +41,14 @@ interface Props {
 export function LibraryPartView({ part, ancestry, team, userId, initialComments, events }: Props) {
   const isDesktop = useMediaQuery("(min-width: 1024px)");
   const [selected, setSelected] = useState<PartVersion>(part.versions[0]);
-  const [content, setContent] = useState<{ text?: string; buffer?: ArrayBuffer } | null>(null);
-  const [error, setError] = useState(false);
+  // keyed by version id so switching versions never shows stale content
+  const [loaded, setLoaded] = useState<{
+    id: string;
+    content: { text?: string; buffer?: ArrayBuffer };
+  } | null>(null);
+  const [errorId, setErrorId] = useState<string | null>(null);
+  const content = loaded?.id === selected?.id ? loaded.content : null;
+  const error = errorId === selected?.id;
 
   const { comments, pending, post, remove } = useComments(part.id, part.name, initialComments);
   const [pendingAnchor, setPendingAnchor] = useState<CommentAnchor | null>(null);
@@ -65,8 +72,6 @@ export function LibraryPartView({ part, ancestry, team, userId, initialComments,
 
   useEffect(() => {
     let cancelled = false;
-    setContent(null);
-    setError(false);
     (async () => {
       try {
         const url = await getFileUrl(createClient(), selected.file_path);
@@ -76,9 +81,9 @@ export function LibraryPartView({ part, ancestry, team, userId, initialComments,
           selected.file_type === "dxf"
             ? { text: await res.text() }
             : { buffer: await res.arrayBuffer() };
-        if (!cancelled) setContent(value);
+        if (!cancelled) setLoaded({ id: selected.id, content: value });
       } catch {
-        if (!cancelled) setError(true);
+        if (!cancelled) setErrorId(selected.id);
       }
     })();
     return () => {
@@ -121,6 +126,8 @@ export function LibraryPartView({ part, ancestry, team, userId, initialComments,
         <Skeleton className="h-72 w-full" />
       ) : content.buffer && selected.file_type === "pdf" ? (
         <PdfWorkspace pdfBuffer={content.buffer} />
+      ) : content.buffer && selected.file_type === "step" ? (
+        <StepWorkspace stepBuffer={content.buffer} />
       ) : content.buffer ? (
         <StlWorkspace stlBuffer={content.buffer} />
       ) : (

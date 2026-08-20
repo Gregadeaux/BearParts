@@ -35,6 +35,7 @@ export function KanbanCard({ part, onDragStart, onArchive, onRequestDelete }: Pr
           </div>
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
             {part.file_type === "stl" && <span className="font-medium">3DP</span>}
+            {part.file_type === "step" && <span className="font-medium">STEP</span>}
             {part.file_type === "pdf" && <span className="font-medium">PDF</span>}
             {part.quantity > 1 && <span>×{part.quantity}</span>}
             {part.material && <span className="truncate">{part.material}</span>}

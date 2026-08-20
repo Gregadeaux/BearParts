@@ -25,11 +25,12 @@ export interface TaskAttachment {
 }
 
 /** File types with a built-in viewer — anything else is download-only. */
-export type PreviewKind = "dxf" | "stl" | "pdf";
+export type PreviewKind = "dxf" | "stl" | "pdf" | "step";
 
 export function previewKind(fileName: string): PreviewKind | null {
-  const ext = fileName.toLowerCase().match(/\.(dxf|stl|pdf)$/)?.[1];
-  return (ext as PreviewKind | undefined) ?? null;
+  const ext = fileName.toLowerCase().match(/\.(dxf|stl|pdf|step|stp)$/)?.[1];
+  if (!ext) return null;
+  return ext === "stp" ? "step" : (ext as PreviewKind);
 }
 
 /** Task with everything the UI needs joined in. */

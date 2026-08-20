@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { DxfWorkspace } from "./dxf-workspace";
 import { StlWorkspace } from "./stl-workspace";
 import { PdfWorkspace } from "./pdf-workspace";
+import { StepWorkspace } from "./step-workspace";
 
 export interface PreviewFile {
   fileName: string;
@@ -75,6 +76,8 @@ export function FilePreviewDialog({ file, onClose }: Props) {
             <StlWorkspace stlBuffer={loaded as ArrayBuffer} />
           ) : file.kind === "pdf" ? (
             <PdfWorkspace pdfBuffer={loaded as ArrayBuffer} />
+          ) : file.kind === "step" ? (
+            <StepWorkspace stepBuffer={loaded as ArrayBuffer} />
           ) : (
             <DxfWorkspace dxfText={loaded as string} />
           )}

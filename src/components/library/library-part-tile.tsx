@@ -17,6 +17,7 @@ interface Props {
 function TypeIcon({ type, className }: { type?: string; className: string }) {
   if (type === "stl") return <Box className={`${className} text-violet-500`} />;
   if (type === "pdf") return <FileType2 className={`${className} text-red-400`} />;
+  if (type === "step") return <Box className={`${className} text-emerald-600`} />;
   return <FileText className={`${className} text-sky-500`} />;
 }
 

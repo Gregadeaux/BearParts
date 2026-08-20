@@ -10,6 +10,7 @@ const CONTENT_TYPES: Record<string, string> = {
   dxf: "application/dxf",
   stl: "model/stl",
   pdf: "application/pdf",
+  step: "application/step",
   png: "image/png",
 };
 

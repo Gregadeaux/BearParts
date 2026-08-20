@@ -34,9 +34,9 @@ export async function deleteFolderAction(folderId: string) {
 
 /** Build version metadata from an uploaded file; DXF gets analyzed server-side. */
 async function versionInputFromFile(file: File, note?: string): Promise<NewVersionInput & { fileType: PartFileType }> {
-  const ext = file.name.toLowerCase().match(/\.(dxf|stl|pdf)$/)?.[1];
-  const fileType = (ext ?? null) as PartFileType | null;
-  if (!fileType) throw new Error("Only .dxf, .stl, and .pdf files are supported");
+  const ext = file.name.toLowerCase().match(/\.(dxf|stl|pdf|step|stp)$/)?.[1];
+  const fileType = (ext === "stp" ? "step" : (ext ?? null)) as PartFileType | null;
+  if (!fileType) throw new Error("Only .dxf, .stl, .pdf, and .step files are supported");
 
   if (fileType === "dxf") {
     const { analysis } = analyzeDxfText(await file.text());
@@ -76,7 +76,7 @@ export async function createLibraryPartAction(formData: FormData) {
     supabase,
     user.id,
     folderId,
-    name || file.name.replace(/\.(dxf|stl|pdf)$/i, ""),
+    name || file.name.replace(/\.(dxf|stl|pdf|step|stp)$/i, ""),
   );
   input.filePath = library.versionFilePath(part.id, 1, input.fileType);
   await uploadToPath(supabase, file, input.filePath, input.fileType);

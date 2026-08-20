@@ -13,10 +13,16 @@ export async function generateThumbnail(file: File, fileType: PartFileType): Pro
   try {
     if (fileType === "dxf") return await dxfThumb(await file.text());
     if (fileType === "stl") return await stlThumb(await file.arrayBuffer());
+    if (fileType === "step") return await stepThumb(await file.arrayBuffer());
     return await pdfThumb(await file.arrayBuffer());
   } catch {
     return null;
   }
+}
+
+async function stepThumb(buffer: ArrayBuffer): Promise<Blob | null> {
+  const { parseStep } = await import("@/services/step/step-parser");
+  return renderMeshThumb(await parseStep(buffer));
 }
 
 async function dxfThumb(text: string): Promise<Blob | null> {
@@ -41,11 +47,14 @@ async function dxfThumb(text: string): Promise<Blob | null> {
 }
 
 async function stlThumb(buffer: ArrayBuffer): Promise<Blob | null> {
-  const [THREE, { parseStl }] = await Promise.all([
-    import("three"),
-    import("@/services/stl/stl-parser"),
-  ]);
-  const mesh = parseStl(buffer);
+  const { parseStl } = await import("@/services/stl/stl-parser");
+  return renderMeshThumb(parseStl(buffer));
+}
+
+async function renderMeshThumb(
+  mesh: import("@/services/stl/stl-parser").StlMesh,
+): Promise<Blob | null> {
+  const THREE = await import("three");
 
   const canvas = document.createElement("canvas");
   canvas.width = W;
