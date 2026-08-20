@@ -5,6 +5,7 @@ import { getLibraryPart } from "@/services/library.service";
 import { listComments } from "@/services/comments.service";
 import { listPartEvents } from "@/services/events.service";
 import { getAncestry } from "@/services/folders.service";
+import { listVersionDocuments } from "@/services/version-documents.service";
 import { AppShell } from "@/components/layout/app-shell";
 import { LibraryPartView } from "@/components/library/library-part-view";
 
@@ -23,12 +24,13 @@ export default async function LibraryPartPage({
   const part = await getLibraryPart(supabase, id);
   if (!part) notFound();
 
-  const [profile, team, ancestry, comments, events] = await Promise.all([
+  const [profile, team, ancestry, comments, events, documents] = await Promise.all([
     getProfile(supabase, user.id),
     listProfiles(supabase),
     getAncestry(supabase, part.folder_id),
     listComments(supabase, part.id),
     listPartEvents(supabase, part.id),
+    listVersionDocuments(supabase, part.versions.map((v) => v.id)),
   ]);
 
   return (
@@ -45,6 +47,7 @@ export default async function LibraryPartPage({
           userId={user.id}
           initialComments={comments}
           events={events}
+          documents={documents}
         />
       </main>
     </AppShell>

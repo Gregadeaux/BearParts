@@ -20,6 +20,8 @@ import { DxfWorkspace } from "@/components/viewer/dxf-workspace";
 import { StlWorkspace } from "@/components/viewer/stl-workspace";
 import { PdfWorkspace } from "@/components/viewer/pdf-workspace";
 import { StepWorkspace } from "@/components/viewer/step-workspace";
+import { VersionDocsTabs } from "./version-docs-tabs";
+import type { VersionDocumentRow } from "@/services/version-documents.service";
 import { StatusBadge } from "@/components/parts/status-badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -35,10 +37,20 @@ interface Props {
   userId: string;
   initialComments: PartComment[];
   events: PartEvent[];
+  /** version id → its supporting documents (drawings, G-code) */
+  documents: Record<string, VersionDocumentRow[]>;
 }
 
 /** Library part detail: versions + viewer beside a live discussion panel. */
-export function LibraryPartView({ part, ancestry, team, userId, initialComments, events }: Props) {
+export function LibraryPartView({
+  part,
+  ancestry,
+  team,
+  userId,
+  initialComments,
+  events,
+  documents,
+}: Props) {
   const isDesktop = useMediaQuery("(min-width: 1024px)");
   const [selected, setSelected] = useState<PartVersion>(part.versions[0]);
   // keyed by version id so switching versions never shows stale content
@@ -112,6 +124,18 @@ export function LibraryPartView({ part, ancestry, team, userId, initialComments,
     </div>
   );
 
+  const viewer = error ? (
+    <p className="text-sm text-destructive">Could not load this version&apos;s file.</p>
+  ) : !content ? (
+    <Skeleton className="h-72 w-full" />
+  ) : content.buffer && selected.file_type === "pdf" ? (
+    <PdfWorkspace pdfBuffer={content.buffer} />
+  ) : content.buffer && selected.file_type === "step" ? (
+    <StepWorkspace stepBuffer={content.buffer} />
+  ) : content.buffer ? (
+    <StlWorkspace stlBuffer={content.buffer} />
+  ) : null;
+
   const workspace = (
     <div className="space-y-4">
       <VersionHistory
@@ -120,19 +144,22 @@ export function LibraryPartView({ part, ancestry, team, userId, initialComments,
         selectedId={selected?.id}
         onSelect={setSelected}
       />
-      {error ? (
-        <p className="text-sm text-destructive">Could not load this version&apos;s file.</p>
-      ) : !content ? (
-        <Skeleton className="h-72 w-full" />
-      ) : content.buffer && selected.file_type === "pdf" ? (
-        <PdfWorkspace pdfBuffer={content.buffer} />
-      ) : content.buffer && selected.file_type === "step" ? (
-        <StepWorkspace stepBuffer={content.buffer} />
-      ) : content.buffer ? (
-        <StlWorkspace stlBuffer={content.buffer} />
+      {selected.file_type === "stl" || selected.file_type === "step" ? (
+        // machined/printed models carry supporting docs: drawings + G-code
+        <VersionDocsTabs
+          key={selected.id}
+          versionId={selected.id}
+          versionNumber={selected.version}
+          libraryPartId={part.id}
+          initialDocs={documents[selected.id] ?? []}
+        >
+          {viewer}
+        </VersionDocsTabs>
+      ) : viewer !== null ? (
+        viewer
       ) : (
         <DxfWorkspace
-          dxfText={content.text!}
+          dxfText={content!.text!}
           unitOverride={selected.units === "unknown" ? undefined : selected.units}
           annotations={annotations}
           selectedAnnotationId={focusedCommentId}

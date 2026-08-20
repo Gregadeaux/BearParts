@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import * as folders from "@/services/folders.service";
 import * as library from "@/services/library.service";
 import { deleteFiles, uploadToPath } from "@/services/storage.service";
+import * as versionDocs from "@/services/version-documents.service";
 import { analyzeDxfText } from "@/services/dxf/analysis.service";
 import { createPartAction } from "./parts";
 import type { NewVersionInput } from "@/services/library.service";
@@ -30,6 +31,37 @@ export async function deleteFolderAction(folderId: string) {
   const { supabase } = await requireUser();
   await folders.deleteEmptyFolder(supabase, folderId);
   revalidatePath("/library");
+}
+
+export async function addVersionDocumentAction(formData: FormData) {
+  const { supabase, user } = await requireUser();
+  const versionId = formData.get("versionId");
+  const libraryPartId = formData.get("libraryPartId");
+  const version = Number(formData.get("version"));
+  const file = formData.get("file");
+  if (
+    typeof versionId !== "string" ||
+    typeof libraryPartId !== "string" ||
+    !Number.isFinite(version) ||
+    !(file instanceof File) ||
+    file.size === 0
+  )
+    throw new Error("A file is required");
+
+  const doc = await versionDocs.addVersionDocument(supabase, user.id, {
+    versionId,
+    libraryPartId,
+    version,
+    file,
+  });
+  revalidatePath(`/library/parts/${libraryPartId}`);
+  return doc;
+}
+
+export async function deleteVersionDocumentAction(documentId: string, libraryPartId: string) {
+  const { supabase } = await requireUser();
+  await versionDocs.deleteVersionDocument(supabase, documentId);
+  revalidatePath(`/library/parts/${libraryPartId}`);
 }
 
 export async function deleteLibraryPartAction(libraryPartId: string) {

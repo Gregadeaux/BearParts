@@ -933,6 +933,54 @@ export type Database = {
           },
         ]
       }
+      version_documents: {
+        Row: {
+          created_at: string
+          file_name: string
+          id: string
+          kind: string
+          path: string
+          size_bytes: number
+          uploaded_by: string | null
+          version_id: string
+        }
+        Insert: {
+          created_at?: string
+          file_name: string
+          id?: string
+          kind: string
+          path: string
+          size_bytes?: number
+          uploaded_by?: string | null
+          version_id: string
+        }
+        Update: {
+          created_at?: string
+          file_name?: string
+          id?: string
+          kind?: string
+          path?: string
+          size_bytes?: number
+          uploaded_by?: string | null
+          version_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "version_documents_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "version_documents_version_id_fkey"
+            columns: ["version_id"]
+            isOneToOne: false
+            referencedRelation: "part_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
