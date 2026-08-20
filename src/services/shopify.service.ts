@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Public Shopify storefront lookups — no API key needed.
  * `/products/<handle>.json` has full product data; `/search/suggest.json`
  * finds the handle when a SKU isn't also the product handle (WCP's are).
@@ -20,13 +20,17 @@ interface ShopifyProduct {
   images?: { src?: string }[];
 }
 
-const FETCH_OPTS: RequestInit = {
-  headers: { accept: "application/json", "user-agent": "BearParts BOM lookup" },
-  signal: AbortSignal.timeout(8000),
-};
+// a FRESH abort signal per request — a shared AbortSignal.timeout starts its
+// timer at module load and would kill every fetch after the first 8 seconds
+function fetchOpts(): RequestInit {
+  return {
+    headers: { accept: "application/json", "user-agent": "BearParts BOM lookup" },
+    signal: AbortSignal.timeout(8000),
+  };
+}
 
 async function fetchProduct(base: string, handle: string): Promise<ShopifyProduct | null> {
-  const res = await fetch(`${base}/products/${encodeURIComponent(handle)}.json`, FETCH_OPTS);
+  const res = await fetch(`${base}/products/${encodeURIComponent(handle)}.json`, fetchOpts());
   if (!res.ok) return null;
   const json = (await res.json()) as { product?: ShopifyProduct };
   return json.product ?? null;
@@ -35,7 +39,7 @@ async function fetchProduct(base: string, handle: string): Promise<ShopifyProduc
 async function findHandle(base: string, query: string): Promise<string | null> {
   const res = await fetch(
     `${base}/search/suggest.json?q=${encodeURIComponent(query)}&resources[type]=product`,
-    FETCH_OPTS,
+    fetchOpts(),
   );
   if (!res.ok) return null;
   const json = (await res.json()) as {
@@ -82,7 +86,7 @@ export async function buildCartPermalink(
       continue;
     }
     try {
-      const res = await fetch(`${base}/products/${encodeURIComponent(handle)}.js`, FETCH_OPTS);
+      const res = await fetch(`${base}/products/${encodeURIComponent(handle)}.js`, fetchOpts());
       if (!res.ok) throw new Error("not found");
       const product = (await res.json()) as ShopifyProductJs;
       const wanted = item.sku?.toLowerCase();
