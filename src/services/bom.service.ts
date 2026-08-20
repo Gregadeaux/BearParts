@@ -35,6 +35,14 @@ export const BOM_STATUSES: { value: BomStatus; label: string }[] = [
   { value: "received", label: "Received" },
 ];
 
+/** Vendors on Shopify — their storefront JSON powers SKU auto-fill. */
+export const SHOPIFY_VENDORS: ReadonlySet<BomVendor> = new Set([
+  "wcp",
+  "ttb",
+  "ctre",
+  "andymark",
+]);
+
 /** Vendor storefronts, for mentors placing orders. */
 export const VENDOR_URLS: Partial<Record<BomVendor, string>> = {
   wcp: "https://wcproducts.com",

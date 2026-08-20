@@ -2,10 +2,11 @@
 
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
-import { ExternalLink, Minus, Plus, ShoppingCart, Trash2 } from "lucide-react";
+import { ExternalLink, Loader2, Minus, Plus, ShoppingCart, Sparkles, Trash2 } from "lucide-react";
 import {
   BOM_STATUSES,
   BOM_VENDORS,
+  SHOPIFY_VENDORS,
   type BomItemRow,
   type BomStatus,
   type BomVendor,
@@ -13,6 +14,7 @@ import {
 import {
   addBomItemAction,
   deleteBomItemAction,
+  lookupBomProductAction,
   updateBomItemAction,
 } from "@/app/actions/subsystems";
 import { Button } from "@/components/ui/button";
@@ -226,9 +228,28 @@ function AddItemRow({
   const [qty, setQty] = useState("1");
   const [price, setPrice] = useState("");
   const [pending, startTransition] = useTransition();
+  const [looking, setLooking] = useState(false);
 
   const partItems = customParts.map((p) => ({ value: p.id, label: p.name }));
   const isCustom = vendor === "custom";
+  const canLookup = SHOPIFY_VENDORS.has(vendor);
+
+  const lookup = async () => {
+    const query = sku.trim() || url.trim();
+    if (!query) return;
+    setLooking(true);
+    try {
+      const found = await lookupBomProductAction(vendor, query);
+      setName(found.name);
+      if (found.sku) setSku(found.sku);
+      setUrl(found.url);
+      if (found.unitPrice !== null) setPrice(String(found.unitPrice));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Lookup failed");
+    } finally {
+      setLooking(false);
+    }
+  };
   const resolvedName = isCustom ? (customParts.find((p) => p.id === partId)?.name ?? "") : name.trim();
   const quantity = Math.max(1, parseInt(qty, 10) || 1);
   const canAdd = resolvedName.length > 0 && !pending;
@@ -289,16 +310,34 @@ function AddItemRow({
       ) : (
         <>
           <Input
+            value={sku}
+            onChange={(e) => setSku(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && canLookup && !name.trim()) {
+                e.preventDefault();
+                lookup();
+              }
+            }}
+            placeholder={canLookup ? "SKU or product URL" : "SKU"}
+            className="h-8 w-36"
+          />
+          {canLookup && (
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={looking || (!sku.trim() && !url.trim())}
+              onClick={lookup}
+              title="Fill name, link, and price from the vendor"
+            >
+              {looking ? <Loader2 className="animate-spin" /> : <Sparkles />}
+              Fill
+            </Button>
+          )}
+          <Input
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Item name"
             className="h-8 min-w-32 flex-1"
-          />
-          <Input
-            value={sku}
-            onChange={(e) => setSku(e.target.value)}
-            placeholder="SKU"
-            className="h-8 w-24"
           />
           <Input
             value={url}
