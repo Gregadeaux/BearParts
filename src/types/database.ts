@@ -19,8 +19,10 @@ export type Database = {
           created_at: string
           created_by: string | null
           id: string
+          image_url: string | null
           library_part_id: string | null
           name: string
+          order_quantity: number | null
           quantity: number
           sku: string | null
           status: string
@@ -33,8 +35,10 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           id?: string
+          image_url?: string | null
           library_part_id?: string | null
           name: string
+          order_quantity?: number | null
           quantity?: number
           sku?: string | null
           status?: string
@@ -47,8 +51,10 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           id?: string
+          image_url?: string | null
           library_part_id?: string | null
           name?: string
+          order_quantity?: number | null
           quantity?: number
           sku?: string | null
           status?: string

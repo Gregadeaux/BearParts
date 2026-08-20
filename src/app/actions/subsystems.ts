@@ -6,8 +6,9 @@ import * as subsystems from "@/services/subsystems.service";
 import * as comments from "@/services/subsystem-comments.service";
 import * as bom from "@/services/bom.service";
 import { SHOPIFY_VENDORS, VENDOR_URLS } from "@/services/bom.service";
-import type { BomItemInput, BomStatus, BomVendor } from "@/services/bom.service";
-import { lookupShopifyProduct } from "@/services/shopify.service";
+import type { BomItemInput, BomItemPatch, BomStatus, BomVendor } from "@/services/bom.service";
+import { buildCartPermalink, lookupShopifyProduct } from "@/services/shopify.service";
+import { orderQty } from "@/services/bom.service";
 import { notifyUsers } from "@/services/notify.service";
 import { commentPreview, mentionedUserIds } from "@/lib/mentions";
 
@@ -67,10 +68,7 @@ export async function addBomItemAction(subsystemId: string, input: BomItemInput)
   return item;
 }
 
-export async function updateBomItemAction(
-  id: string,
-  patch: { quantity?: number; status?: BomStatus },
-) {
+export async function updateBomItemAction(id: string, patch: BomItemPatch) {
   const { supabase } = await requireUser();
   await bom.updateBomItem(supabase, id, patch);
   revalidatePath("/orders");
@@ -85,6 +83,18 @@ export async function setBomStatusAction(ids: string[], status: BomStatus) {
 export async function deleteBomItemAction(id: string) {
   const { supabase } = await requireUser();
   await bom.deleteBomItem(supabase, id);
+}
+
+/** Build a Shopify cart permalink for a vendor's order-list items (in-stock only). */
+export async function buildVendorCartAction(vendor: BomVendor, itemIds: string[]) {
+  const { supabase } = await requireUser();
+  const base = VENDOR_URLS[vendor];
+  if (!base || !SHOPIFY_VENDORS.has(vendor)) throw new Error("No cart builder for this vendor");
+  const items = await bom.getBomItems(supabase, itemIds);
+  return buildCartPermalink(
+    base,
+    items.map((i) => ({ name: i.name, sku: i.sku, url: i.url, quantity: orderQty(i) })),
+  );
 }
 
 /** Auto-fill a COTS item from the vendor's public Shopify storefront. */

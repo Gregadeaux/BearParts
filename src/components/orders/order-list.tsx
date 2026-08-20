@@ -3,15 +3,17 @@
 import { useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { Check, Copy, ExternalLink, PackageCheck, ShoppingCart, Undo2 } from "lucide-react";
+import { Check, Copy, ExternalLink, Loader2, PackageCheck, ShoppingCart, Undo2 } from "lucide-react";
 import {
   BOM_VENDORS,
+  SHOPIFY_VENDORS,
   VENDOR_URLS,
+  orderQty,
   type BomStatus,
   type BomVendor,
   type OrderItem,
 } from "@/services/bom.service";
-import { setBomStatusAction } from "@/app/actions/subsystems";
+import { buildVendorCartAction, setBomStatusAction } from "@/app/actions/subsystems";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
@@ -80,9 +82,12 @@ export function OrderList({ initial }: Props) {
               vendor={vendor}
               items={group}
               action={
-                <Button size="sm" onClick={() => setStatus(group.map((i) => i.id), "ordered", `${VENDOR_LABEL[vendor]} marked ordered`)}>
-                  <Check /> Mark ordered
-                </Button>
+                <>
+                  {SHOPIFY_VENDORS.has(vendor) && <BuildCartButton vendor={vendor} items={group} />}
+                  <Button size="sm" onClick={() => setStatus(group.map((i) => i.id), "ordered", `${VENDOR_LABEL[vendor]} marked ordered`)}>
+                    <Check /> Mark ordered
+                  </Button>
+                </>
               }
               onRemove={(item) => setStatus([item.id], "planned", "Moved back to planned")}
             />
@@ -138,6 +143,50 @@ export function OrderList({ initial }: Props) {
   );
 }
 
+/** Resolve live variant ids + stock, then hand over a Shopify cart permalink. */
+function BuildCartButton({ vendor, items }: { vendor: BomVendor; items: OrderItem[] }) {
+  const [building, setBuilding] = useState(false);
+  const [cartUrl, setCartUrl] = useState<string | null>(null);
+
+  const build = async () => {
+    setBuilding(true);
+    try {
+      const result = await buildVendorCartAction(vendor, items.map((i) => i.id));
+      if (result.skipped.length > 0) {
+        toast.warning(`Not added (out of stock or not found): ${result.skipped.join(", ")}`);
+      }
+      if (!result.url) {
+        toast.error("Nothing could be added to a cart");
+        return;
+      }
+      setCartUrl(result.url);
+      window.open(result.url, "_blank", "noopener");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not build cart");
+    } finally {
+      setBuilding(false);
+    }
+  };
+
+  if (cartUrl) {
+    return (
+      <Button
+        size="sm"
+        variant="outline"
+        nativeButton={false}
+        render={<a href={cartUrl} target="_blank" rel="noreferrer" />}
+      >
+        <ExternalLink /> Open cart
+      </Button>
+    );
+  }
+  return (
+    <Button size="sm" variant="outline" disabled={building} onClick={build}>
+      {building ? <Loader2 className="animate-spin" /> : <ShoppingCart />} Build cart
+    </Button>
+  );
+}
+
 function groupByVendor(items: OrderItem[]): [BomVendor, OrderItem[]][] {
   const groups = new Map<BomVendor, OrderItem[]>();
   for (const item of items) {
@@ -163,14 +212,14 @@ function VendorGroup({
   removeIcon?: "undo";
 }) {
   const subtotal = items.reduce(
-    (sum, i) => (i.unit_price === null ? sum : sum + Number(i.unit_price) * i.quantity),
+    (sum, i) => (i.unit_price === null ? sum : sum + Number(i.unit_price) * orderQty(i)),
     0,
   );
   const storeUrl = VENDOR_URLS[vendor];
 
   const copyList = () => {
     const lines = items.map(
-      (i) => `${i.quantity}x ${i.name}${i.sku ? ` (${i.sku})` : ""}`,
+      (i) => `${orderQty(i)}x ${i.name}${i.sku ? ` (${i.sku})` : ""}`,
     );
     navigator.clipboard
       .writeText(lines.join("\n"))
@@ -207,6 +256,17 @@ function VendorGroup({
       <div className="divide-y">
         {items.map((item) => (
           <div key={item.id} className="group flex items-center gap-2 px-3 py-2">
+            {item.image_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={item.image_url}
+                alt=""
+                loading="lazy"
+                className="size-8 shrink-0 rounded-md border bg-white object-contain"
+              />
+            ) : (
+              <span className="size-8 shrink-0 rounded-md bg-muted" aria-hidden />
+            )}
             <span className="flex min-w-0 flex-1 items-center gap-1.5">
               <span className="truncate text-sm">{item.name}</span>
               {item.url && (
@@ -233,13 +293,20 @@ function VendorGroup({
                 </Badge>
               </Link>
             )}
-            <span className="w-10 shrink-0 text-right text-sm tabular-nums">
-              ×{item.quantity}
+            <span
+              className="w-10 shrink-0 text-right text-sm tabular-nums"
+              title={
+                item.order_quantity !== null && item.order_quantity !== item.quantity
+                  ? `BOM calls for ${item.quantity}`
+                  : undefined
+              }
+            >
+              ×{orderQty(item)}
             </span>
             <span className="hidden w-16 shrink-0 text-right text-xs tabular-nums text-muted-foreground sm:inline">
               {item.unit_price === null
                 ? ""
-                : `$${(Number(item.unit_price) * item.quantity).toFixed(2)}`}
+                : `$${(Number(item.unit_price) * orderQty(item)).toFixed(2)}`}
             </span>
             {perItem?.(item)}
             <button

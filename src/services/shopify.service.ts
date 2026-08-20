@@ -9,12 +9,15 @@ export interface ShopifyLookupResult {
   sku: string | null;
   url: string;
   unitPrice: number | null;
+  imageUrl: string | null;
 }
 
 interface ShopifyProduct {
   title: string;
   handle: string;
   variants: { sku: string | null; price: string }[];
+  image?: { src?: string } | null;
+  images?: { src?: string }[];
 }
 
 const FETCH_OPTS: RequestInit = {
@@ -39,6 +42,64 @@ async function findHandle(base: string, query: string): Promise<string | null> {
     resources?: { results?: { products?: { handle?: string }[] } };
   };
   return json.resources?.results?.products?.[0]?.handle ?? null;
+}
+
+export interface CartCandidate {
+  name: string;
+  sku: string | null;
+  url: string | null;
+  quantity: number;
+}
+
+export interface CartBuildResult {
+  /** Shopify cart permalink, or null when nothing could be added */
+  url: string | null;
+  added: string[];
+  skipped: string[];
+}
+
+interface ShopifyProductJs {
+  variants: { id: number; sku: string | null; available: boolean }[];
+}
+
+/**
+ * Build a `/cart/<variantId>:<qty>,...` permalink from order-list items.
+ * The `.js` endpoint carries live availability — out-of-stock items are skipped.
+ */
+export async function buildCartPermalink(
+  base: string,
+  items: CartCandidate[],
+): Promise<CartBuildResult> {
+  const pairs: string[] = [];
+  const added: string[] = [];
+  const skipped: string[] = [];
+
+  for (const item of items) {
+    const handleMatch = item.url?.match(/\/products\/([^/?#\s]+)/);
+    const handle = handleMatch?.[1] ?? item.sku?.trim().toLowerCase().replace(/\s+/g, "-");
+    if (!handle) {
+      skipped.push(item.name);
+      continue;
+    }
+    try {
+      const res = await fetch(`${base}/products/${encodeURIComponent(handle)}.js`, FETCH_OPTS);
+      if (!res.ok) throw new Error("not found");
+      const product = (await res.json()) as ShopifyProductJs;
+      const wanted = item.sku?.toLowerCase();
+      const variant =
+        product.variants.find((v) => v.sku?.toLowerCase() === wanted) ?? product.variants[0];
+      if (!variant?.available) {
+        skipped.push(item.name);
+        continue;
+      }
+      pairs.push(`${variant.id}:${item.quantity}`);
+      added.push(item.name);
+    } catch {
+      skipped.push(item.name);
+    }
+  }
+
+  return { url: pairs.length > 0 ? `${base}/cart/${pairs.join(",")}` : null, added, skipped };
 }
 
 /** Look up a product by SKU, handle, or pasted product URL. */
@@ -71,5 +132,6 @@ export async function lookupShopifyProduct(
     sku: variant?.sku || (urlMatch ? null : trimmed),
     url: `${base}/products/${product.handle}`,
     unitPrice: Number.isFinite(price) ? price : null,
+    imageUrl: product.image?.src ?? product.images?.[0]?.src ?? null,
   };
 }

@@ -128,6 +128,26 @@ export async function subsystemUploads(
   return data as unknown as SubsystemUpload[];
 }
 
+/** library part id → latest version's thumb storage path (for BOM thumbnails). */
+export async function latestThumbPaths(
+  supabase: Client,
+  libraryPartIds: string[],
+): Promise<Record<string, string>> {
+  if (libraryPartIds.length === 0) return {};
+  const { data, error } = await supabase
+    .from("part_versions")
+    .select("library_part_id, version, thumb_path")
+    .in("library_part_id", libraryPartIds)
+    .not("thumb_path", "is", null)
+    .order("version", { ascending: false });
+  if (error) throw new Error(`Could not load thumbnails: ${error.message}`);
+  const map: Record<string, string> = {};
+  for (const row of data) {
+    if (!(row.library_part_id in map) && row.thumb_path) map[row.library_part_id] = row.thumb_path;
+  }
+  return map;
+}
+
 /** Name lookup for the BOM's "custom part" picker. */
 export async function subsystemPartNames(
   supabase: Client,

@@ -20,6 +20,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -37,11 +38,14 @@ interface Props {
   initial: BomItemRow[];
   /** the subsystem's own library parts, for vendor = Custom */
   customParts: { id: string; name: string }[];
+  /** bom item id → signed thumb URL for custom parts (vendor items carry image_url) */
+  thumbUrls?: Record<string, string>;
 }
 
 /** Bill of materials: custom parts + vendor items with quantities and order status. */
-export function BomTable({ subsystemId, initial, customParts }: Props) {
+export function BomTable({ subsystemId, initial, customParts, thumbUrls = {} }: Props) {
   const [items, setItems] = useState(initial);
+  const [ordering, setOrdering] = useState<BomItemRow | null>(null);
 
   const patchLocal = (id: string, patch: Partial<BomItemRow>) =>
     setItems((list) => list.map((i) => (i.id === id ? { ...i, ...patch } : i)));
@@ -60,6 +64,16 @@ export function BomTable({ subsystemId, initial, customParts }: Props) {
     updateBomItemAction(item.id, { status }).catch(() => {
       toast.error("Could not update status");
       patchLocal(item.id, { status: item.status });
+    });
+  };
+
+  /** From the order dialog: how many to actually order (can exceed the BOM qty). */
+  const placeOnOrderList = (item: BomItemRow, orderQuantity: number) => {
+    patchLocal(item.id, { status: "to_order", order_quantity: orderQuantity });
+    setOrdering(null);
+    updateBomItemAction(item.id, { status: "to_order", orderQuantity }).catch(() => {
+      toast.error("Could not add to order list");
+      patchLocal(item.id, { status: item.status, order_quantity: item.order_quantity });
     });
   };
 
@@ -96,7 +110,8 @@ export function BomTable({ subsystemId, initial, customParts }: Props) {
               {items.map((item) => (
                 <tr key={item.id} className="group">
                   <td className="max-w-48 px-3 py-1.5">
-                    <span className="flex items-center gap-1.5">
+                    <span className="flex items-center gap-2">
+                      <ItemThumb src={item.image_url ?? thumbUrls[item.id]} />
                       <span className="truncate font-medium">{item.name}</span>
                       {item.url && (
                         <a
@@ -166,7 +181,7 @@ export function BomTable({ subsystemId, initial, customParts }: Props) {
                           type="button"
                           aria-label={`Add ${item.name} to order list`}
                           title="Add to order list"
-                          onClick={() => changeStatus(item, "to_order")}
+                          onClick={() => setOrdering(item)}
                           className="hidden text-muted-foreground hover:text-foreground group-hover:block"
                         >
                           <ShoppingCart className="size-3.5" />
@@ -207,7 +222,77 @@ export function BomTable({ subsystemId, initial, customParts }: Props) {
         customParts={customParts}
         onAdded={(item) => setItems((list) => [...list, item])}
       />
+
+      <OrderDialog item={ordering} onClose={() => setOrdering(null)} onConfirm={placeOnOrderList} />
     </div>
+  );
+}
+
+function ItemThumb({ src }: { src?: string }) {
+  if (!src) return <span className="size-8 shrink-0 rounded-md bg-muted" aria-hidden />;
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={src}
+      alt=""
+      loading="lazy"
+      className="size-8 shrink-0 rounded-md border bg-white object-contain"
+    />
+  );
+}
+
+/** "How many?" — partial orders and spares both happen. */
+function OrderDialog({
+  item,
+  onClose,
+  onConfirm,
+}: {
+  item: BomItemRow | null;
+  onClose: () => void;
+  onConfirm: (item: BomItemRow, orderQuantity: number) => void;
+}) {
+  return (
+    <Dialog open={item !== null} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-xs">
+        {item && <OrderDialogBody key={item.id} item={item} onConfirm={onConfirm} />}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function OrderDialogBody({
+  item,
+  onConfirm,
+}: {
+  item: BomItemRow;
+  onConfirm: (item: BomItemRow, orderQuantity: number) => void;
+}) {
+  const [qty, setQty] = useState(() => String(item.quantity));
+  const parsed = parseInt(qty, 10);
+  const valid = Number.isFinite(parsed) && parsed > 0;
+
+  return (
+    <>
+      <DialogHeader className="min-w-0">
+        <DialogTitle className="min-w-0 truncate pr-8">Order {item.name}</DialogTitle>
+      </DialogHeader>
+      <div className="space-y-1.5">
+        <Input
+          autoFocus
+          value={qty}
+          onChange={(e) => setQty(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && valid && onConfirm(item, parsed)}
+          inputMode="numeric"
+          aria-label="Quantity to order"
+        />
+        <p className="text-xs text-muted-foreground">
+          BOM calls for {item.quantity}. Order fewer, or extras for spares.
+        </p>
+      </div>
+      <Button disabled={!valid} onClick={() => onConfirm(item, parsed)}>
+        <ShoppingCart /> Add to order list
+      </Button>
+    </>
   );
 }
 
@@ -227,6 +312,7 @@ function AddItemRow({
   const [url, setUrl] = useState("");
   const [qty, setQty] = useState("1");
   const [price, setPrice] = useState("");
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const [looking, setLooking] = useState(false);
 
@@ -244,6 +330,7 @@ function AddItemRow({
       if (found.sku) setSku(found.sku);
       setUrl(found.url);
       if (found.unitPrice !== null) setPrice(String(found.unitPrice));
+      setImageUrl(found.imageUrl);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Lookup failed");
     } finally {
@@ -266,6 +353,7 @@ function AddItemRow({
           url: url || null,
           quantity,
           unitPrice: price ? parseFloat(price) : null,
+          imageUrl: isCustom ? null : imageUrl,
         });
         onAdded(item);
         setPartId(null);
@@ -274,6 +362,7 @@ function AddItemRow({
         setUrl("");
         setQty("1");
         setPrice("");
+        setImageUrl(null);
       } catch (e) {
         toast.error(e instanceof Error ? e.message : "Could not add item");
       }
@@ -333,6 +422,7 @@ function AddItemRow({
               Fill
             </Button>
           )}
+          {imageUrl && <ItemThumb src={imageUrl} />}
           <Input
             value={name}
             onChange={(e) => setName(e.target.value)}

@@ -6,6 +6,7 @@ import { getProfile, listProfiles } from "@/services/profiles.service";
 import { listAllTags, listProjects, listSubgroups, listTasks } from "@/services/tasks.service";
 import {
   getSubsystem,
+  latestThumbPaths,
   listSubsystems,
   subsystemPartIds,
   subsystemPartNames,
@@ -102,6 +103,24 @@ export default async function SubsystemPage({
       }),
   );
   const thumbUrls = Object.fromEntries(thumbEntries.filter((e): e is [string, string] => e !== null));
+
+  // custom BOM rows get their library part's latest preview
+  const customPartIds = [...new Set(bomItems.map((i) => i.library_part_id).filter((x): x is string => x !== null))];
+  const bomThumbPaths = await latestThumbPaths(supabase, customPartIds);
+  const bomThumbEntries = await Promise.all(
+    bomItems
+      .filter((i) => i.library_part_id && bomThumbPaths[i.library_part_id])
+      .map(async (i) => {
+        try {
+          return [i.id, await getFileUrl(supabase, bomThumbPaths[i.library_part_id!])] as const;
+        } catch {
+          return null;
+        }
+      }),
+  );
+  const bomThumbUrls = Object.fromEntries(
+    bomThumbEntries.filter((e): e is [string, string] => e !== null),
+  );
 
   return (
     <AppShell
@@ -209,7 +228,12 @@ export default async function SubsystemPage({
               </TabsContent>
 
               <TabsContent value="bom" className="-mx-1 min-h-0 flex-1 overflow-y-auto px-1 pt-2">
-                <BomTable subsystemId={subsystem.id} initial={bomItems} customParts={partNames} />
+                <BomTable
+                  subsystemId={subsystem.id}
+                  initial={bomItems}
+                  customParts={partNames}
+                  thumbUrls={bomThumbUrls}
+                />
               </TabsContent>
             </Tabs>
           </div>

@@ -62,6 +62,12 @@ export interface BomItemInput {
   url?: string | null;
   quantity: number;
   unitPrice?: number | null;
+  imageUrl?: string | null;
+}
+
+/** How many an order-list row represents — order_quantity wins when set. */
+export function orderQty(item: Pick<BomItemRow, "quantity" | "order_quantity">): number {
+  return item.order_quantity ?? item.quantity;
 }
 
 export async function listBomItems(supabase: Client, subsystemId: string): Promise<BomItemRow[]> {
@@ -91,6 +97,7 @@ export async function createBomItem(
       url: input.url?.trim() || null,
       quantity: input.quantity,
       unit_price: input.unitPrice ?? null,
+      image_url: input.imageUrl ?? null,
     })
     .select()
     .single();
@@ -121,16 +128,35 @@ export async function setBomItemsStatus(
   status: BomStatus,
 ): Promise<void> {
   if (ids.length === 0) return;
-  const { error } = await supabase.from("bom_items").update({ status }).in("id", ids);
+  // back to planned means the order intent is gone
+  const patch = status === "planned" ? { status, order_quantity: null } : { status };
+  const { error } = await supabase.from("bom_items").update(patch).in("id", ids);
   if (error) throw new Error(`Could not update items: ${error.message}`);
+}
+
+export async function getBomItems(supabase: Client, ids: string[]): Promise<BomItemRow[]> {
+  if (ids.length === 0) return [];
+  const { data, error } = await supabase.from("bom_items").select("*").in("id", ids);
+  if (error) throw new Error(`Could not load items: ${error.message}`);
+  return data;
+}
+
+export interface BomItemPatch {
+  quantity?: number;
+  status?: BomStatus;
+  orderQuantity?: number | null;
 }
 
 export async function updateBomItem(
   supabase: Client,
   id: string,
-  patch: { quantity?: number; status?: BomStatus },
+  patch: BomItemPatch,
 ): Promise<void> {
-  const { error } = await supabase.from("bom_items").update(patch).eq("id", id);
+  const row: Database["public"]["Tables"]["bom_items"]["Update"] = {};
+  if (patch.quantity !== undefined) row.quantity = patch.quantity;
+  if (patch.status !== undefined) row.status = patch.status;
+  if (patch.orderQuantity !== undefined) row.order_quantity = patch.orderQuantity;
+  const { error } = await supabase.from("bom_items").update(row).eq("id", id);
   if (error) throw new Error(`Could not update BOM item: ${error.message}`);
 }
 
