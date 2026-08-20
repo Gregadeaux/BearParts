@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { ExternalLink, Loader2, Minus, Plus, ShoppingCart, Sparkles, Trash2 } from "lucide-react";
 import {
@@ -44,6 +45,7 @@ interface Props {
 
 /** Bill of materials: custom parts + vendor items with quantities and order status. */
 export function BomTable({ subsystemId, initial, customParts, thumbUrls = {} }: Props) {
+  const router = useRouter();
   const [items, setItems] = useState(initial);
   const [ordering, setOrdering] = useState<BomItemRow | null>(null);
 
@@ -59,22 +61,33 @@ export function BomTable({ subsystemId, initial, customParts, thumbUrls = {} }: 
     });
   };
 
+  const orderedToast = (item: BomItemRow, quantity: number) =>
+    toast.success(`${quantity}× ${item.name} added to the order list`, {
+      action: { label: "Orders", onClick: () => router.push("/orders") },
+    });
+
   const changeStatus = (item: BomItemRow, status: BomStatus) => {
     patchLocal(item.id, { status });
-    updateBomItemAction(item.id, { status }).catch(() => {
-      toast.error("Could not update status");
-      patchLocal(item.id, { status: item.status });
-    });
+    updateBomItemAction(item.id, { status })
+      .then(() => {
+        if (status === "to_order") orderedToast(item, item.quantity);
+      })
+      .catch(() => {
+        toast.error("Could not update status");
+        patchLocal(item.id, { status: item.status });
+      });
   };
 
   /** From the order dialog: how many to actually order (can exceed the BOM qty). */
   const placeOnOrderList = (item: BomItemRow, orderQuantity: number) => {
     patchLocal(item.id, { status: "to_order", order_quantity: orderQuantity });
     setOrdering(null);
-    updateBomItemAction(item.id, { status: "to_order", orderQuantity }).catch(() => {
-      toast.error("Could not add to order list");
-      patchLocal(item.id, { status: item.status, order_quantity: item.order_quantity });
-    });
+    updateBomItemAction(item.id, { status: "to_order", orderQuantity })
+      .then(() => orderedToast(item, orderQuantity))
+      .catch(() => {
+        toast.error("Could not add to order list");
+        patchLocal(item.id, { status: item.status, order_quantity: item.order_quantity });
+      });
   };
 
   const remove = (item: BomItemRow) => {
