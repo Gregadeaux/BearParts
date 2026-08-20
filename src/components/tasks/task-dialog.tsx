@@ -7,6 +7,7 @@ import { Trash2 } from "lucide-react";
 import type { Person, ProjectRow, SubgroupRow, Task, TaskStatus } from "@/types/task";
 import {
   addSubtaskAction,
+  addTaskAttachmentAction,
   createTaskAction,
   deleteSubtaskAction,
   deleteTaskAction,
@@ -32,6 +33,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { TagInput } from "./tag-input";
 import { SubtaskList, type SubtaskItem } from "./subtask-list";
+import { TaskAttachments, toItem, type AttachmentItem } from "./task-attachments";
+import { TaskComments } from "./task-comments";
 import { TaskFormFields, type TaskDraft } from "./task-form-fields";
 
 export interface TaskDialogProps {
@@ -50,6 +53,7 @@ export interface TaskDialogProps {
   subgroups: SubgroupRow[];
   projects: ProjectRow[];
   allTags: string[];
+  userId: string;
 }
 
 function emptyDraft(defaults: TaskDialogProps["defaults"]): TaskDraft {
@@ -90,10 +94,12 @@ export function TaskDialog({
   subgroups,
   projects,
   allTags,
+  userId,
 }: TaskDialogProps): React.JSX.Element {
   const isMobile = useMediaQuery("(max-width: 639px)");
   const [draft, setDraft] = useState<TaskDraft>(() => emptyDraft(defaults));
   const [subtasks, setSubtasks] = useState<SubtaskItem[]>([]);
+  const [attachments, setAttachments] = useState<AttachmentItem[]>([]);
   const [created, setCreated] = useState<SubgroupRow[]>([]);
   const [confirming, setConfirming] = useState(false);
   const [pending, startTransition] = useTransition();
@@ -104,6 +110,7 @@ export function TaskDialog({
     if (open && !wasOpen.current) {
       setDraft(task ? draftFromTask(task) : emptyDraft(defaults));
       setSubtasks(task ? task.subtasks.map(({ id, title, done }) => ({ id, title, done })) : []);
+      setAttachments(task ? task.attachments.map(toItem) : []);
     }
     wasOpen.current = open;
   }, [open, task, defaults]);
@@ -162,10 +169,17 @@ export function TaskDialog({
           await updateTaskAction(task.id, input, draft.assigneeIds, draft.tags);
         } else {
           const { id } = await createTaskAction(input, draft.assigneeIds, draft.tags);
-          // locally staged subtasks land after the task exists
+          // locally staged subtasks and attachments land after the task exists
           for (const [i, sub] of subtasks.entries()) {
             const saved = await addSubtaskAction(id, sub.title, i);
             if (sub.done) await setSubtaskDoneAction(saved.id, true);
+          }
+          for (const item of attachments) {
+            if (!item.staged) continue;
+            const formData = new FormData();
+            formData.set("taskId", id);
+            formData.set("file", item.staged);
+            await addTaskAttachmentAction(formData);
           }
         }
         onOpenChange(false);
@@ -216,6 +230,11 @@ export function TaskDialog({
           onToggle={toggleSubtask}
           onRemove={removeSubtask}
         />
+        <TaskAttachments
+          taskId={task?.id ?? null}
+          items={attachments}
+          onItemsChange={setAttachments}
+        />
         <div className="space-y-1">
           <span className="text-xs font-medium text-muted-foreground">Tags</span>
           <TagInput
@@ -224,6 +243,11 @@ export function TaskDialog({
             onChange={(tags) => patch({ tags })}
           />
         </div>
+        {task && (
+          <div className="border-t pt-3">
+            <TaskComments taskId={task.id} taskTitle={task.title} team={team} userId={userId} />
+          </div>
+        )}
       </div>
 
       <div className="flex items-center gap-2 border-t bg-muted/50 p-3">

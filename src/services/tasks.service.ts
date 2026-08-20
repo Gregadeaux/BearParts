@@ -9,22 +9,25 @@ const TASK_SELECT = `*,
   project:projects (*),
   task_assignees (user:profiles (id, display_name, avatar_url)),
   task_tags (tag),
-  task_subtasks (id, title, done, position)`;
+  task_subtasks (id, title, done, position),
+  task_attachments (id, file_name, path, size_bytes, created_at)`;
 
 interface RawTask {
   task_assignees: { user: Task["assignees"][number] | null }[];
   task_tags: { tag: string }[];
   task_subtasks: Task["subtasks"];
+  task_attachments: Task["attachments"];
   [key: string]: unknown;
 }
 
 function shapeTask(raw: RawTask): Task {
-  const { task_assignees, task_tags, task_subtasks, ...rest } = raw;
+  const { task_assignees, task_tags, task_subtasks, task_attachments, ...rest } = raw;
   return {
-    ...(rest as unknown as Omit<Task, "assignees" | "tags" | "subtasks">),
+    ...(rest as unknown as Omit<Task, "assignees" | "tags" | "subtasks" | "attachments">),
     assignees: task_assignees.map((a) => a.user).filter((u): u is Task["assignees"][number] => u !== null),
     tags: task_tags.map((t) => t.tag).sort(),
     subtasks: [...task_subtasks].sort((a, b) => a.position - b.position || a.id.localeCompare(b.id)),
+    attachments: [...task_attachments].sort((a, b) => a.created_at.localeCompare(b.created_at)),
   };
 }
 

@@ -4,7 +4,11 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import * as tasks from "@/services/tasks.service";
 import type { TaskInput } from "@/services/tasks.service";
+import * as taskComments from "@/services/task-comments.service";
+import * as attachments from "@/services/task-attachments.service";
+import { getDownloadUrl, getFileUrl } from "@/services/storage.service";
 import { sendPush } from "@/services/notifications.service";
+import { commentPreview, mentionedUserIds } from "@/lib/mentions";
 
 async function requireUser() {
   const supabase = await createClient();
@@ -84,6 +88,54 @@ export async function createSubgroupAction(name: string, color: string) {
   const subgroup = await tasks.createSubgroup(supabase, name, color);
   revalidate();
   return subgroup;
+}
+
+export async function addTaskCommentAction(taskId: string, body: string, taskTitle: string) {
+  const { supabase, user } = await requireUser();
+  const comment = await taskComments.createTaskComment(supabase, user.id, taskId, body);
+
+  const mentioned = mentionedUserIds(body).filter((id) => id !== user.id);
+  if (mentioned.length > 0) {
+    await sendPush(mentioned, {
+      title: `Mentioned on ${taskTitle}`,
+      body: `${comment.author?.display_name ?? "Someone"}: ${commentPreview(body)}`,
+      url: `/tasks?task=${taskId}`,
+    });
+  }
+  return comment;
+}
+
+export async function deleteTaskCommentAction(commentId: string) {
+  const { supabase } = await requireUser();
+  await taskComments.deleteTaskComment(supabase, commentId);
+}
+
+export async function addTaskAttachmentAction(formData: FormData) {
+  const { supabase, user } = await requireUser();
+  const taskId = formData.get("taskId");
+  const file = formData.get("file");
+  if (typeof taskId !== "string" || !(file instanceof File) || file.size === 0)
+    throw new Error("A file is required");
+  const attachment = await attachments.addAttachment(supabase, user.id, taskId, file);
+  revalidate();
+  return attachment;
+}
+
+export async function deleteTaskAttachmentAction(attachmentId: string) {
+  const { supabase } = await requireUser();
+  await attachments.deleteAttachment(supabase, attachmentId);
+  revalidate();
+}
+
+/** Signed view + forced-download URLs for one attachment. */
+export async function attachmentUrlsAction(attachmentId: string) {
+  const { supabase } = await requireUser();
+  const attachment = await attachments.getAttachment(supabase, attachmentId);
+  const [viewUrl, downloadUrl] = await Promise.all([
+    getFileUrl(supabase, attachment.path),
+    getDownloadUrl(supabase, attachment.path, attachment.file_name),
+  ]);
+  return { viewUrl, downloadUrl };
 }
 
 async function notifyAssigned(addedIds: string[], actorId: string, title: string) {

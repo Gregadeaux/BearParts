@@ -20,10 +20,17 @@ interface Props {
   /** resolves true when the comment posted — composer clears only then */
   onSubmit: (body: string) => Promise<boolean>;
   pending: boolean;
+  placeholder?: string;
 }
 
 /** Comment box with @-mention autocomplete for teammates and versions. */
-export function MentionComposer({ team, versions, onSubmit, pending }: Props) {
+export function MentionComposer({
+  team,
+  versions,
+  onSubmit,
+  pending,
+  placeholder = "Comment — @ to mention someone or a version",
+}: Props) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [value, setValue] = useState("");
   const [caret, setCaret] = useState(0);
@@ -141,7 +148,7 @@ export function MentionComposer({ team, versions, onSubmit, pending }: Props) {
           ref={textareaRef}
           value={value}
           rows={2}
-          placeholder="Comment — @ to mention someone or a version"
+          placeholder={placeholder}
           className="min-h-9 resize-none"
           onChange={(e) => {
             setValue(e.target.value);

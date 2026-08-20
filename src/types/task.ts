@@ -16,6 +16,22 @@ export interface Subtask {
   position: number;
 }
 
+export interface TaskAttachment {
+  id: string;
+  file_name: string;
+  path: string;
+  size_bytes: number;
+  created_at: string;
+}
+
+/** File types with a built-in viewer — anything else is download-only. */
+export type PreviewKind = "dxf" | "stl" | "pdf";
+
+export function previewKind(fileName: string): PreviewKind | null {
+  const ext = fileName.toLowerCase().match(/\.(dxf|stl|pdf)$/)?.[1];
+  return (ext as PreviewKind | undefined) ?? null;
+}
+
 /** Task with everything the UI needs joined in. */
 export interface Task extends Omit<TaskRow, "status"> {
   status: TaskStatus;
@@ -24,6 +40,7 @@ export interface Task extends Omit<TaskRow, "status"> {
   assignees: Person[];
   tags: string[];
   subtasks: Subtask[];
+  attachments: TaskAttachment[];
 }
 
 /** Fixed status set (see research spec) — subgroup owns hue, status stays a neutral dot. */

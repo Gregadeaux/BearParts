@@ -22,9 +22,21 @@ domains. Tasks are high-level ("Fabricate the Intake"), parts are shop-floor.
    in `task_tags`; suggestions come from `listAllTags`.
 5. **Multiple assignees** via `task_assignees`; `setAssignees` replaces the set
    and returns newly-added ids — actions push-notify those (never the actor).
-6. Realtime lives on `public.tasks` only — assignee/tag-only edits don't emit
-   task events, so mutations should go through the server actions (which
-   revalidate) and views refetch via `useLiveTable`.
-7. v1 skip list (don't add without a decision): time tracking, custom fields,
-   recurring tasks, dependencies, subtasks, priorities, comments, week/day
-   calendar views, drag-reorder within groups, external calendar sync.
+6. Realtime lives on `public.tasks` and `public.task_comments` —
+   assignee/tag/subtask/attachment edits don't emit task events, so mutations
+   should go through the server actions (which revalidate) and views refetch
+   via `useLiveTable`.
+7. **Attachments** accept any file format, stored in the shared private bucket
+   at `tasks/{taskId}/{uuid}/{safeName}` (`task_attachments` rows joined into
+   `TASK_SELECT`). Only dxf/stl/pdf get the preview modal
+   (`FilePreviewDialog` reuses the three workspaces); everything else is
+   download-only. Downloads use signed URLs with the `download` option so the
+   original file name survives. Create-mode dialogs stage `File` objects
+   locally and upload after `createTaskAction` returns the id (same pattern
+   as staged subtasks).
+8. **Comments** mirror `part_comments` exactly (RLS, mention tokens, push on
+   mention with url `/tasks?task=<id>`); the dialog reuses `MentionComposer`
+   / `CommentBody` with `versions=[]`.
+9. v1 skip list (don't add without a decision): time tracking, custom fields,
+   recurring tasks, dependencies, priorities, week/day calendar views,
+   drag-reorder within groups, external calendar sync.

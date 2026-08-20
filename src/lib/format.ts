@@ -17,6 +17,19 @@ export function formatDateTime(iso: string): string {
   });
 }
 
+/** 1536 → "1.5 KB" */
+export function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  const units = ["KB", "MB", "GB"];
+  let value = bytes;
+  let i = -1;
+  do {
+    value /= 1024;
+    i += 1;
+  } while (value >= 1024 && i < units.length - 1);
+  return `${parseFloat(value.toFixed(1))} ${units[i]}`;
+}
+
 /** "Dana Designer" → "DD" */
 export function initials(name: string): string {
   return name

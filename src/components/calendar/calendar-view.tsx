@@ -199,6 +199,7 @@ export function CalendarView({
           subgroups={subgroups}
           projects={projects}
           allTags={allTags}
+          userId={userId ?? ""}
         />
       )}
     </div>

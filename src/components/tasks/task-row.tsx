@@ -1,7 +1,7 @@
 ﻿"use client";
 
 import { useState } from "react";
-import { CheckSquare2, MoreHorizontal } from "lucide-react";
+import { CheckSquare2, MoreHorizontal, Paperclip } from "lucide-react";
 import type { Task, TaskStatus } from "@/types/task";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -69,6 +69,7 @@ export function TaskRow({ task, onOpen, onStatusChange, onDelete }: Props) {
           {task.title}
         </button>
         <SubtaskCount task={task} />
+        <AttachmentCount task={task} />
         <TagBadges tags={task.tags} />
         <AvatarStack people={task.assignees} />
         <span className={cn("w-12 shrink-0 text-right text-xs tabular-nums", dueClass)}>{due}</span>
@@ -151,6 +152,19 @@ function SubtaskCount({ task }: { task: Task }) {
     >
       <CheckSquare2 className="size-3.5" />
       {done}/{task.subtasks.length}
+    </span>
+  );
+}
+
+function AttachmentCount({ task }: { task: Task }) {
+  if (task.attachments.length === 0) return null;
+  return (
+    <span
+      className="flex shrink-0 items-center gap-0.5 text-xs tabular-nums text-muted-foreground"
+      title={`${task.attachments.length} attachments`}
+    >
+      <Paperclip className="size-3.5" />
+      {task.attachments.length}
     </span>
   );
 }
