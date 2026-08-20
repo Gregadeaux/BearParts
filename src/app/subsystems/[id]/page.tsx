@@ -154,7 +154,7 @@ export default async function SubsystemPage({
                 <TabsTrigger value="bom">BOM</TabsTrigger>
               </TabsList>
 
-              <TabsContent value="parts" className="min-h-0 flex-1 overflow-y-auto pt-2">
+              <TabsContent value="parts" className="-mx-1 min-h-0 flex-1 overflow-y-auto px-1 pt-2">
                 <LibraryBrowser
                   currentFolderId={currentFolderId}
                   ancestry={ancestry}
@@ -168,7 +168,7 @@ export default async function SubsystemPage({
                 />
               </TabsContent>
 
-              <TabsContent value="tasks" className="min-h-0 flex-1 overflow-y-auto pt-2">
+              <TabsContent value="tasks" className="-mx-1 min-h-0 flex-1 overflow-y-auto px-1 pt-2">
                 <TasksView
                   initialTasks={tasks}
                   team={team}
@@ -183,7 +183,7 @@ export default async function SubsystemPage({
                 />
               </TabsContent>
 
-              <TabsContent value="queue" className="min-h-0 flex-1 overflow-y-auto pt-2">
+              <TabsContent value="queue" className="-mx-1 min-h-0 flex-1 overflow-y-auto px-1 pt-2">
                 {queueParts.length === 0 ? (
                   <p className="rounded-lg border border-dashed px-3 py-4 text-sm text-muted-foreground">
                     No parts from this subsystem are in the queue.
@@ -208,7 +208,7 @@ export default async function SubsystemPage({
                 )}
               </TabsContent>
 
-              <TabsContent value="bom" className="min-h-0 flex-1 overflow-y-auto pt-2">
+              <TabsContent value="bom" className="-mx-1 min-h-0 flex-1 overflow-y-auto px-1 pt-2">
                 <BomTable subsystemId={subsystem.id} initial={bomItems} customParts={partNames} />
               </TabsContent>
             </Tabs>
