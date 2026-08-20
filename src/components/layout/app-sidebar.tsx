@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { CalendarDays, FolderOpen, ListTodo, LogOut, Plus, SquareKanban } from "lucide-react";
+import { CalendarDays, FolderOpen, ListTodo, LogOut, Palette, Plus, SquareKanban } from "lucide-react";
 import type { ProjectRow } from "@/types/task";
 import { createClient } from "@/lib/supabase/client";
 import { listProjects } from "@/services/tasks.service";
@@ -39,6 +39,7 @@ const NAV = [
   { href: "/library", label: "Library", icon: FolderOpen },
   { href: "/tasks", label: "Tasks", icon: ListTodo },
   { href: "/calendar", label: "Calendar", icon: CalendarDays },
+  { href: "/subgroups", label: "Subgroups", icon: Palette },
 ];
 
 interface Props {

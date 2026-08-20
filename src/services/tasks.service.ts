@@ -184,6 +184,39 @@ export async function listSubgroups(supabase: Client): Promise<SubgroupRow[]> {
   return data;
 }
 
+export async function updateSubgroup(
+  supabase: Client,
+  id: string,
+  patch: { name?: string; color?: string },
+): Promise<void> {
+  const clean = {
+    ...(patch.name !== undefined ? { name: patch.name.trim() } : {}),
+    ...(patch.color !== undefined ? { color: patch.color } : {}),
+  };
+  const { error } = await supabase.from("subgroups").update(clean).eq("id", id);
+  if (error) {
+    if (error.code === "23505") throw new Error(`Subgroup "${patch.name}" already exists`);
+    throw new Error(`Could not update subgroup: ${error.message}`);
+  }
+}
+
+/** Tasks keep existing but lose the subgroup (FK is on delete set null). */
+export async function deleteSubgroup(supabase: Client, id: string): Promise<void> {
+  const { error } = await supabase.from("subgroups").delete().eq("id", id);
+  if (error) throw new Error(`Could not delete subgroup: ${error.message}`);
+}
+
+/** subgroup id → number of tasks in it (for the admin page). */
+export async function countTasksBySubgroup(supabase: Client): Promise<Record<string, number>> {
+  const { data, error } = await supabase.from("tasks").select("subgroup_id");
+  if (error) throw new Error(`Could not count tasks: ${error.message}`);
+  const counts: Record<string, number> = {};
+  for (const row of data) {
+    if (row.subgroup_id) counts[row.subgroup_id] = (counts[row.subgroup_id] ?? 0) + 1;
+  }
+  return counts;
+}
+
 export async function createSubgroup(supabase: Client, name: string, color: string): Promise<SubgroupRow> {
   const { data, error } = await supabase
     .from("subgroups")

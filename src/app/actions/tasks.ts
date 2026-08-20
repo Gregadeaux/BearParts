@@ -90,6 +90,20 @@ export async function createSubgroupAction(name: string, color: string) {
   return subgroup;
 }
 
+export async function updateSubgroupAction(id: string, patch: { name?: string; color?: string }) {
+  const { supabase } = await requireUser();
+  await tasks.updateSubgroup(supabase, id, patch);
+  revalidate();
+  revalidatePath("/subgroups");
+}
+
+export async function deleteSubgroupAction(id: string) {
+  const { supabase } = await requireUser();
+  await tasks.deleteSubgroup(supabase, id);
+  revalidate();
+  revalidatePath("/subgroups");
+}
+
 export async function addTaskCommentAction(taskId: string, body: string, taskTitle: string) {
   const { supabase, user } = await requireUser();
   const comment = await taskComments.createTaskComment(supabase, user.id, taskId, body);
