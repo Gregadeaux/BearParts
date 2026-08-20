@@ -66,3 +66,7 @@ export async function getDownloadUrl(supabase: Client, path: string, fileName: s
 export async function deletePartFile(supabase: Client, path: string) {
   await supabase.storage.from(BUCKET).remove([path]);
 }
+
+export async function deleteFiles(supabase: Client, paths: string[]) {
+  if (paths.length > 0) await supabase.storage.from(BUCKET).remove(paths);
+}

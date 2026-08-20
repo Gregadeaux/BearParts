@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import * as folders from "@/services/folders.service";
 import * as library from "@/services/library.service";
-import { uploadToPath } from "@/services/storage.service";
+import { deleteFiles, uploadToPath } from "@/services/storage.service";
 import { analyzeDxfText } from "@/services/dxf/analysis.service";
 import { createPartAction } from "./parts";
 import type { NewVersionInput } from "@/services/library.service";
@@ -29,6 +29,13 @@ export async function createFolderAction(name: string, parentId: string | null) 
 export async function deleteFolderAction(folderId: string) {
   const { supabase } = await requireUser();
   await folders.deleteEmptyFolder(supabase, folderId);
+  revalidatePath("/library");
+}
+
+export async function deleteLibraryPartAction(libraryPartId: string) {
+  const { supabase } = await requireUser();
+  const orphanedPaths = await library.deleteLibraryPart(supabase, libraryPartId);
+  await deleteFiles(supabase, orphanedPaths);
   revalidatePath("/library");
 }
 

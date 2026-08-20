@@ -9,8 +9,18 @@ import type { FolderRow, LibraryPartListing } from "@/types/library";
 import type { PartFileType } from "@/types/part";
 import type { ProjectRow } from "@/types/task";
 import type { Subsystem } from "@/services/subsystems.service";
-import { deleteFolderAction } from "@/app/actions/library";
+import { deleteFolderAction, deleteLibraryPartAction } from "@/app/actions/library";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { LibraryBreadcrumb } from "./library-breadcrumb";
 import { LibraryPartTile } from "./library-part-tile";
 import { NewFolderDialog } from "./new-folder-dialog";
@@ -71,6 +81,8 @@ export function LibraryBrowser({
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<PartFileType | "all">("all");
+  const [deletingPart, setDeletingPart] = useState<LibraryPartListing | null>(null);
+  const [deletePending, setDeletePending] = useState(false);
   const search = useLibrarySearch(query, currentFolderId);
 
   const matchesType = (p: LibraryPartListing) =>
@@ -83,6 +95,21 @@ export function LibraryBrowser({
       router.refresh();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not delete folder");
+    }
+  };
+
+  const deletePart = async () => {
+    if (!deletingPart) return;
+    setDeletePending(true);
+    try {
+      await deleteLibraryPartAction(deletingPart.id);
+      toast.success(`Deleted "${deletingPart.name}"`);
+      setDeletingPart(null);
+      router.refresh();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not delete part");
+    } finally {
+      setDeletePending(false);
     }
   };
 
@@ -154,6 +181,7 @@ export function LibraryBrowser({
           thumbUrls={search.thumbUrls}
           matchesType={matchesType}
           basePath={basePath}
+          onDeletePart={setDeletingPart}
         />
       ) : (
         <BrowseGrid
@@ -164,8 +192,29 @@ export function LibraryBrowser({
           subsystemByFolder={subsystemByFolder}
           onDeleteFolder={deleteFolder}
           basePath={basePath}
+          onDeletePart={setDeletingPart}
         />
       )}
+
+      <AlertDialog open={deletingPart !== null} onOpenChange={(open) => !open && setDeletingPart(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete part?</AlertDialogTitle>
+            <AlertDialogDescription>
+              <span className="font-medium text-foreground">{deletingPart?.name}</span> and all{" "}
+              {deletingPart?.versionCount ?? 0} version
+              {(deletingPart?.versionCount ?? 0) === 1 ? "" : "s"} will be removed for good,
+              including its comments. Fab-queue entries made from it are kept.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction variant="destructive" disabled={deletePending} onClick={deletePart}>
+              {deletePending ? "Deleting…" : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
@@ -178,6 +227,7 @@ function BrowseGrid({
   subsystemByFolder,
   onDeleteFolder,
   basePath,
+  onDeletePart,
 }: {
   currentFolderId: string | null;
   folders: FolderRow[];
@@ -186,6 +236,7 @@ function BrowseGrid({
   subsystemByFolder: Map<string, Subsystem>;
   onDeleteFolder: (folder: FolderRow) => void;
   basePath: string;
+  onDeletePart: (part: LibraryPartListing) => void;
 }) {
   if (folders.length === 0 && parts.length === 0) {
     return (
@@ -200,7 +251,15 @@ function BrowseGrid({
       {folders.map((folder) => (
         <ContextMenu key={folder.id}>
           <ContextMenuTrigger>
-            <Link href={`${basePath}?f=${folder.id}`} className="block">
+            {/* subsystem folders open their dashboard; plain folders browse in place */}
+            <Link
+              href={
+                subsystemByFolder.has(folder.id)
+                  ? `/subsystems/${subsystemByFolder.get(folder.id)!.id}`
+                  : `${basePath}?f=${folder.id}`
+              }
+              className="block"
+            >
               <Card className="flex-row items-center gap-2.5 border-transparent bg-muted/60 p-3 transition-colors hover:bg-muted">
                 <Folder className="size-5 shrink-0 fill-amber-200 text-amber-500" />
                 <span className="min-w-0 flex-1 truncate text-sm font-medium">{folder.name}</span>
@@ -221,7 +280,16 @@ function BrowseGrid({
         </ContextMenu>
       ))}
       {parts.map((part) => (
-        <LibraryPartTile key={part.id} part={part} thumbUrl={thumbUrls[part.id]} />
+        <ContextMenu key={part.id}>
+          <ContextMenuTrigger>
+            <LibraryPartTile part={part} thumbUrl={thumbUrls[part.id]} />
+          </ContextMenuTrigger>
+          <ContextMenuContent>
+            <ContextMenuItem variant="destructive" onClick={() => onDeletePart(part)}>
+              Delete part
+            </ContextMenuItem>
+          </ContextMenuContent>
+        </ContextMenu>
       ))}
     </div>
   );
@@ -233,12 +301,14 @@ function SearchResults({
   thumbUrls,
   matchesType,
   basePath,
+  onDeletePart,
 }: {
   results: ReturnType<typeof useLibrarySearch>["results"];
   searching: boolean;
   thumbUrls: Record<string, string>;
   matchesType: (p: LibraryPartListing) => boolean;
   basePath: string;
+  onDeletePart: (part: LibraryPartListing) => void;
 }) {
   if (!results) {
     return <p className="py-10 text-center text-sm text-muted-foreground">Searching…</p>;
@@ -268,12 +338,20 @@ function SearchResults({
       ) : (
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
           {parts.map((part) => (
-            <LibraryPartTile
-              key={part.id}
-              part={part}
-              thumbUrl={thumbUrls[part.id]}
-              folderName={part.folderName}
-            />
+            <ContextMenu key={part.id}>
+              <ContextMenuTrigger>
+                <LibraryPartTile
+                  part={part}
+                  thumbUrl={thumbUrls[part.id]}
+                  folderName={part.folderName}
+                />
+              </ContextMenuTrigger>
+              <ContextMenuContent>
+                <ContextMenuItem variant="destructive" onClick={() => onDeletePart(part)}>
+                  Delete part
+                </ContextMenuItem>
+              </ContextMenuContent>
+            </ContextMenu>
           ))}
         </div>
       )}

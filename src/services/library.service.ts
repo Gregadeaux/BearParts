@@ -210,6 +210,40 @@ export async function insertVersion(
   return data as unknown as PartVersion;
 }
 
+/**
+ * Delete a part and all its versions (rows cascade, comments included).
+ * Returns the storage paths that are now safe to remove — version files
+ * still referenced by fab-queue entries are kept so those parts keep working.
+ */
+export async function deleteLibraryPart(supabase: Client, id: string): Promise<string[]> {
+  const { data: versions, error: vError } = await supabase
+    .from("part_versions")
+    .select("id, file_path, thumb_path")
+    .eq("library_part_id", id);
+  if (vError) throw new Error(`Could not load versions: ${vError.message}`);
+
+  const versionIds = versions.map((v) => v.id);
+  const referenced = new Set<string>();
+  if (versionIds.length > 0) {
+    const { data: refs, error: rError } = await supabase
+      .from("parts")
+      .select("source_version_id")
+      .in("source_version_id", versionIds);
+    if (rError) throw new Error(`Could not check queue references: ${rError.message}`);
+    for (const r of refs) if (r.source_version_id) referenced.add(r.source_version_id);
+  }
+
+  const { error } = await supabase.from("library_parts").delete().eq("id", id);
+  if (error) throw new Error(`Could not delete part: ${error.message}`);
+
+  const paths: string[] = [];
+  for (const v of versions) {
+    if (v.file_path && !referenced.has(v.id)) paths.push(v.file_path);
+    if (v.thumb_path) paths.push(v.thumb_path); // previews are never shared
+  }
+  return paths;
+}
+
 /** Storage path for a library version file. */
 export function versionFilePath(libraryPartId: string, version: number, fileType: PartFileType) {
   return `library/${libraryPartId}/v${version}.${fileType}`;
