@@ -179,6 +179,7 @@ export default async function SubsystemPage({
                   userId={user.id}
                   projectId={subsystem.project_id}
                   subsystemId={subsystem.id}
+                  embedded
                 />
               </TabsContent>
 

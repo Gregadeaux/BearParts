@@ -3,6 +3,8 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import type { Person, ProjectRow, SubgroupRow, Task, TaskStatus } from "@/types/task";
 import type { Subsystem } from "@/services/subsystems.service";
 import { createTaskAction, deleteTaskAction, updateTaskAction } from "@/app/actions/tasks";
@@ -32,6 +34,8 @@ interface Props {
   projectId?: string;
   /** scope to one subsystem (its dashboard embeds this view) */
   subsystemId?: string;
+  /** inside a scroll container: no sticky filter toolbar, just a New task button */
+  embedded?: boolean;
 }
 
 interface DialogState {
@@ -52,6 +56,7 @@ export function TasksView({
   openTaskId,
   projectId,
   subsystemId,
+  embedded = false,
 }: Props) {
   const router = useRouter();
   const { tasks, setTasks, refetch } = useTasks(initialTasks);
@@ -123,24 +128,33 @@ export function TasksView({
     }
   };
 
+  const openNewTask = () =>
+    setDialog({
+      open: true,
+      task: null,
+      defaults: { projectId: defaultProjectId, subsystemId: subsystemId ?? null },
+    });
+
   return (
     <div className="space-y-3">
-      <TaskFilters
-        filters={filters}
-        onFiltersChange={(p) => setFilters((f) => ({ ...f, ...p }))}
-        groupBy={groupBy}
-        onGroupByChange={setGroupBy}
-        team={team}
-        subgroups={subgroups}
-        allTags={allTags}
-        onNewTask={() =>
-          setDialog({
-            open: true,
-            task: null,
-            defaults: { projectId: defaultProjectId, subsystemId: subsystemId ?? null },
-          })
-        }
-      />
+      {embedded ? (
+        <div className="flex justify-end">
+          <Button size="sm" onClick={openNewTask}>
+            <Plus /> New task
+          </Button>
+        </div>
+      ) : (
+        <TaskFilters
+          filters={filters}
+          onFiltersChange={(p) => setFilters((f) => ({ ...f, ...p }))}
+          groupBy={groupBy}
+          onGroupByChange={setGroupBy}
+          team={team}
+          subgroups={subgroups}
+          allTags={allTags}
+          onNewTask={openNewTask}
+        />
+      )}
 
       <div className="space-y-3">
         {groups.map((group) => (
