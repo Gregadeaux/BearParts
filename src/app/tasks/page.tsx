@@ -1,7 +1,9 @@
-﻿import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
 import { getProfile, listProfiles } from "@/services/profiles.service";
 import { listAllTags, listProjects, listSubgroups, listTasks } from "@/services/tasks.service";
 import { AppShell } from "@/components/layout/app-shell";
+import { ProjectGrid } from "@/components/tasks/project-grid";
 import { TasksView } from "@/components/tasks/tasks-view";
 
 export default async function TasksPage({
@@ -25,12 +27,31 @@ export default async function TasksPage({
     listAllTags(supabase),
   ]);
 
+  // task deep links (push notifications) land inside the task's project view
+  if (openTaskId && !projectId) {
+    const target = tasks.find((t) => t.id === openTaskId);
+    redirect(`/tasks?project=${target?.project_id ?? "none"}&task=${openTaskId}`);
+  }
+
+  const userName = profile?.display_name ?? "Teammate";
+  const userAvatar = profile?.avatar_url ?? null;
+
+  // no project selected → landing page with one KPI card per project
+  if (!projectId) {
+    return (
+      <AppShell userName={userName} userAvatar={userAvatar} title="Projects">
+        <main className="mx-auto max-w-6xl space-y-4 p-4">
+          <ProjectGrid projects={projects} initialTasks={tasks} />
+        </main>
+      </AppShell>
+    );
+  }
+
+  const project = projects.find((p) => p.id === projectId);
+  const title = projectId === "none" ? "No project" : (project?.name ?? "Tasks");
+
   return (
-    <AppShell
-      userName={profile?.display_name ?? "Teammate"}
-      userAvatar={profile?.avatar_url ?? null}
-      title="Tasks"
-    >
+    <AppShell userName={userName} userAvatar={userAvatar} title={title}>
       <main className="mx-auto max-w-6xl space-y-4 p-4">
         <TasksView
           initialTasks={tasks}

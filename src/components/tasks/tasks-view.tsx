@@ -51,8 +51,11 @@ export function TasksView({
   const { tasks, setTasks, refetch } = useTasks(initialTasks);
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
   const [groupBy, setGroupBy] = useState<GroupBy>("status");
-  const activeProject = projectId ? projects.find((p) => p.id === projectId) : undefined;
-  const scoped = projectId ? tasks.filter((t) => t.project_id === projectId) : tasks;
+  // "none" is the pseudo-project for tasks without one (reachable from the landing grid)
+  const defaultProjectId = projectId === "none" ? null : (projectId ?? null);
+  const scoped = projectId
+    ? tasks.filter((t) => (projectId === "none" ? t.project_id === null : t.project_id === projectId))
+    : tasks;
   // a `?task=<id>` link opens that task's dialog straight away
   const [dialog, setDialog] = useState<DialogState>(() => {
     const task = (openTaskId && initialTasks.find((t) => t.id === openTaskId)) || null;
@@ -101,7 +104,7 @@ export function TasksView({
           title,
           status: defaults?.status,
           subgroupId: defaults?.subgroupId ?? null,
-          projectId: projectId ?? null,
+          projectId: defaultProjectId,
         },
         [],
         [],
@@ -114,11 +117,6 @@ export function TasksView({
 
   return (
     <div className="space-y-3">
-      {activeProject && (
-        <p className="text-sm text-muted-foreground">
-          Project: <span className="font-medium text-foreground">{activeProject.name}</span>
-        </p>
-      )}
       <TaskFilters
         filters={filters}
         onFiltersChange={(p) => setFilters((f) => ({ ...f, ...p }))}
@@ -128,7 +126,7 @@ export function TasksView({
         subgroups={subgroups}
         allTags={allTags}
         onNewTask={() =>
-          setDialog({ open: true, task: null, defaults: { projectId: projectId ?? null } })
+          setDialog({ open: true, task: null, defaults: { projectId: defaultProjectId } })
         }
       />
 
