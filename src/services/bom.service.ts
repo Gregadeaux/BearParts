@@ -35,6 +35,17 @@ export const BOM_STATUSES: { value: BomStatus; label: string }[] = [
   { value: "received", label: "Received" },
 ];
 
+/** Vendor storefronts, for mentors placing orders. */
+export const VENDOR_URLS: Partial<Record<BomVendor, string>> = {
+  wcp: "https://wcproducts.com",
+  ttb: "https://www.thethriftybot.com",
+  rev: "https://www.revrobotics.com",
+  ctre: "https://store.ctr-electronics.com",
+  andymark: "https://www.andymark.com",
+  vex: "https://www.vexrobotics.com",
+  mcmaster: "https://www.mcmaster.com",
+};
+
 export interface BomItemInput {
   vendor: BomVendor;
   name: string;
@@ -77,6 +88,33 @@ export async function createBomItem(
     .single();
   if (error) throw new Error(`Could not add BOM item: ${error.message}`);
   return data;
+}
+
+export interface OrderItem extends BomItemRow {
+  subsystem: { id: string; name: string } | null;
+}
+
+/** Everything on the order list (to_order) or in flight (ordered), across subsystems. */
+export async function listOrderItems(supabase: Client): Promise<OrderItem[]> {
+  const { data, error } = await supabase
+    .from("bom_items")
+    .select("*, subsystem:subsystems (id, name)")
+    .in("status", ["to_order", "ordered"])
+    .order("vendor")
+    .order("name");
+  if (error) throw new Error(`Could not load order list: ${error.message}`);
+  return data as unknown as OrderItem[];
+}
+
+/** Bulk status flip — e.g. "mark this vendor's items ordered". */
+export async function setBomItemsStatus(
+  supabase: Client,
+  ids: string[],
+  status: BomStatus,
+): Promise<void> {
+  if (ids.length === 0) return;
+  const { error } = await supabase.from("bom_items").update({ status }).in("id", ids);
+  if (error) throw new Error(`Could not update items: ${error.message}`);
 }
 
 export async function updateBomItem(

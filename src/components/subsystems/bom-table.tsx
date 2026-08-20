@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
-import { ExternalLink, Minus, Plus, Trash2 } from "lucide-react";
+import { ExternalLink, Minus, Plus, ShoppingCart, Trash2 } from "lucide-react";
 import {
   BOM_STATUSES,
   BOM_VENDORS,
@@ -158,14 +158,27 @@ export function BomTable({ subsystemId, initial, customParts }: Props) {
                     </Select>
                   </td>
                   <td className="px-2 py-1.5">
-                    <button
-                      type="button"
-                      aria-label={`Remove ${item.name}`}
-                      onClick={() => remove(item)}
-                      className="hidden text-muted-foreground hover:text-destructive group-hover:block"
-                    >
-                      <Trash2 className="size-3.5" />
-                    </button>
+                    <span className="flex items-center gap-1.5">
+                      {item.status === "planned" && (
+                        <button
+                          type="button"
+                          aria-label={`Add ${item.name} to order list`}
+                          title="Add to order list"
+                          onClick={() => changeStatus(item, "to_order")}
+                          className="hidden text-muted-foreground hover:text-foreground group-hover:block"
+                        >
+                          <ShoppingCart className="size-3.5" />
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        aria-label={`Remove ${item.name}`}
+                        onClick={() => remove(item)}
+                        className="hidden text-muted-foreground hover:text-destructive group-hover:block"
+                      >
+                        <Trash2 className="size-3.5" />
+                      </button>
+                    </span>
                   </td>
                 </tr>
               ))}

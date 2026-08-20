@@ -71,6 +71,13 @@ export async function updateBomItemAction(
 ) {
   const { supabase } = await requireUser();
   await bom.updateBomItem(supabase, id, patch);
+  revalidatePath("/orders");
+}
+
+export async function setBomStatusAction(ids: string[], status: BomStatus) {
+  const { supabase } = await requireUser();
+  await bom.setBomItemsStatus(supabase, ids, status);
+  revalidatePath("/orders");
 }
 
 export async function deleteBomItemAction(id: string) {
