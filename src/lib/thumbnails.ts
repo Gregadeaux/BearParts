@@ -79,7 +79,9 @@ async function renderMeshThumb(
     const radius = Math.max(0.5 * Math.hypot(size.x, size.y, size.z), 0.001);
     const vFov = (45 * Math.PI) / 180;
     const hFov = 2 * Math.atan(Math.tan(vFov / 2) * (W / H));
-    const dist = (radius / Math.sin(Math.min(vFov, hFov) / 2)) * 1.05;
+    // 0.8 crops into the bounding sphere — real silhouettes rarely reach it, so
+    // parts fill the frame instead of floating in it
+    const dist = (radius / Math.sin(Math.min(vFov, hFov) / 2)) * 0.8;
 
     const light = new THREE.DirectionalLight(0xffffff, 1.4);
     light.position.set(dist, -dist, dist * 2);
