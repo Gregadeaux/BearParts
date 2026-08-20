@@ -92,7 +92,7 @@ export async function searchLibrary(
 }
 
 /** A folder plus all of its descendants (BFS over the whole small folder table). */
-async function subtreeFolderIds(supabase: Client, rootId: string): Promise<string[]> {
+export async function subtreeFolderIds(supabase: Client, rootId: string): Promise<string[]> {
   const { data, error } = await supabase.from("folders").select("id, parent_id");
   if (error) throw new Error(`Search failed: ${error.message}`);
 

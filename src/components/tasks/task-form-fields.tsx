@@ -8,6 +8,7 @@ import {
   type SubgroupRow,
   type TaskStatus,
 } from "@/types/task";
+import type { Subsystem } from "@/services/subsystems.service";
 import { cn } from "@/lib/utils";
 import {
   Select,
@@ -31,6 +32,7 @@ export interface TaskDraft {
   status: TaskStatus;
   subgroupId: string | null;
   projectId: string | null;
+  subsystemId: string | null;
   assigneeIds: string[];
   tags: string[];
   startDate: string | null;
@@ -43,16 +45,31 @@ interface Props {
   team: Person[];
   subgroups: SubgroupRow[];
   projects: ProjectRow[];
+  subsystems: Subsystem[];
   onSubgroupCreated: (subgroup: SubgroupRow) => void;
 }
 
 const NO_PROJECT = "none";
 
-/** Status / subgroup / project / assignees / dates grid. Stacks to one column on phones. */
-export function TaskFormFields({ draft, onChange, team, subgroups, projects, onSubgroupCreated }: Props) {
+/** Status / subgroup / project / subsystem / assignees / dates grid. Stacks to one column on phones. */
+export function TaskFormFields({
+  draft,
+  onChange,
+  team,
+  subgroups,
+  projects,
+  subsystems,
+  onSubgroupCreated,
+}: Props) {
   const projectItems = [
     { value: NO_PROJECT, label: "No project" },
     ...projects.map((p) => ({ value: p.id, label: p.name })),
+  ];
+  // subsystems belong to a project — only offer the current project's
+  const projectSubsystems = subsystems.filter((s) => s.project_id === draft.projectId);
+  const subsystemItems = [
+    { value: NO_PROJECT, label: "No subsystem" },
+    ...projectSubsystems.map((s) => ({ value: s.id, label: s.name })),
   ];
   const picked = team.filter((p) => draft.assigneeIds.includes(p.id));
   const badRange = Boolean(draft.startDate && draft.dueDate && draft.startDate > draft.dueDate);
@@ -93,7 +110,14 @@ export function TaskFormFields({ draft, onChange, team, subgroups, projects, onS
         <Select
           value={draft.projectId ?? NO_PROJECT}
           items={projectItems}
-          onValueChange={(v) => onChange({ projectId: v === NO_PROJECT || v === null ? null : v })}
+          onValueChange={(v) => {
+            const projectId = v === NO_PROJECT || v === null ? null : v;
+            // a subsystem can't outlive its project
+            const keep = subsystems.some(
+              (s) => s.id === draft.subsystemId && s.project_id === projectId,
+            );
+            onChange({ projectId, subsystemId: keep ? draft.subsystemId : null });
+          }}
         >
           <SelectTrigger size="sm" className="w-full">
             <SelectValue />
@@ -107,6 +131,29 @@ export function TaskFormFields({ draft, onChange, team, subgroups, projects, onS
           </SelectContent>
         </Select>
       </Field>
+
+      {projectSubsystems.length > 0 && (
+        <Field label="Subsystem">
+          <Select
+            value={draft.subsystemId ?? NO_PROJECT}
+            items={subsystemItems}
+            onValueChange={(v) =>
+              onChange({ subsystemId: v === NO_PROJECT || v === null ? null : v })
+            }
+          >
+            <SelectTrigger size="sm" className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {subsystemItems.map((s) => (
+                <SelectItem key={s.value} value={s.value}>
+                  {s.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </Field>
+      )}
 
       <Field label="Assignees">
         <AssigneePicker

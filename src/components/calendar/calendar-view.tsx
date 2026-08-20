@@ -6,6 +6,7 @@ import { ChevronLeftIcon, ChevronRightIcon, Flag } from "lucide-react";
 import { toast } from "sonner";
 import type { Person, ProjectRow, SubgroupRow, Task } from "@/types/task";
 import type { MilestoneRow } from "@/services/milestones.service";
+import type { Subsystem } from "@/services/subsystems.service";
 import { useMediaQuery } from "@/lib/use-media-query";
 import { updateTaskAction } from "@/app/actions/tasks";
 import { Button } from "@/components/ui/button";
@@ -37,6 +38,7 @@ interface Props {
   subgroups: SubgroupRow[];
   team: Person[];
   projects: ProjectRow[];
+  subsystems: Subsystem[];
   allTags: string[];
   userId: string | null;
   /** the server's today (yyyy-MM-dd); the browser's own takes over after hydration */
@@ -52,6 +54,7 @@ export function CalendarView({
   subgroups,
   team,
   projects,
+  subsystems,
   allTags,
   userId,
   initialToday,
@@ -228,6 +231,7 @@ export function CalendarView({
           team={team}
           subgroups={subgroups}
           projects={projects}
+          subsystems={subsystems}
           allTags={allTags}
           userId={userId ?? ""}
         />

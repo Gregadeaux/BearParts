@@ -14,6 +14,73 @@ export type Database = {
   }
   public: {
     Tables: {
+      bom_items: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          library_part_id: string | null
+          name: string
+          quantity: number
+          sku: string | null
+          status: string
+          subsystem_id: string
+          unit_price: number | null
+          url: string | null
+          vendor: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          library_part_id?: string | null
+          name: string
+          quantity?: number
+          sku?: string | null
+          status?: string
+          subsystem_id: string
+          unit_price?: number | null
+          url?: string | null
+          vendor: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          library_part_id?: string | null
+          name?: string
+          quantity?: number
+          sku?: string | null
+          status?: string
+          subsystem_id?: string
+          unit_price?: number | null
+          url?: string | null
+          vendor?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bom_items_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bom_items_library_part_id_fkey"
+            columns: ["library_part_id"]
+            isOneToOne: false
+            referencedRelation: "library_parts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bom_items_subsystem_id_fkey"
+            columns: ["subsystem_id"]
+            isOneToOne: false
+            referencedRelation: "subsystems"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       folders: {
         Row: {
           created_at: string
@@ -526,6 +593,94 @@ export type Database = {
         }
         Relationships: []
       }
+      subsystem_comments: {
+        Row: {
+          author_id: string
+          body: string
+          created_at: string
+          id: string
+          subsystem_id: string
+        }
+        Insert: {
+          author_id: string
+          body: string
+          created_at?: string
+          id?: string
+          subsystem_id: string
+        }
+        Update: {
+          author_id?: string
+          body?: string
+          created_at?: string
+          id?: string
+          subsystem_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subsystem_comments_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subsystem_comments_subsystem_id_fkey"
+            columns: ["subsystem_id"]
+            isOneToOne: false
+            referencedRelation: "subsystems"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subsystems: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          folder_id: string
+          id: string
+          name: string
+          project_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          folder_id: string
+          id?: string
+          name: string
+          project_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          folder_id?: string
+          id?: string
+          name?: string
+          project_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subsystems_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subsystems_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: true
+            referencedRelation: "folders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subsystems_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       task_assignees: {
         Row: {
           task_id: string
@@ -709,6 +864,7 @@ export type Database = {
           start_date: string | null
           status: string
           subgroup_id: string | null
+          subsystem_id: string | null
           title: string
           updated_at: string
         }
@@ -722,6 +878,7 @@ export type Database = {
           start_date?: string | null
           status?: string
           subgroup_id?: string | null
+          subsystem_id?: string | null
           title: string
           updated_at?: string
         }
@@ -735,6 +892,7 @@ export type Database = {
           start_date?: string | null
           status?: string
           subgroup_id?: string | null
+          subsystem_id?: string | null
           title?: string
           updated_at?: string
         }
@@ -758,6 +916,13 @@ export type Database = {
             columns: ["subgroup_id"]
             isOneToOne: false
             referencedRelation: "subgroups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_subsystem_id_fkey"
+            columns: ["subsystem_id"]
+            isOneToOne: false
+            referencedRelation: "subsystems"
             referencedColumns: ["id"]
           },
         ]

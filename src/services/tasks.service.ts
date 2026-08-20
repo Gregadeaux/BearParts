@@ -37,6 +37,7 @@ export interface TaskInput {
   status?: TaskStatus;
   subgroupId?: string | null;
   projectId?: string | null;
+  subsystemId?: string | null;
   startDate?: string | null; // ISO date (yyyy-mm-dd)
   dueDate?: string | null;
 }
@@ -66,6 +67,7 @@ export async function createTask(supabase: Client, userId: string, input: TaskIn
       status: input.status ?? "todo",
       subgroup_id: input.subgroupId ?? null,
       project_id: input.projectId ?? null,
+      subsystem_id: input.subsystemId ?? null,
       start_date: input.startDate ?? null,
       due_date: input.dueDate ?? null,
       created_by: userId,
@@ -83,6 +85,7 @@ export async function updateTask(supabase: Client, id: string, input: Partial<Ta
   if (input.status !== undefined) patch.status = input.status;
   if (input.subgroupId !== undefined) patch.subgroup_id = input.subgroupId;
   if (input.projectId !== undefined) patch.project_id = input.projectId;
+  if (input.subsystemId !== undefined) patch.subsystem_id = input.subsystemId;
   if (input.startDate !== undefined) patch.start_date = input.startDate;
   if (input.dueDate !== undefined) patch.due_date = input.dueDate;
   const { error } = await supabase.from("tasks").update(patch).eq("id", id);

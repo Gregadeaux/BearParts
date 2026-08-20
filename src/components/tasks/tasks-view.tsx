@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import type { Person, ProjectRow, SubgroupRow, Task, TaskStatus } from "@/types/task";
+import type { Subsystem } from "@/services/subsystems.service";
 import { createTaskAction, deleteTaskAction, updateTaskAction } from "@/app/actions/tasks";
 import { TaskDialog, type TaskDialogProps } from "./task-dialog";
 import { TaskFilters } from "./task-filters";
@@ -22,12 +23,15 @@ interface Props {
   team: Person[];
   subgroups: SubgroupRow[];
   projects: ProjectRow[];
+  subsystems: Subsystem[];
   allTags: string[];
   userId: string;
   /** `?task=<id>` — opens that task's dialog on load */
   openTaskId?: string;
   /** `?project=<id>` — scope the whole view to one project */
   projectId?: string;
+  /** scope to one subsystem (its dashboard embeds this view) */
+  subsystemId?: string;
 }
 
 interface DialogState {
@@ -42,10 +46,12 @@ export function TasksView({
   team,
   subgroups,
   projects,
+  subsystems,
   allTags,
   userId,
   openTaskId,
   projectId,
+  subsystemId,
 }: Props) {
   const router = useRouter();
   const { tasks, setTasks, refetch } = useTasks(initialTasks);
@@ -53,9 +59,10 @@ export function TasksView({
   const [groupBy, setGroupBy] = useState<GroupBy>("status");
   // "none" is the pseudo-project for tasks without one (reachable from the landing grid)
   const defaultProjectId = projectId === "none" ? null : (projectId ?? null);
-  const scoped = projectId
+  const byProject = projectId
     ? tasks.filter((t) => (projectId === "none" ? t.project_id === null : t.project_id === projectId))
     : tasks;
+  const scoped = subsystemId ? byProject.filter((t) => t.subsystem_id === subsystemId) : byProject;
   // a `?task=<id>` link opens that task's dialog straight away
   const [dialog, setDialog] = useState<DialogState>(() => {
     const task = (openTaskId && initialTasks.find((t) => t.id === openTaskId)) || null;
@@ -105,6 +112,7 @@ export function TasksView({
           status: defaults?.status,
           subgroupId: defaults?.subgroupId ?? null,
           projectId: defaultProjectId,
+          subsystemId: subsystemId ?? null,
         },
         [],
         [],
@@ -126,7 +134,11 @@ export function TasksView({
         subgroups={subgroups}
         allTags={allTags}
         onNewTask={() =>
-          setDialog({ open: true, task: null, defaults: { projectId: defaultProjectId } })
+          setDialog({
+            open: true,
+            task: null,
+            defaults: { projectId: defaultProjectId, subsystemId: subsystemId ?? null },
+          })
         }
       />
 
@@ -152,6 +164,7 @@ export function TasksView({
         team={team}
         subgroups={subgroups}
         projects={projects}
+        subsystems={subsystems}
         allTags={allTags}
         userId={userId}
       />

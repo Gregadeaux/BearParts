@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getProfile, listProfiles } from "@/services/profiles.service";
 import { listAllTags, listProjects, listSubgroups, listTasks } from "@/services/tasks.service";
+import { listSubsystems } from "@/services/subsystems.service";
 import { AppShell } from "@/components/layout/app-shell";
 import { ProjectGrid } from "@/components/tasks/project-grid";
 import { TasksView } from "@/components/tasks/tasks-view";
@@ -18,12 +19,13 @@ export default async function TasksPage({
   } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const [profile, team, tasks, subgroups, projects, allTags] = await Promise.all([
+  const [profile, team, tasks, subgroups, projects, subsystems, allTags] = await Promise.all([
     getProfile(supabase, user.id),
     listProfiles(supabase),
     listTasks(supabase),
     listSubgroups(supabase),
     listProjects(supabase),
+    listSubsystems(supabase),
     listAllTags(supabase),
   ]);
 
@@ -58,6 +60,7 @@ export default async function TasksPage({
           team={team}
           subgroups={subgroups}
           projects={projects}
+          subsystems={subsystems}
           allTags={allTags}
           userId={user.id}
           openTaskId={openTaskId}

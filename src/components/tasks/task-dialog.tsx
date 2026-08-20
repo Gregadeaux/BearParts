@@ -5,6 +5,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Trash2 } from "lucide-react";
 import type { Person, ProjectRow, SubgroupRow, Task, TaskStatus } from "@/types/task";
+import type { Subsystem } from "@/services/subsystems.service";
 import {
   addSubtaskAction,
   addTaskAttachmentAction,
@@ -46,12 +47,14 @@ export interface TaskDialogProps {
     status?: TaskStatus;
     subgroupId?: string | null;
     projectId?: string | null;
+    subsystemId?: string | null;
     dueDate?: string | null;
     startDate?: string | null;
   };
   team: Person[];
   subgroups: SubgroupRow[];
   projects: ProjectRow[];
+  subsystems: Subsystem[];
   allTags: string[];
   userId: string;
 }
@@ -63,6 +66,7 @@ function emptyDraft(defaults: TaskDialogProps["defaults"]): TaskDraft {
     status: defaults?.status ?? "todo",
     subgroupId: defaults?.subgroupId ?? null,
     projectId: defaults?.projectId ?? null,
+    subsystemId: defaults?.subsystemId ?? null,
     assigneeIds: [],
     tags: [],
     startDate: defaults?.startDate ?? null,
@@ -77,6 +81,7 @@ function draftFromTask(task: Task): TaskDraft {
     status: task.status,
     subgroupId: task.subgroup_id,
     projectId: task.project_id,
+    subsystemId: task.subsystem_id,
     assigneeIds: task.assignees.map((a) => a.id),
     tags: task.tags,
     startDate: task.start_date,
@@ -93,6 +98,7 @@ export function TaskDialog({
   team,
   subgroups,
   projects,
+  subsystems,
   allTags,
   userId,
 }: TaskDialogProps): React.JSX.Element {
@@ -161,6 +167,7 @@ export function TaskDialog({
         status: draft.status,
         subgroupId: draft.subgroupId,
         projectId: draft.projectId,
+        subsystemId: draft.subsystemId,
         startDate: draft.startDate,
         dueDate: draft.dueDate,
       };
@@ -221,6 +228,7 @@ export function TaskDialog({
         team={team}
         subgroups={allSubgroups}
         projects={projects}
+        subsystems={subsystems}
         onSubgroupCreated={(s) => setCreated((c) => [...c, s])}
       />
       <SubtaskList

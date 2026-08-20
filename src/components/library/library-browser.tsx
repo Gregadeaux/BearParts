@@ -4,13 +4,17 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Folder, Search } from "lucide-react";
+import { Blocks, Folder, Search } from "lucide-react";
 import type { FolderRow, LibraryPartListing } from "@/types/library";
 import type { PartFileType } from "@/types/part";
+import type { ProjectRow } from "@/types/task";
+import type { Subsystem } from "@/services/subsystems.service";
 import { deleteFolderAction } from "@/app/actions/library";
+import { Button } from "@/components/ui/button";
 import { LibraryBreadcrumb } from "./library-breadcrumb";
 import { LibraryPartTile } from "./library-part-tile";
 import { NewFolderDialog } from "./new-folder-dialog";
+import { NewSubsystemDialog } from "./new-subsystem-dialog";
 import { UploadPartDialog } from "./upload-part-dialog";
 import { useLibrarySearch } from "./use-library-search";
 import { Card } from "@/components/ui/card";
@@ -41,12 +45,22 @@ interface Props {
   ancestry: FolderRow[];
   folders: FolderRow[];
   parts: LibraryPartListing[];
+  subsystems: Subsystem[];
+  projects: ProjectRow[];
   /** part id → signed URL of the latest version's preview PNG */
   thumbUrls?: Record<string, string>;
 }
 
 /** Folder browser with whole-library search and type filtering. */
-export function LibraryBrowser({ currentFolderId, ancestry, folders, parts, thumbUrls = {} }: Props) {
+export function LibraryBrowser({
+  currentFolderId,
+  ancestry,
+  folders,
+  parts,
+  subsystems,
+  projects,
+  thumbUrls = {},
+}: Props) {
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<PartFileType | "all">("all");
@@ -66,12 +80,32 @@ export function LibraryBrowser({ currentFolderId, ancestry, folders, parts, thum
   };
 
   const searching = query.trim().length >= 2;
+  const subsystemByFolder = new Map(subsystems.map((s) => [s.folder_id, s]));
+  const currentFolder = ancestry[ancestry.length - 1];
+  const currentSubsystem = currentFolderId ? subsystemByFolder.get(currentFolderId) : undefined;
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
         <LibraryBreadcrumb ancestry={ancestry} />
         <div className="ml-auto flex gap-2">
+          {currentFolderId &&
+            (currentSubsystem ? (
+              <Button
+                variant="outline"
+                size="sm"
+                nativeButton={false}
+                render={<Link href={`/subsystems/${currentSubsystem.id}`} />}
+              >
+                <Blocks /> {currentSubsystem.name}
+              </Button>
+            ) : (
+              <NewSubsystemDialog
+                folderId={currentFolderId}
+                folderName={currentFolder?.name ?? "This folder"}
+                projects={projects}
+              />
+            ))}
           <NewFolderDialog parentId={currentFolderId} />
           {currentFolderId && <UploadPartDialog folderId={currentFolderId} />}
         </div>
@@ -118,6 +152,7 @@ export function LibraryBrowser({ currentFolderId, ancestry, folders, parts, thum
           folders={folders}
           parts={parts.filter(matchesType)}
           thumbUrls={thumbUrls}
+          subsystemByFolder={subsystemByFolder}
           onDeleteFolder={deleteFolder}
         />
       )}
@@ -130,12 +165,14 @@ function BrowseGrid({
   folders,
   parts,
   thumbUrls,
+  subsystemByFolder,
   onDeleteFolder,
 }: {
   currentFolderId: string | null;
   folders: FolderRow[];
   parts: LibraryPartListing[];
   thumbUrls: Record<string, string>;
+  subsystemByFolder: Map<string, Subsystem>;
   onDeleteFolder: (folder: FolderRow) => void;
 }) {
   if (folders.length === 0 && parts.length === 0) {
@@ -154,7 +191,13 @@ function BrowseGrid({
             <Link href={`/library?f=${folder.id}`} className="block">
               <Card className="flex-row items-center gap-2.5 border-transparent bg-muted/60 p-3 transition-colors hover:bg-muted">
                 <Folder className="size-5 shrink-0 fill-amber-200 text-amber-500" />
-                <span className="truncate text-sm font-medium">{folder.name}</span>
+                <span className="min-w-0 flex-1 truncate text-sm font-medium">{folder.name}</span>
+                {subsystemByFolder.has(folder.id) && (
+                  <Blocks
+                    className="size-4 shrink-0 text-violet-500"
+                    aria-label="Subsystem"
+                  />
+                )}
               </Card>
             </Link>
           </ContextMenuTrigger>

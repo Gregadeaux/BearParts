@@ -2,6 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/services/profiles.service";
 import { listFolders, getAncestry } from "@/services/folders.service";
 import { listLibraryParts } from "@/services/library.service";
+import { listSubsystems } from "@/services/subsystems.service";
+import { listProjects } from "@/services/tasks.service";
 import { getFileUrl } from "@/services/storage.service";
 import { AppShell } from "@/components/layout/app-shell";
 import { LibraryBrowser } from "@/components/library/library-browser";
@@ -18,11 +20,13 @@ export default async function LibraryPage({
   } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const [profile, subfolders, parts, ancestry] = await Promise.all([
+  const [profile, subfolders, parts, ancestry, subsystems, projects] = await Promise.all([
     getProfile(supabase, user.id),
     listFolders(supabase, folderId ?? null),
     folderId ? listLibraryParts(supabase, folderId) : Promise.resolve([]),
     folderId ? getAncestry(supabase, folderId) : Promise.resolve([]),
+    listSubsystems(supabase),
+    listProjects(supabase),
   ]);
 
   // signed URLs for the latest-version previews
@@ -51,6 +55,8 @@ export default async function LibraryPage({
           ancestry={ancestry}
           folders={subfolders}
           parts={parts}
+          subsystems={subsystems}
+          projects={projects}
           thumbUrls={thumbUrls}
         />
       </main>

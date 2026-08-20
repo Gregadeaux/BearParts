@@ -21,12 +21,19 @@ description: How this repo talks to Supabase — project ref, migrations, auth, 
   `part_versions` (unique per part, latest = max version). Queue `parts` rows
   created from the library set `source_version_id` and SHARE the version's
   storage file — deletePartAction must never delete storage for those.
+- **Subsystems:** a library folder promoted to a project workspace
+  (`subsystems`: unique folder_id + project_id). Part membership is DERIVED
+  from the folder subtree (`subtreeFolderIds`) — never stored per part.
+  `tasks.subsystem_id` tags tasks (on delete set null); `subsystem_comments`
+  mirrors the other comment tables; `bom_items` holds the BOM (vendor enum:
+  custom/wcp/ttb/rev/ctre/andymark/vex/mcmaster; status planned→to_order→
+  ordered→received is groundwork for the future order-list/PO flow).
 - **Auth:** Supabase Auth with Google OAuth. Redirect flows go through
   `/auth/callback` which exchanges the code and redirects home.
 - **Realtime:** enabled on `public.parts`, `public.part_comments`,
-  `public.tasks`, `public.task_comments`, `public.milestones`, and
+  `public.tasks`, `public.task_comments`, `public.milestones`,
   `public.notifications` (RLS scopes notification events to the recipient, so
-  no channel filter is needed there). ALWAYS
+  no channel filter is needed there), and `public.subsystem_comments`. ALWAYS
   subscribe through `useLiveTable` (src/lib/use-live-table.ts) — postgres_changes
   on RLS'd tables silently delivers nothing unless `realtime.setAuth(jwt)` runs
   BEFORE `.subscribe()`; the hook handles that plus token refresh, focus refetch,
