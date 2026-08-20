@@ -7,8 +7,9 @@ import type { TaskInput } from "@/services/tasks.service";
 import * as taskComments from "@/services/task-comments.service";
 import * as attachments from "@/services/task-attachments.service";
 import { getDownloadUrl, getFileUrl } from "@/services/storage.service";
-import { sendPush } from "@/services/notifications.service";
+import { notifyUsers } from "@/services/notify.service";
 import { commentPreview, mentionedUserIds } from "@/lib/mentions";
+import { TASK_STATUSES } from "@/types/task";
 
 async function requireUser() {
   const supabase = await createClient();
@@ -29,7 +30,7 @@ export async function createTaskAction(input: TaskInput, assigneeIds: string[], 
   const task = await tasks.createTask(supabase, user.id, input);
   const added = await tasks.setAssignees(supabase, task.id, assigneeIds);
   await tasks.setTags(supabase, task.id, tags);
-  await notifyAssigned(added, user.id, task.title);
+  await notifyAssigned(supabase, added, user.id, task.id, task.title);
   revalidate();
   return { id: task.id };
 }
@@ -41,13 +42,30 @@ export async function updateTaskAction(
   tags?: string[],
 ) {
   const { supabase, user } = await requireUser();
+  const before = input.status !== undefined ? await tasks.getTask(supabase, taskId) : null;
   await tasks.updateTask(supabase, taskId, input);
   if (assigneeIds) {
     const added = await tasks.setAssignees(supabase, taskId, assigneeIds);
     const task = await tasks.getTask(supabase, taskId);
-    await notifyAssigned(added, user.id, task?.title ?? "A task");
+    await notifyAssigned(supabase, added, user.id, taskId, task?.title ?? "A task");
   }
   if (tags) await tasks.setTags(supabase, taskId, tags);
+
+  // the creator follows status changes on their task; only "done" also pushes
+  if (before && input.status && input.status !== before.status && before.created_by) {
+    const label = TASK_STATUSES.find((s) => s.value === input.status)?.label ?? input.status;
+    await notifyUsers(supabase, [before.created_by], {
+      kind: "task_update",
+      title: input.status === "done" ? "Task finished" : "Task updated",
+      body:
+        input.status === "done"
+          ? `"${before.title}" is done`
+          : `"${before.title}" moved to ${label}`,
+      url: `/tasks?task=${taskId}`,
+      actorId: user.id,
+      push: input.status === "done",
+    });
+  }
   revalidate();
 }
 
@@ -108,14 +126,13 @@ export async function addTaskCommentAction(taskId: string, body: string, taskTit
   const { supabase, user } = await requireUser();
   const comment = await taskComments.createTaskComment(supabase, user.id, taskId, body);
 
-  const mentioned = mentionedUserIds(body).filter((id) => id !== user.id);
-  if (mentioned.length > 0) {
-    await sendPush(mentioned, {
-      title: `Mentioned on ${taskTitle}`,
-      body: `${comment.author?.display_name ?? "Someone"}: ${commentPreview(body)}`,
-      url: `/tasks?task=${taskId}`,
-    });
-  }
+  await notifyUsers(supabase, mentionedUserIds(body), {
+    kind: "mention",
+    title: `Mentioned on ${taskTitle}`,
+    body: `${comment.author?.display_name ?? "Someone"}: ${commentPreview(body)}`,
+    url: `/tasks?task=${taskId}`,
+    actorId: user.id,
+  });
   return comment;
 }
 
@@ -152,12 +169,18 @@ export async function attachmentUrlsAction(attachmentId: string) {
   return { viewUrl, downloadUrl };
 }
 
-async function notifyAssigned(addedIds: string[], actorId: string, title: string) {
-  const targets = addedIds.filter((id) => id !== actorId);
-  if (targets.length === 0) return;
-  await sendPush(targets, {
+async function notifyAssigned(
+  supabase: Awaited<ReturnType<typeof requireUser>>["supabase"],
+  addedIds: string[],
+  actorId: string,
+  taskId: string,
+  title: string,
+) {
+  await notifyUsers(supabase, addedIds, {
+    kind: "task_assigned",
     title: "Task assigned to you",
     body: title,
-    url: "/tasks",
+    url: `/tasks?task=${taskId}`,
+    actorId,
   });
 }

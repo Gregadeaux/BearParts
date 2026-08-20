@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { CalendarDays, FolderOpen, House, ListTodo, LogOut, Palette, Plus, SquareKanban } from "lucide-react";
+import { Bell, CalendarDays, FolderOpen, House, ListTodo, LogOut, Palette, Plus, SquareKanban } from "lucide-react";
 import type { ProjectRow } from "@/types/task";
 import { createClient } from "@/lib/supabase/client";
 import { listProjects } from "@/services/tasks.service";
@@ -26,6 +26,7 @@ import {
   SidebarGroupContent,
   SidebarHeader,
   SidebarMenu,
+  SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarMenuSub,
@@ -33,6 +34,7 @@ import {
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
 import { PushToggle } from "@/components/notifications/push-toggle";
+import { useUnreadCount } from "@/components/notifications/use-unread-count";
 
 const NAV = [
   { href: "/", label: "Home", icon: House },
@@ -41,6 +43,7 @@ const NAV = [
   { href: "/tasks", label: "Tasks", icon: ListTodo },
   { href: "/calendar", label: "Calendar", icon: CalendarDays },
   { href: "/subgroups", label: "Subgroups", icon: Palette },
+  { href: "/notifications", label: "Notifications", icon: Bell },
 ];
 
 interface Props {
@@ -56,6 +59,7 @@ export function AppSidebar({ userName, userAvatar }: Props) {
   const activeProjectId = pathname.startsWith("/tasks") ? searchParams.get("project") : null;
   const [projects, setProjects] = useState<ProjectRow[]>([]);
   const [newProjectOpen, setNewProjectOpen] = useState(false);
+  const unread = useUnreadCount();
 
   useEffect(() => {
     listProjects(createClient()).then(setProjects).catch(() => {});
@@ -107,6 +111,11 @@ export function AppSidebar({ userName, userAvatar }: Props) {
                     <item.icon />
                     <span>{item.label}</span>
                   </SidebarMenuButton>
+                  {item.href === "/notifications" && unread > 0 && (
+                    <SidebarMenuBadge className="rounded-full bg-primary text-primary-foreground">
+                      {unread > 99 ? "99+" : unread}
+                    </SidebarMenuBadge>
+                  )}
                   {item.href === "/tasks" && (
                     <SidebarMenuSub>
                       {projects.map((project) => (

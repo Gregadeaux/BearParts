@@ -5,8 +5,9 @@ import { createClient } from "@/lib/supabase/server";
 import * as partsService from "@/services/parts.service";
 import * as storageService from "@/services/storage.service";
 import { sendPush } from "@/services/notifications.service";
+import { notifyUsers } from "@/services/notify.service";
 import type { NewPartInput } from "@/services/parts.service";
-import type { PartStatus } from "@/types/part";
+import { PART_STATUSES, type PartStatus } from "@/types/part";
 
 async function requireUser() {
   const supabase = await createClient();
@@ -23,10 +24,12 @@ export async function createPartAction(input: NewPartInput) {
 
   const submitter = part.submitter?.display_name ?? "Someone";
   if (part.assigned_to) {
-    await sendPush([part.assigned_to], {
+    await notifyUsers(supabase, [part.assigned_to], {
+      kind: "part_assigned",
       title: "Part assigned to you",
       body: `${submitter} assigned "${part.name}" to you`,
       url: `/parts/${part.id}`,
+      actorId: user.id,
     });
   } else {
     await sendPush(
@@ -51,10 +54,12 @@ export async function assignPartAction(partId: string, userId: string | null) {
 
   if (userId && userId !== user.id) {
     const part = await partsService.getPart(supabase, partId);
-    await sendPush([userId], {
+    await notifyUsers(supabase, [userId], {
+      kind: "part_assigned",
       title: "Part assigned to you",
       body: `"${part?.name ?? "A part"}" is now yours`,
       url: `/parts/${partId}`,
+      actorId: user.id,
     });
   }
   revalidatePath("/");
@@ -66,15 +71,18 @@ export async function updateStatusAction(partId: string, status: PartStatus) {
   const { supabase, user } = await requireUser();
   await partsService.updateStatus(supabase, partId, status);
 
-  if (status === "done") {
-    const part = await partsService.getPart(supabase, partId);
-    if (part && part.submitted_by !== user.id) {
-      await sendPush([part.submitted_by], {
-        title: "Part finished",
-        body: `"${part.name}" is done`,
-        url: `/parts/${partId}`,
-      });
-    }
+  // the submitter follows their part's progress; only "done" also pushes
+  const part = await partsService.getPart(supabase, partId);
+  if (part) {
+    const label = PART_STATUSES.find((s) => s.value === status)?.label ?? status;
+    await notifyUsers(supabase, [part.submitted_by], {
+      kind: "part_update",
+      title: status === "done" ? "Part finished" : "Part updated",
+      body: status === "done" ? `"${part.name}" is done` : `"${part.name}" moved to ${label}`,
+      url: `/parts/${partId}`,
+      actorId: user.id,
+      push: status === "done",
+    });
   }
   revalidatePath("/");
   revalidatePath("/board");
