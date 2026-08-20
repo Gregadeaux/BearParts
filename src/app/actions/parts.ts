@@ -1,4 +1,4 @@
-"use server";
+﻿"use server";
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
@@ -41,6 +41,7 @@ export async function createPartAction(input: NewPartInput) {
   }
 
   revalidatePath("/");
+  revalidatePath("/board");
   return { id: part.id };
 }
 
@@ -57,6 +58,7 @@ export async function assignPartAction(partId: string, userId: string | null) {
     });
   }
   revalidatePath("/");
+  revalidatePath("/board");
   revalidatePath(`/parts/${partId}`);
 }
 
@@ -75,6 +77,7 @@ export async function updateStatusAction(partId: string, status: PartStatus) {
     }
   }
   revalidatePath("/");
+  revalidatePath("/board");
   revalidatePath(`/parts/${partId}`);
 }
 
@@ -82,6 +85,7 @@ export async function setArchivedAction(partId: string, archived: boolean) {
   const { supabase } = await requireUser();
   await partsService.setArchived(supabase, partId, archived);
   revalidatePath("/");
+  revalidatePath("/board");
   revalidatePath(`/parts/${partId}`);
 }
 
@@ -89,9 +93,11 @@ export async function deletePartAction(partId: string) {
   const { supabase } = await requireUser();
   const part = await partsService.getPart(supabase, partId);
   await partsService.deletePart(supabase, partId);
-  // library-sourced entries share the version's file — never delete those from storage
+  // library-sourced entries share the version's file â€” never delete those from storage
   if (part?.file_path && !part.source_version_id) {
     await storageService.deletePartFile(supabase, part.file_path);
   }
   revalidatePath("/");
+  revalidatePath("/board");
 }
+

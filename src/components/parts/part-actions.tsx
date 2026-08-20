@@ -134,7 +134,7 @@ export function PartActions({ part, team, userId }: Props) {
           if (!confirmDelete) return setConfirmDelete(true);
           run(async () => {
             await deletePartAction(part.id);
-            router.push("/");
+            router.push("/board");
           }, "Part deleted");
         }}
         onBlur={() => setConfirmDelete(false)}

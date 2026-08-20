@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { CalendarDays, FolderOpen, ListTodo, LogOut, Palette, Plus, SquareKanban } from "lucide-react";
+import { CalendarDays, FolderOpen, House, ListTodo, LogOut, Palette, Plus, SquareKanban } from "lucide-react";
 import type { ProjectRow } from "@/types/task";
 import { createClient } from "@/lib/supabase/client";
 import { listProjects } from "@/services/tasks.service";
@@ -35,7 +35,8 @@ import {
 import { PushToggle } from "@/components/notifications/push-toggle";
 
 const NAV = [
-  { href: "/", label: "Board", icon: SquareKanban },
+  { href: "/", label: "Home", icon: House },
+  { href: "/board", label: "Board", icon: SquareKanban },
   { href: "/library", label: "Library", icon: FolderOpen },
   { href: "/tasks", label: "Tasks", icon: ListTodo },
   { href: "/calendar", label: "Calendar", icon: CalendarDays },
@@ -67,7 +68,11 @@ export function AppSidebar({ userName, userAvatar }: Props) {
   };
 
   const isActive = (href: string) =>
-    href === "/" ? pathname === "/" || pathname.startsWith("/parts") : pathname.startsWith(href);
+    href === "/"
+      ? pathname === "/"
+      : href === "/board"
+        ? pathname.startsWith("/board") || pathname.startsWith("/parts")
+        : pathname.startsWith(href);
 
   return (
     <Sidebar collapsible="icon">

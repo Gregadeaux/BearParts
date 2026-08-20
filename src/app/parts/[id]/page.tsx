@@ -5,6 +5,7 @@ import { getFileUrl } from "@/services/storage.service";
 import { listProfiles, getProfile } from "@/services/profiles.service";
 import { AppShell } from "@/components/layout/app-shell";
 import { PartDetail } from "@/components/parts/part-detail";
+import { NewPartButton } from "@/components/parts/new-part-button";
 
 export default async function PartPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -28,6 +29,7 @@ export default async function PartPage({ params }: { params: Promise<{ id: strin
       userName={profile?.display_name ?? "Teammate"}
       userAvatar={profile?.avatar_url ?? null}
       title={part.name}
+      action={<NewPartButton />}
     >
       <main className="mx-auto max-w-5xl space-y-4 p-4">
         <PartDetail part={part} team={team} userId={user.id} fileUrl={fileUrl} />
