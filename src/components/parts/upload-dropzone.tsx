@@ -1,6 +1,8 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { toast } from "sonner";
+import { UploadCloud } from "lucide-react";
 import type { PartFileType } from "@/types/part";
 
 interface Props {
@@ -24,7 +26,11 @@ export function UploadDropzone({ onFile }: Props) {
   const accept = (file: File | undefined) => {
     if (!file) return;
     const type = fileTypeOf(file.name);
-    if (type) onFile(file, type);
+    if (!type) {
+      toast.error("Unsupported file — pick a DXF, STL, PDF, or STEP");
+      return;
+    }
+    onFile(file, type);
   };
 
   return (
@@ -45,7 +51,7 @@ export function UploadDropzone({ onFile }: Props) {
         dragging ? "border-primary bg-primary/5" : "border-muted-foreground/25 hover:border-muted-foreground/50"
       }`}
     >
-      <span className="text-3xl">📄</span>
+      <UploadCloud className="mb-1 size-7 text-muted-foreground" />
       <span className="font-medium">Drop a DXF, STL, PDF, or STEP here</span>
       <span className="text-xs text-muted-foreground">machined · 3D printed · drawing · CAD</span>
       <input

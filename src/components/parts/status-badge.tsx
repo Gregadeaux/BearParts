@@ -9,7 +9,7 @@ const STATUS_STYLES: Record<PartStatus, string> = {
   rejected: "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300",
 };
 
-const STATUS_LABELS: Record<PartStatus, string> = {
+export const STATUS_LABELS: Record<PartStatus, string> = {
   queued: "Queued",
   assigned: "Assigned",
   in_progress: "In progress",

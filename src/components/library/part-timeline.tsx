@@ -99,7 +99,7 @@ export function PartTimeline({ versions, events }: Props) {
 
   return (
     <div className="space-y-2">
-      <h2 className="text-sm font-medium text-muted-foreground">History</h2>
+      <h2 className="text-sm font-semibold">History</h2>
       <ol className="relative ml-3 space-y-4 border-l pl-5">
         {entries.map((entry) => (
           <li key={entry.key} className="relative text-sm">
@@ -108,7 +108,7 @@ export function PartTimeline({ versions, events }: Props) {
             </span>
             <div className="flex flex-wrap items-baseline gap-x-2">
               <span>{entry.text}</span>
-              <span className="ml-auto text-xs text-muted-foreground">
+              <span className="ml-auto shrink-0 text-xs text-muted-foreground">
                 {formatDateTime(entry.at)}
               </span>
             </div>

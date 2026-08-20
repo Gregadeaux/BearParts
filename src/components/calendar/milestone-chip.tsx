@@ -23,7 +23,7 @@ export function MilestoneChip({
         onClick?.();
       }}
       className={cn(
-        "pointer-events-auto flex h-6 w-full items-center gap-1 overflow-hidden rounded bg-amber-100 px-1.5 text-left text-xs font-medium text-amber-800 hover:bg-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:hover:bg-amber-900",
+        "pointer-events-auto flex h-6 w-full items-center gap-1 overflow-hidden rounded bg-amber-100 px-1.5 text-left text-xs font-medium text-amber-800 transition-colors hover:bg-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:hover:bg-amber-900",
         className,
       )}
     >

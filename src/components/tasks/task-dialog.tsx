@@ -188,6 +188,7 @@ export function TaskDialog({
             formData.set("file", item.staged);
             await addTaskAttachmentAction(formData);
           }
+          toast.success("Task created");
         }
         onOpenChange(false);
       } catch (e) {
@@ -200,6 +201,7 @@ export function TaskDialog({
       if (!task) return;
       try {
         await deleteTaskAction(task.id);
+        toast.success("Task deleted");
         setConfirming(false);
         onOpenChange(false);
       } catch (e) {
@@ -269,6 +271,7 @@ export function TaskDialog({
         variant="ghost"
         size="sm"
         className="ml-auto"
+        disabled={pending}
         onClick={() => onOpenChange(false)}
       >
         Cancel
@@ -292,7 +295,7 @@ export function TaskDialog({
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
           <AlertDialogAction variant="destructive" disabled={pending} onClick={remove}>
-            Delete
+            {pending ? "Deleting…" : "Delete"}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

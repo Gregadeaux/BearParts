@@ -64,7 +64,10 @@ export function MilestoneDialog({ state, onClose, onSaved }: Props) {
       const input = { title: trimmed, date, description: notes };
       try {
         if (state?.milestone) await updateMilestoneAction(state.milestone.id, input);
-        else await createMilestoneAction(input);
+        else {
+          await createMilestoneAction(input);
+          toast.success(`"${trimmed}" added`);
+        }
         onSaved();
         onClose();
       } catch (e) {
@@ -77,6 +80,7 @@ export function MilestoneDialog({ state, onClose, onSaved }: Props) {
       if (!state?.milestone) return;
       try {
         await deleteMilestoneAction(state.milestone.id);
+        toast.success("Milestone deleted");
         setConfirming(false);
         onSaved();
         onClose();
@@ -140,7 +144,7 @@ export function MilestoneDialog({ state, onClose, onSaved }: Props) {
             <AlertDialogFooter>
               <AlertDialogCancel>Cancel</AlertDialogCancel>
               <AlertDialogAction variant="destructive" disabled={pending} onClick={remove}>
-                Delete
+                {pending ? "Deleting…" : "Delete"}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

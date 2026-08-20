@@ -41,7 +41,9 @@ export function LibraryPartTile({ part, thumbUrl, folderName }: Props) {
         </div>
         <div className="flex items-center gap-2.5">
           <TypeIcon type={part.latest?.file_type} className="size-4 shrink-0" />
-          <span className="truncate text-sm font-medium">{part.name}</span>
+          <span className="truncate text-sm font-medium" title={part.name}>
+            {part.name}
+          </span>
         </div>
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           {part.latest && <Badge variant="secondary">v{part.latest.version}</Badge>}

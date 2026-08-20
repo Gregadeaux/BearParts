@@ -44,7 +44,10 @@ export function SubtaskList({ items, onAdd, onToggle, onRemove }: Props) {
       {items.length > 0 && (
         <ul className="space-y-0.5">
           {items.map((subtask) => (
-            <li key={subtask.id} className="group flex items-center gap-2 rounded-md px-1 py-0.5 hover:bg-muted/60">
+            <li
+              key={subtask.id}
+              className="group flex items-center gap-2 rounded-md px-1 py-0.5 transition-colors hover:bg-muted/60"
+            >
               <Checkbox
                 checked={subtask.done}
                 onCheckedChange={(checked) => onToggle(subtask.id, checked === true)}
@@ -61,7 +64,7 @@ export function SubtaskList({ items, onAdd, onToggle, onRemove }: Props) {
                 type="button"
                 aria-label={`Remove "${subtask.title}"`}
                 onClick={() => onRemove(subtask.id)}
-                className="hidden text-muted-foreground hover:text-destructive group-hover:block"
+                className="shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 hover:text-destructive"
               >
                 <X className="size-3.5" />
               </button>

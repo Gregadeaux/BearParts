@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { AtSign, Bell, CheckCheck, ListTodo, RefreshCw, Wrench } from "lucide-react";
 import type { AppNotification, NotificationKind } from "@/services/inbox.service";
 import { listNotifications } from "@/services/inbox.service";
@@ -50,7 +51,10 @@ export function NotificationsList({ initial }: Props) {
   const markAll = () => {
     const now = new Date().toISOString();
     setNotifications((ns) => ns.map((n) => (n.read_at === null ? { ...n, read_at: now } : n)));
-    markAllNotificationsReadAction().catch(() => refetch());
+    markAllNotificationsReadAction().catch(() => {
+      toast.error("Could not mark everything read");
+      refetch();
+    });
   };
 
   return (
@@ -92,6 +96,7 @@ export function NotificationsList({ initial }: Props) {
                     {notification.actor?.avatar_url && (
                       <AvatarImage
                         src={notification.actor.avatar_url}
+                        alt={notification.actor.display_name}
                         referrerPolicy="no-referrer"
                       />
                     )}
@@ -105,10 +110,10 @@ export function NotificationsList({ initial }: Props) {
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="flex items-baseline gap-2">
-                    <span className={cn("text-sm", isUnread && "font-semibold")}>
+                    <span className={cn("min-w-0 truncate text-sm", isUnread && "font-semibold")}>
                       {notification.title}
                     </span>
-                    <span className="ml-auto shrink-0 text-[11px] text-muted-foreground">
+                    <span className="ml-auto shrink-0 text-xs text-muted-foreground">
                       {formatDateTime(notification.created_at)}
                     </span>
                   </span>

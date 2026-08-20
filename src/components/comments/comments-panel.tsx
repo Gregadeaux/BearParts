@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { MapPin, X } from "lucide-react";
+import { MapPin, MessageSquare, X } from "lucide-react";
 import type { CommentAnchor, PartComment } from "@/services/comments.service";
 import { MentionComposer } from "./mention-composer";
 import { CommentBody } from "./comment-body";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { formatDate, initials } from "@/lib/format";
+import { formatDateTime, initials } from "@/lib/format";
 
 interface Props {
   comments: PartComment[];
@@ -63,7 +63,8 @@ export function CommentsPanel({
       <ScrollArea className="min-h-0 flex-1">
         <div className="space-y-3 p-3">
           {comments.length === 0 && (
-            <p className="py-6 text-center text-xs text-muted-foreground">
+            <p className="flex flex-col items-center gap-1 py-8 text-xs text-muted-foreground">
+              <MessageSquare className="size-5 opacity-50" />
               No comments yet. Start the discussion.
             </p>
           )}
@@ -84,18 +85,18 @@ export function CommentsPanel({
               </Avatar>
               <div className="min-w-0 flex-1">
                 <div className="flex items-baseline gap-2">
-                  <span className="text-xs font-medium">
+                  <span className="truncate text-xs font-medium">
                     {comment.author?.display_name ?? "Unknown"}
                   </span>
-                  <span className="text-[11px] text-muted-foreground">
-                    {formatDate(comment.created_at)}
+                  <span className="shrink-0 text-[11px] text-muted-foreground">
+                    {formatDateTime(comment.created_at)}
                   </span>
                   {comment.author_id === userId && (
                     <button
                       type="button"
                       aria-label="Delete comment"
                       onClick={() => onRemove(comment.id)}
-                      className="ml-auto hidden text-muted-foreground hover:text-destructive group-hover:block"
+                      className="ml-auto shrink-0 text-muted-foreground opacity-0 transition-opacity hover:text-destructive focus-visible:opacity-100 group-hover:opacity-100"
                     >
                       <X className="size-3.5" />
                     </button>
@@ -105,9 +106,9 @@ export function CommentsPanel({
                   <button
                     type="button"
                     onClick={() => onFocusAnnotation?.(comment)}
-                    className="mb-0.5 inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-700 hover:bg-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:hover:bg-amber-900"
+                    className="mb-0.5 inline-flex max-w-full items-center gap-1 truncate rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-700 transition-colors hover:bg-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:hover:bg-amber-900"
                   >
-                    <MapPin className="size-3" />
+                    <MapPin className="size-3 shrink-0" />
                     {pinNumbers[comment.id] ? `#${pinNumbers[comment.id]} · ` : ""}
                     {comment.anchor.label ?? "pinned"}
                   </button>

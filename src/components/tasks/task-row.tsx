@@ -98,15 +98,15 @@ export function TaskRow({ task, onOpen, onStatusChange, onDelete }: Props) {
           {task.subgroup && (
             <Badge
               variant="outline"
-              className="gap-1"
+              className="max-w-32 gap-1"
               style={{ borderColor: `${task.subgroup.color}66` }}
             >
               <span
                 aria-hidden
-                className="size-2 rounded-full"
+                className="size-2 shrink-0 rounded-full"
                 style={{ backgroundColor: task.subgroup.color }}
               />
-              {task.subgroup.name}
+              <span className="truncate">{task.subgroup.name}</span>
             </Badge>
           )}
           {due && <span className={dueClass}>{due}</span>}
@@ -161,7 +161,7 @@ function AttachmentCount({ task }: { task: Task }) {
   return (
     <span
       className="flex shrink-0 items-center gap-0.5 text-xs tabular-nums text-muted-foreground"
-      title={`${task.attachments.length} attachments`}
+      title={`${task.attachments.length} attachment${task.attachments.length === 1 ? "" : "s"}`}
     >
       <Paperclip className="size-3.5" />
       {task.attachments.length}

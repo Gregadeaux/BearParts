@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
-import { X } from "lucide-react";
+import { MessageSquare, X } from "lucide-react";
 import type { SubsystemComment } from "@/services/subsystem-comments.service";
 import { listSubsystemComments } from "@/services/subsystem-comments.service";
 import {
@@ -92,7 +92,8 @@ export function SubsystemComments({
       <ScrollArea className="min-h-0 flex-1">
         <div className="space-y-3 p-3">
           {comments.length === 0 && (
-            <p className="py-6 text-center text-xs text-muted-foreground">
+            <p className="flex flex-col items-center gap-1 py-8 text-xs text-muted-foreground">
+              <MessageSquare className="size-5 opacity-50" />
               No comments yet. Start the discussion.
             </p>
           )}
@@ -108,10 +109,10 @@ export function SubsystemComments({
               </Avatar>
               <div className="min-w-0 flex-1">
                 <div className="flex items-baseline gap-2">
-                  <span className="text-xs font-medium">
+                  <span className="truncate text-xs font-medium">
                     {comment.author?.display_name ?? "Unknown"}
                   </span>
-                  <span className="text-[11px] text-muted-foreground">
+                  <span className="shrink-0 text-[11px] text-muted-foreground">
                     {formatDateTime(comment.created_at)}
                   </span>
                   {comment.author_id === userId && (
@@ -119,7 +120,7 @@ export function SubsystemComments({
                       type="button"
                       aria-label="Delete comment"
                       onClick={() => remove(comment.id)}
-                      className="ml-auto hidden text-muted-foreground hover:text-destructive group-hover:block"
+                      className="ml-auto shrink-0 text-muted-foreground opacity-0 transition-opacity hover:text-destructive focus-visible:opacity-100 group-hover:opacity-100"
                     >
                       <X className="size-3.5" />
                     </button>

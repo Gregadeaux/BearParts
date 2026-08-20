@@ -268,7 +268,9 @@ function VendorGroup({
               <span className="size-8 shrink-0 rounded-md bg-muted" aria-hidden />
             )}
             <span className="flex min-w-0 flex-1 items-center gap-1.5">
-              <span className="truncate text-sm">{item.name}</span>
+              <span className="truncate text-sm" title={item.name}>
+                {item.name}
+              </span>
               {item.url && (
                 <a
                   href={item.url}
@@ -288,7 +290,7 @@ function VendorGroup({
             )}
             {item.subsystem && (
               <Link href={`/subsystems/${item.subsystem.id}`} className="shrink-0">
-                <Badge variant="outline" className="hover:bg-muted">
+                <Badge variant="outline" className="transition-colors hover:bg-muted">
                   {item.subsystem.name}
                 </Badge>
               </Link>
@@ -314,7 +316,7 @@ function VendorGroup({
               aria-label={removeIcon === "undo" ? "Move back" : "Remove"}
               title="Move back"
               onClick={() => onRemove(item)}
-              className="hidden shrink-0 text-muted-foreground hover:text-foreground group-hover:block"
+              className="shrink-0 text-muted-foreground opacity-0 transition-opacity hover:text-foreground focus-visible:opacity-100 group-hover:opacity-100"
             >
               <Undo2 className="size-3.5" />
             </button>

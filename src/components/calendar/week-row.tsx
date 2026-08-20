@@ -76,7 +76,7 @@ export function WeekRow({
               if (id) onDropTask(id, day);
             }}
             className={cn(
-              "min-h-32 border-t border-l p-1 first:border-l-0",
+              "min-h-32 cursor-pointer border-t border-l p-1 transition-colors first:border-l-0 hover:bg-muted/40",
               !day.startsWith(monthKey) && "bg-muted/30",
               day === today && "bg-accent/40",
               overDay === day && "ring-2 ring-primary/50 ring-inset",

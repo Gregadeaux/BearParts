@@ -7,6 +7,7 @@ import { Upload } from "lucide-react";
 import type { PartFileType } from "@/types/part";
 import { createLibraryPartAction } from "@/app/actions/library";
 import { generateThumbnail } from "@/lib/thumbnails";
+import { formatBytes } from "@/lib/format";
 import { UploadDropzone } from "@/components/parts/upload-dropzone";
 import { Button } from "@/components/ui/button";
 import {
@@ -75,13 +76,20 @@ export function UploadPartDialog({ folderId }: { folderId: string }) {
           />
         ) : (
           <div className="space-y-3">
-            <p className="truncate rounded-md bg-muted px-3 py-2 text-sm">{file.name}</p>
+            <p className="flex items-center gap-2 rounded-md bg-muted px-3 py-2 text-sm">
+              <span className="min-w-0 flex-1 truncate" title={file.name}>
+                {file.name}
+              </span>
+              <span className="shrink-0 text-xs text-muted-foreground">
+                {formatBytes(file.size)}
+              </span>
+            </p>
             <div className="space-y-1.5">
               <Label>Part name</Label>
               <Input value={name} onChange={(e) => setName(e.target.value)} />
             </div>
             <div className="flex gap-2">
-              <Button disabled={pending} onClick={submit}>
+              <Button disabled={pending || !name.trim()} onClick={submit}>
                 {pending ? "Uploading…" : "Add to library"}
               </Button>
               <Button variant="ghost" disabled={pending} onClick={() => setFile(null)}>

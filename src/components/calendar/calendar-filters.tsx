@@ -56,11 +56,15 @@ export function CalendarFilters({
                 : undefined
             }
             className={cn(
-              "inline-flex h-7 shrink-0 items-center gap-1.5 rounded-full border px-2.5 text-xs",
-              !on && "border-border text-muted-foreground hover:bg-muted",
+              "inline-flex h-7 shrink-0 items-center gap-1.5 rounded-full border px-2.5 text-xs transition-colors",
+              on ? "font-medium text-foreground" : "border-border text-muted-foreground hover:bg-muted",
             )}
           >
-            <span className="size-2 rounded-full" style={{ backgroundColor: sg.color }} />
+            <span
+              aria-hidden
+              className="size-2 shrink-0 rounded-full"
+              style={{ backgroundColor: sg.color }}
+            />
             {sg.name}
           </button>
         );

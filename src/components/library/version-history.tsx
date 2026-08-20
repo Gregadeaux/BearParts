@@ -47,12 +47,12 @@ export function VersionHistory({ versions, partName, selectedId, onSelect }: Pro
             <Badge variant={selected ? "default" : "secondary"} className="tabular-nums">
               v{v.version}
             </Badge>
-            <span className="text-xs uppercase text-muted-foreground">{v.file_type}</span>
-            <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
+            <span className="shrink-0 text-xs uppercase text-muted-foreground">{v.file_type}</span>
+            <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground" title={v.note ?? undefined}>
               {v.note ?? ""}
             </span>
             {v.uploader && (
-              <Avatar className="size-5" title={v.uploader.display_name}>
+              <Avatar className="size-5 shrink-0" title={v.uploader.display_name}>
                 {v.uploader.avatar_url && (
                   <AvatarImage src={v.uploader.avatar_url} referrerPolicy="no-referrer" />
                 )}
@@ -61,11 +61,13 @@ export function VersionHistory({ versions, partName, selectedId, onSelect }: Pro
                 </AvatarFallback>
               </Avatar>
             )}
-            <span className="text-xs text-muted-foreground">{formatDate(v.created_at)}</span>
+            <span className="shrink-0 text-xs text-muted-foreground">{formatDate(v.created_at)}</span>
             <Button
               variant="ghost"
               size="icon-sm"
               aria-label={`Download v${v.version}`}
+              title={`Download v${v.version}`}
+              className="shrink-0"
               nativeButton={false}
               render={<span role="button" tabIndex={0} />}
               onClick={(e: React.MouseEvent) => {

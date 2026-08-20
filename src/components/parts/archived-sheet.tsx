@@ -59,10 +59,15 @@ export function ArchivedSheet() {
             {parts === null ? (
               <p className="py-8 text-center text-sm text-muted-foreground">Loading…</p>
             ) : parts.length === 0 ? (
-              <p className="py-8 text-center text-sm text-muted-foreground">Nothing archived.</p>
+              <p className="rounded-lg border border-dashed px-3 py-8 text-center text-sm text-muted-foreground">
+                Nothing archived yet — archived parts land here.
+              </p>
             ) : (
               parts.map((part) => (
-                <div key={part.id} className="flex items-center gap-2 rounded-lg border p-2.5">
+                <div
+                  key={part.id}
+                  className="flex items-center gap-2 rounded-lg border p-2.5 transition-colors hover:bg-muted/50"
+                >
                   <div className="min-w-0 flex-1">
                     <Link
                       href={`/parts/${part.id}`}
@@ -70,9 +75,11 @@ export function ArchivedSheet() {
                     >
                       {part.name}
                     </Link>
-                    <p className="text-xs text-muted-foreground">
-                      archived {part.archived_at ? formatDate(part.archived_at) : ""}
-                    </p>
+                    {part.archived_at && (
+                      <p className="text-xs text-muted-foreground">
+                        archived {formatDate(part.archived_at)}
+                      </p>
+                    )}
                   </div>
                   <StatusBadge status={part.status as never} />
                   <Button

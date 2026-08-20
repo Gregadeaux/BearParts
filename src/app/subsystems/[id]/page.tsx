@@ -131,14 +131,16 @@ export default async function SubsystemPage({
       <main className="space-y-4 p-4">
         {/* header row spans all columns */}
         <div className="flex flex-wrap items-center gap-2">
-          <Blocks className="size-5 text-violet-500" />
-          <h1 className="text-lg font-semibold">{subsystem.name}</h1>
+          <Blocks className="size-5 shrink-0 text-violet-500" />
+          <h1 className="min-w-0 truncate text-lg font-semibold" title={subsystem.name}>
+            {subsystem.name}
+          </h1>
           {subsystem.project && (
             <Link
               href={`/tasks?project=${subsystem.project.id}`}
               className="inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs text-muted-foreground transition-colors hover:bg-muted"
             >
-              <FolderKanban className="size-3" /> {subsystem.project.name}
+              <FolderKanban className="size-3 shrink-0" /> {subsystem.project.name}
             </Link>
           )}
           {subsystem.folder && (
@@ -146,7 +148,8 @@ export default async function SubsystemPage({
               href={`/library?f=${subsystem.folder.id}`}
               className="inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs text-muted-foreground transition-colors hover:bg-muted"
             >
-              <Folder className="size-3 fill-amber-200 text-amber-500" /> {subsystem.folder.name}
+              <Folder className="size-3 shrink-0 fill-amber-200 text-amber-500" />{" "}
+              {subsystem.folder.name}
             </Link>
           )}
           <div className="flex-1" />

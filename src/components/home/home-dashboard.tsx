@@ -8,11 +8,12 @@ import {
   SquareKanban,
   UserRound,
 } from "lucide-react";
-import type { Part } from "@/types/part";
+import type { Part, PartStatus } from "@/types/part";
 import type { Task } from "@/types/task";
 import type { MilestoneRow } from "@/services/milestones.service";
 import { cn } from "@/lib/utils";
 import { STATUS_META, formatDay, isOverdue } from "@/components/tasks/task-utils";
+import { STATUS_LABELS } from "@/components/parts/status-badge";
 
 interface Props {
   parts: Part[];
@@ -96,7 +97,7 @@ export function HomeDashboard({ parts, tasks, milestones, userId, userName, toda
             >
               <span className="min-w-0 flex-1 truncate text-sm">{part.name}</span>
               <span className="shrink-0 text-xs text-muted-foreground">
-                {part.status === "in_progress" ? "in progress" : part.status}
+                {STATUS_LABELS[part.status as PartStatus]}
               </span>
             </Link>
           ))}
@@ -138,10 +139,10 @@ export function HomeDashboard({ parts, tasks, milestones, userId, userName, toda
       {upcoming.length > 0 && (
         <div className="space-y-2">
           <div className="flex items-center gap-2">
-            <h3 className="text-sm font-medium">Milestones</h3>
+            <h3 className="text-sm font-semibold">Milestones</h3>
             <Link
               href="/calendar"
-              className="flex items-center gap-0.5 text-xs text-muted-foreground hover:text-foreground"
+              className="flex items-center gap-0.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
             >
               Calendar <ArrowRight className="size-3" />
             </Link>
@@ -213,13 +214,13 @@ function ListCard({
         <h3 className="text-sm font-medium">{title}</h3>
         <Link
           href={href}
-          className="flex items-center gap-0.5 text-xs text-muted-foreground hover:text-foreground"
+          className="flex shrink-0 items-center gap-0.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
         >
           View all <ArrowRight className="size-3" />
         </Link>
       </div>
       {children.length === 0 ? (
-        <p className="border-t px-3 py-3 text-xs text-muted-foreground">{emptyText}</p>
+        <p className="border-t px-3 py-6 text-center text-sm text-muted-foreground">{emptyText}</p>
       ) : (
         children
       )}

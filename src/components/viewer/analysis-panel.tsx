@@ -1,5 +1,6 @@
 "use client";
 
+import { TriangleAlert } from "lucide-react";
 import type { DxfAnalysis } from "@/types/analysis";
 import { Badge } from "@/components/ui/badge";
 import { formatInches } from "@/lib/format";
@@ -79,8 +80,9 @@ export function AnalysisPanel({ analysis }: { analysis: DxfAnalysis }) {
       {warnings.length > 0 && (
         <ul className="space-y-1">
           {warnings.map((w, i) => (
-            <li key={i} className="text-xs text-amber-600 dark:text-amber-400">
-              ⚠ {w}
+            <li key={i} className="flex items-start gap-1.5 text-xs text-amber-600 dark:text-amber-400">
+              <TriangleAlert className="mt-px size-3.5 shrink-0" />
+              <span className="min-w-0">{w}</span>
             </li>
           ))}
         </ul>

@@ -188,6 +188,7 @@ export function LibraryBrowser({
           currentFolderId={currentFolderId}
           folders={folders}
           parts={parts.filter(matchesType)}
+          typeFiltered={typeFilter !== "all" && parts.length > 0}
           thumbUrls={thumbUrls}
           subsystemByFolder={subsystemByFolder}
           onDeleteFolder={deleteFolder}
@@ -223,6 +224,7 @@ function BrowseGrid({
   currentFolderId,
   folders,
   parts,
+  typeFiltered,
   thumbUrls,
   subsystemByFolder,
   onDeleteFolder,
@@ -232,6 +234,8 @@ function BrowseGrid({
   currentFolderId: string | null;
   folders: FolderRow[];
   parts: LibraryPartListing[];
+  /** the type filter is hiding parts that exist here */
+  typeFiltered: boolean;
   thumbUrls: Record<string, string>;
   subsystemByFolder: Map<string, Subsystem>;
   onDeleteFolder: (folder: FolderRow) => void;
@@ -242,7 +246,11 @@ function BrowseGrid({
     return (
       <div className="flex flex-col items-center gap-1 py-16 text-sm text-muted-foreground">
         <Folder className="mb-1 size-8 opacity-40" />
-        {currentFolderId ? "Nothing in this folder yet." : "No folders yet."}
+        {typeFiltered
+          ? "No parts of that type in this folder."
+          : currentFolderId
+            ? "Nothing in this folder yet."
+            : "No folders yet."}
       </div>
     );
   }
@@ -323,9 +331,9 @@ function SearchResults({
             <Link
               key={folder.id}
               href={`${basePath}?f=${folder.id}`}
-              className="inline-flex items-center gap-1.5 rounded-full border bg-muted/50 px-3 py-1 text-sm transition-colors hover:bg-muted"
+              className="inline-flex max-w-full items-center gap-1.5 truncate rounded-full border bg-muted/50 px-3 py-1 text-sm transition-colors hover:bg-muted"
             >
-              <Folder className="size-3.5 fill-amber-200 text-amber-500" />
+              <Folder className="size-3.5 shrink-0 fill-amber-200 text-amber-500" />
               {folder.name}
             </Link>
           ))}

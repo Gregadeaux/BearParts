@@ -113,11 +113,13 @@ export function LibraryPartView({
 
   const header = (
     <div className="flex flex-wrap items-center gap-2">
-      <h1 className="text-lg font-semibold">{part.name}</h1>
-      <span className="text-sm text-muted-foreground">
+      <h1 className="min-w-0 truncate text-lg font-semibold" title={part.name}>
+        {part.name}
+      </h1>
+      <span className="shrink-0 text-sm text-muted-foreground">
         {part.versions.length} version{part.versions.length === 1 ? "" : "s"}
       </span>
-      <div className="ml-auto flex gap-2">
+      <div className="ml-auto flex shrink-0 gap-2">
         <UploadVersionDialog libraryPartId={part.id} />
         {selected && <AddToQueueDialog partName={part.name} version={selected} team={team} />}
       </div>
@@ -125,7 +127,9 @@ export function LibraryPartView({
   );
 
   const viewer = error ? (
-    <p className="text-sm text-destructive">Could not load this version&apos;s file.</p>
+    <div className="rounded-lg border border-destructive/50 p-4 text-sm text-destructive">
+      Could not load this version&apos;s file.
+    </div>
   ) : !content ? (
     <Skeleton className="h-72 w-full" />
   ) : content.buffer && selected.file_type === "pdf" ? (
@@ -255,7 +259,11 @@ function ActiveQueueEntries({ part }: { part: LibraryPartDetail }) {
       {active.map((entry) => {
         const version = part.versions.find((v) => v.id === entry.source_version_id);
         return (
-          <Link key={entry.id} href={`/parts/${entry.id}`} className="flex items-center gap-1">
+          <Link
+            key={entry.id}
+            href={`/parts/${entry.id}`}
+            className="flex items-center gap-1 transition-opacity hover:opacity-75"
+          >
             <StatusBadge status={entry.status as never} />
             {version && <span className="text-xs text-muted-foreground">v{version.version}</span>}
           </Link>

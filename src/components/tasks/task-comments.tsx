@@ -107,7 +107,7 @@ export function TaskComments({ taskId, taskTitle, team, userId, layout = "inline
         <ScrollArea className="min-h-0 flex-1">
           <div className="space-y-3 p-3">
             {comments.length === 0 && (
-              <p className="py-6 text-center text-xs text-muted-foreground">
+              <p className="rounded-lg border border-dashed px-3 py-6 text-center text-sm text-muted-foreground">
                 No comments yet. Start the discussion.
               </p>
             )}
@@ -161,7 +161,7 @@ function CommentItem({
               type="button"
               aria-label="Delete comment"
               onClick={() => onRemove(comment.id)}
-              className="ml-auto hidden text-muted-foreground hover:text-destructive group-hover:block"
+              className="ml-auto shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 hover:text-destructive"
             >
               <X className="size-3.5" />
             </button>

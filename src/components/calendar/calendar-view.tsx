@@ -138,9 +138,9 @@ export function CalendarView({
         >
           <ChevronLeftIcon />
         </Button>
-        <h1 className="min-w-36 text-center text-base font-semibold sm:text-lg">
+        <h2 className="min-w-36 text-center text-base font-semibold sm:text-lg">
           {format(cursor, "MMMM yyyy")}
-        </h1>
+        </h2>
         <Button
           variant="ghost"
           size="icon-sm"

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { FolderKanban, Plus } from "lucide-react";
 import type { Person, ProjectRow, Task } from "@/types/task";
+import { cn } from "@/lib/utils";
 import { AvatarStack } from "./avatar-stack";
 import { NewProjectDialog } from "./new-project-dialog";
 import { isOverdue, STATUS_META } from "./task-utils";
@@ -71,9 +72,10 @@ function ProjectCard({
   return (
     <Link
       href={href}
-      className={`flex min-h-32 flex-col gap-2.5 rounded-lg border bg-card p-4 shadow-sm transition-colors hover:bg-muted/50 ${
-        muted ? "border-dashed" : ""
-      }`}
+      className={cn(
+        "flex min-h-32 flex-col gap-2.5 rounded-lg border bg-card p-4 shadow-sm transition-colors hover:bg-muted/50",
+        muted && "border-dashed",
+      )}
     >
       <div className="flex items-center gap-2">
         <FolderKanban className="size-4 shrink-0 text-muted-foreground" />

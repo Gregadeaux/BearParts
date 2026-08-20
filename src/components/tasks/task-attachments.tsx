@@ -121,7 +121,7 @@ export function TaskAttachments({ taskId, items, onItemsChange }: Props) {
             return (
               <li
                 key={item.id}
-                className="group flex items-center gap-2 rounded-md px-1 py-0.5 hover:bg-muted/60"
+                className="group flex items-center gap-2 rounded-md px-1 py-0.5 transition-colors hover:bg-muted/60"
               >
                 <FileText className="size-3.5 shrink-0 text-muted-foreground" />
                 <button
@@ -136,9 +136,9 @@ export function TaskAttachments({ taskId, items, onItemsChange }: Props) {
                   {formatBytes(item.size_bytes)}
                 </span>
                 {item.staged && (
-                  <span className="shrink-0 text-[11px] text-muted-foreground">on save</span>
+                  <span className="shrink-0 text-xs text-muted-foreground">on save</span>
                 )}
-                <span className="hidden shrink-0 items-center gap-1.5 group-hover:flex">
+                <span className="flex shrink-0 items-center gap-1.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
                   {kind && (
                     <button
                       type="button"

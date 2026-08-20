@@ -97,12 +97,13 @@ export function PartActions({ part, team, userId }: Props) {
           { value: "unassigned", label: "Unassigned" },
           ...team.map((m) => ({ value: m.id, label: m.display_name })),
         ]}
-        onValueChange={(v) =>
+        onValueChange={(v) => {
+          const next = v ?? "unassigned"; // Base UI can hand back null
           run(
-            () => assignPartAction(part.id, v === "unassigned" ? null : v),
-            v === "unassigned" ? "Back in the queue" : "Assigned",
-          )
-        }
+            () => assignPartAction(part.id, next === "unassigned" ? null : next),
+            next === "unassigned" ? "Back in the queue" : "Assigned",
+          );
+        }}
       >
         <SelectTrigger className="w-40" disabled={pending}>
           <SelectValue placeholder="Assign to…" />

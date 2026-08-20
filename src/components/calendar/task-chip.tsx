@@ -50,7 +50,8 @@ export function TaskChip({
       }}
       style={chipStyle(task.subgroup?.color)}
       className={cn(
-        "pointer-events-auto flex h-6 w-full items-center overflow-hidden rounded px-1.5 text-left text-xs hover:brightness-105",
+        "pointer-events-auto flex h-6 w-full items-center overflow-hidden rounded px-1.5 text-left text-xs transition-[filter] hover:brightness-105",
+        draggable && "cursor-grab active:cursor-grabbing",
         continuesLeft && "rounded-l-none",
         continuesRight && "rounded-r-none",
         task.status === "done" && "line-through opacity-50",

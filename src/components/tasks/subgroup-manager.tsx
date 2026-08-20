@@ -65,6 +65,7 @@ export function SubgroupManager({ initialSubgroups, taskCounts }: Props) {
       try {
         await deleteSubgroupAction(deleting.id);
         setSubgroups((list) => list.filter((s) => s.id !== deleting.id));
+        toast.success(`"${deleting.name}" deleted`);
         setDeleting(null);
       } catch (e) {
         toast.error(e instanceof Error ? e.message : "Could not delete subgroup");
@@ -75,7 +76,10 @@ export function SubgroupManager({ initialSubgroups, taskCounts }: Props) {
     <div className="max-w-xl space-y-3">
       <div className="divide-y rounded-lg border">
         {subgroups.map((subgroup) => (
-          <div key={subgroup.id} className="group flex items-center gap-2.5 px-3 py-2">
+          <div
+            key={subgroup.id}
+            className="group flex items-center gap-2.5 px-3 py-2 transition-colors hover:bg-muted/40"
+          >
             <ColorSwatch value={subgroup.color} onChange={(c) => recolor(subgroup, c)} />
             <NameField value={subgroup.name} onCommit={(name) => rename(subgroup, name)} />
             <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
@@ -93,7 +97,9 @@ export function SubgroupManager({ initialSubgroups, taskCounts }: Props) {
           </div>
         ))}
         {subgroups.length === 0 && (
-          <p className="px-3 py-4 text-sm text-muted-foreground">No subgroups yet.</p>
+          <p className="px-3 py-4 text-center text-sm text-muted-foreground">
+            No subgroups yet — add one below.
+          </p>
         )}
       </div>
 
@@ -117,7 +123,7 @@ export function SubgroupManager({ initialSubgroups, taskCounts }: Props) {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction variant="destructive" disabled={pending} onClick={remove}>
-              Delete
+              {pending ? "Deleting…" : "Delete"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -189,6 +195,7 @@ function CreateRow({ onCreated }: { onCreated: (subgroup: SubgroupRow) => void }
       try {
         const subgroup = await createSubgroupAction(trimmed, color);
         onCreated(subgroup);
+        toast.success(`"${subgroup.name}" created`);
         setName("");
       } catch (e) {
         toast.error(e instanceof Error ? e.message : "Could not create subgroup");

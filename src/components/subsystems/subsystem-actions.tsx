@@ -33,6 +33,7 @@ export function SubsystemActions({ subsystemId, subsystemName, folderId }: Props
     startTransition(async () => {
       try {
         await deleteSubsystemAction(subsystemId);
+        toast.success(`Deleted "${subsystemName}"`);
         router.push(`/library?f=${folderId}`);
       } catch (e) {
         toast.error(e instanceof Error ? e.message : "Could not delete subsystem");
@@ -62,7 +63,7 @@ export function SubsystemActions({ subsystemId, subsystemName, folderId }: Props
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction variant="destructive" disabled={pending} onClick={remove}>
-              Delete
+              {pending ? "Deleting…" : "Delete"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -40,7 +40,13 @@ export function DateField({ value, onChange, placeholder = "Pick a day" }: Props
         </PopoverContent>
       </Popover>
       {value && (
-        <Button variant="ghost" size="icon-sm" aria-label="Clear" onClick={() => onChange(null)}>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          aria-label="Clear date"
+          className="shrink-0"
+          onClick={() => onChange(null)}
+        >
           <X />
         </Button>
       )}

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { PDFDocumentProxy } from "pdfjs-dist";
+import { ChevronLeft, ChevronRight, Expand, Minus, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface Props {
@@ -94,27 +95,27 @@ export function PdfViewer({ data, className }: Props) {
       </div>
 
       <div className="absolute right-2 top-2 flex flex-col gap-1">
-        <Button variant="secondary" size="icon" aria-label="Zoom in" onClick={() => setZoom((z) => Math.min(z * 1.4, 8))}>
-          +
+        <Button variant="secondary" size="icon" aria-label="Zoom in" title="Zoom in" onClick={() => setZoom((z) => Math.min(z * 1.4, 8))}>
+          <Plus />
         </Button>
-        <Button variant="secondary" size="icon" aria-label="Zoom out" onClick={() => setZoom((z) => Math.max(z / 1.4, 1))}>
-          −
+        <Button variant="secondary" size="icon" aria-label="Zoom out" title="Zoom out" disabled={zoom <= 1} onClick={() => setZoom((z) => Math.max(z / 1.4, 1))}>
+          <Minus />
         </Button>
-        <Button variant="secondary" size="icon" aria-label="Fit width" onClick={() => setZoom(1)}>
-          ⤢
+        <Button variant="secondary" size="icon" aria-label="Fit width" title="Fit width" onClick={() => setZoom(1)}>
+          <Expand />
         </Button>
       </div>
 
       {doc && doc.numPages > 1 && (
         <div className="absolute bottom-2 left-1/2 flex -translate-x-1/2 items-center gap-1 rounded-full border bg-background/95 px-2 py-1 text-sm shadow backdrop-blur">
           <Button variant="ghost" size="icon-sm" aria-label="Previous page" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
-            ‹
+            <ChevronLeft />
           </Button>
           <span className="tabular-nums text-xs">
             {page} / {doc.numPages}
           </span>
           <Button variant="ghost" size="icon-sm" aria-label="Next page" disabled={page >= doc.numPages} onClick={() => setPage((p) => p + 1)}>
-            ›
+            <ChevronRight />
           </Button>
         </div>
       )}

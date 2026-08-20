@@ -27,7 +27,7 @@ export function AgendaList({ day, tasks, milestones, onOpenTask, onOpenMilestone
         <button
           type="button"
           onClick={() => onAddTask(day)}
-          className="text-xs text-muted-foreground hover:text-foreground"
+          className="text-xs text-muted-foreground transition-colors hover:text-foreground"
         >
           + Task
         </button>
@@ -37,7 +37,7 @@ export function AgendaList({ day, tasks, milestones, onOpenTask, onOpenMilestone
           key={milestone.id}
           type="button"
           onClick={() => onOpenMilestone(milestone)}
-          className="flex w-full items-center gap-2 border-t bg-amber-50 px-3 py-2 text-left dark:bg-amber-950/40"
+          className="flex w-full items-center gap-2 border-t bg-amber-50 px-3 py-2 text-left transition-colors hover:bg-amber-100 dark:bg-amber-950/40 dark:hover:bg-amber-950/70"
         >
           <Flag className="size-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
           <span className="min-w-0 flex-1 truncate text-sm font-medium text-amber-800 dark:text-amber-300">
@@ -46,16 +46,17 @@ export function AgendaList({ day, tasks, milestones, onOpenTask, onOpenMilestone
         </button>
       ))}
       {tasks.length === 0 && milestones.length === 0 ? (
-        <p className="border-t px-3 py-3 text-xs text-muted-foreground">Nothing on this day.</p>
+        <p className="border-t px-3 py-4 text-sm text-muted-foreground">Nothing on this day.</p>
       ) : (
         tasks.map((task) => (
           <button
             key={task.id}
             type="button"
             onClick={() => onOpenTask(task)}
-            className="flex w-full items-center gap-2 border-t px-3 py-2 text-left"
+            className="flex w-full items-center gap-2 border-t px-3 py-2 text-left transition-colors hover:bg-muted/50 active:bg-muted/50"
           >
             <span
+              aria-hidden
               className="h-6 w-1 shrink-0 rounded-full"
               style={{ backgroundColor: task.subgroup?.color || NO_SUBGROUP_COLOR }}
             />

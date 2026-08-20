@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { Bell, CalendarDays, FolderOpen, House, ListTodo, LogOut, Palette, Plus, ShoppingCart, SquareKanban } from "lucide-react";
 import type { ProjectRow } from "@/types/task";
 import { createClient } from "@/lib/supabase/client";
@@ -67,7 +68,11 @@ export function AppSidebar({ userName, userAvatar }: Props) {
   }, []);
 
   const signOut = async () => {
-    await createClient().auth.signOut();
+    const { error } = await createClient().auth.signOut();
+    if (error) {
+      toast.error("Could not sign out");
+      return;
+    }
     router.push("/login");
     router.refresh();
   };
@@ -113,7 +118,10 @@ export function AppSidebar({ userName, userAvatar }: Props) {
                     <span>{item.label}</span>
                   </SidebarMenuButton>
                   {item.href === "/notifications" && unread > 0 && (
-                    <SidebarMenuBadge className="rounded-full bg-primary text-primary-foreground">
+                    <SidebarMenuBadge
+                      aria-label={`${unread} unread`}
+                      className="rounded-full bg-primary text-primary-foreground"
+                    >
                       {unread > 99 ? "99+" : unread}
                     </SidebarMenuBadge>
                   )}

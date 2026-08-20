@@ -4,6 +4,7 @@ import { Flag } from "lucide-react";
 import type { Task } from "@/types/task";
 import type { MilestoneRow } from "@/services/milestones.service";
 import { cn } from "@/lib/utils";
+import { formatDay } from "@/components/tasks/task-utils";
 import { tasksOnDay, type WeekLayout } from "./calendar-layout";
 import { NO_SUBGROUP_COLOR } from "./task-chip";
 import { milestonesOnDay } from "./use-milestones";
@@ -109,9 +110,11 @@ function CompactWeeks({
             <button
               key={day}
               type="button"
+              aria-label={formatDay(day)}
+              aria-pressed={day === selectedDay}
               onClick={() => onDayClick(day)}
               className={cn(
-                "flex min-h-14 flex-col items-center gap-1 border-t border-l p-1",
+                "flex min-h-14 flex-col items-center gap-1 border-t border-l p-1 transition-colors hover:bg-muted/50",
                 col === 0 && "border-l-0",
                 !day.startsWith(monthKey) && "bg-muted/30",
                 day === today && "bg-accent/40",

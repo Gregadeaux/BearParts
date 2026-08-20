@@ -105,7 +105,11 @@ export function BomTable({ subsystemId, initial, customParts, thumbUrls = {} }: 
 
   return (
     <div className="space-y-2">
-      {items.length > 0 && (
+      {items.length === 0 ? (
+        <p className="rounded-lg border border-dashed px-3 py-4 text-sm text-muted-foreground">
+          Nothing in the BOM yet. Add this subsystem&apos;s own parts or vendor items below.
+        </p>
+      ) : (
         <div className="overflow-x-auto rounded-lg border">
           <table className="w-full text-sm">
             <thead>
@@ -125,7 +129,9 @@ export function BomTable({ subsystemId, initial, customParts, thumbUrls = {} }: 
                   <td className="max-w-48 px-3 py-1.5">
                     <span className="flex items-center gap-2">
                       <ItemThumb src={item.image_url ?? thumbUrls[item.id]} />
-                      <span className="truncate font-medium">{item.name}</span>
+                      <span className="truncate font-medium" title={item.name}>
+                        {item.name}
+                      </span>
                       {item.url && (
                         <a
                           href={item.url}
@@ -151,7 +157,7 @@ export function BomTable({ subsystemId, initial, customParts, thumbUrls = {} }: 
                         type="button"
                         aria-label="Decrease quantity"
                         onClick={() => changeQty(item, item.quantity - 1)}
-                        className="hidden text-muted-foreground hover:text-foreground group-hover:block"
+                        className="text-muted-foreground opacity-0 transition-opacity hover:text-foreground focus-visible:opacity-100 group-hover:opacity-100"
                       >
                         <Minus className="size-3.5" />
                       </button>
@@ -160,7 +166,7 @@ export function BomTable({ subsystemId, initial, customParts, thumbUrls = {} }: 
                         type="button"
                         aria-label="Increase quantity"
                         onClick={() => changeQty(item, item.quantity + 1)}
-                        className="hidden text-muted-foreground hover:text-foreground group-hover:block"
+                        className="text-muted-foreground opacity-0 transition-opacity hover:text-foreground focus-visible:opacity-100 group-hover:opacity-100"
                       >
                         <Plus className="size-3.5" />
                       </button>
@@ -195,7 +201,7 @@ export function BomTable({ subsystemId, initial, customParts, thumbUrls = {} }: 
                           aria-label={`Add ${item.name} to order list`}
                           title="Add to order list"
                           onClick={() => setOrdering(item)}
-                          className="hidden text-muted-foreground hover:text-foreground group-hover:block"
+                          className="text-muted-foreground opacity-0 transition-opacity hover:text-foreground focus-visible:opacity-100 group-hover:opacity-100"
                         >
                           <ShoppingCart className="size-3.5" />
                         </button>
@@ -204,7 +210,7 @@ export function BomTable({ subsystemId, initial, customParts, thumbUrls = {} }: 
                         type="button"
                         aria-label={`Remove ${item.name}`}
                         onClick={() => remove(item)}
-                        className="hidden text-muted-foreground hover:text-destructive group-hover:block"
+                        className="text-muted-foreground opacity-0 transition-opacity hover:text-destructive focus-visible:opacity-100 group-hover:opacity-100"
                       >
                         <Trash2 className="size-3.5" />
                       </button>
@@ -421,7 +427,7 @@ function AddItemRow({
               }
             }}
             placeholder={canLookup ? "SKU or product URL" : "SKU"}
-            className="h-8 w-36"
+            className="h-7 w-36"
           />
           {canLookup && (
             <Button
@@ -440,20 +446,20 @@ function AddItemRow({
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Item name"
-            className="h-8 min-w-32 flex-1"
+            className="h-7 min-w-32 flex-1"
           />
           <Input
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             placeholder="Link"
-            className="h-8 w-28"
+            className="h-7 w-28"
           />
           <Input
             value={price}
             onChange={(e) => setPrice(e.target.value)}
             placeholder="$"
             inputMode="decimal"
-            className="h-8 w-16"
+            className="h-7 w-16"
           />
         </>
       )}
@@ -463,10 +469,10 @@ function AddItemRow({
         onChange={(e) => setQty(e.target.value)}
         inputMode="numeric"
         aria-label="Quantity"
-        className="h-8 w-14 text-right"
+        className="h-7 w-14 text-right"
       />
       <Button size="sm" disabled={!canAdd} onClick={add}>
-        <Plus /> Add
+        {pending ? <Loader2 className="animate-spin" /> : <Plus />} Add
       </Button>
     </div>
   );

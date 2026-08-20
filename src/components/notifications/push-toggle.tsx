@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { Bell, BellOff } from "lucide-react";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { getPushSubscription, subscribeToPush, unsubscribeFromPush } from "@/lib/push";
 
@@ -26,7 +27,8 @@ export function PushToggle() {
       } else {
         const ok = await subscribeToPush();
         setEnabled(ok);
-        toast(ok ? "Notifications on 🔔" : "Notifications blocked by the browser");
+        if (ok) toast.success("Notifications on");
+        else toast.error("Notifications blocked by the browser");
       }
     } catch {
       toast.error("Could not update notifications");
@@ -35,7 +37,8 @@ export function PushToggle() {
 
   return (
     <DropdownMenuItem onClick={toggle}>
-      {enabled ? "🔔 Notifications on" : "🔕 Notifications off"}
+      {enabled ? <Bell /> : <BellOff />}
+      {enabled ? "Notifications on" : "Notifications off"}
     </DropdownMenuItem>
   );
 }

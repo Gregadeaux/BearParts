@@ -2,6 +2,7 @@
 
 import { format, parseISO } from "date-fns";
 import type { Task } from "@/types/task";
+import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { chipStyle } from "./task-chip";
 
@@ -21,7 +22,8 @@ export function DayPopover({ day, tasks, hiddenCount, onSelect }: Props) {
     <Popover>
       <PopoverTrigger
         onClick={(e) => e.stopPropagation()}
-        className="pointer-events-auto w-full truncate rounded px-1 text-left text-[11px] text-muted-foreground hover:bg-muted"
+        aria-label={`${hiddenCount} more tasks on ${format(parseISO(day), "EEE, MMM d")}`}
+        className="pointer-events-auto w-full truncate rounded px-1 text-left text-[11px] text-muted-foreground transition-colors hover:bg-muted"
       >
         +{hiddenCount} more
       </PopoverTrigger>
@@ -34,9 +36,10 @@ export function DayPopover({ day, tasks, hiddenCount, onSelect }: Props) {
               type="button"
               style={chipStyle(task.subgroup?.color)}
               onClick={() => onSelect(task)}
-              className={`flex h-6 items-center overflow-hidden rounded px-1.5 text-left text-xs hover:brightness-105 ${
-                task.status === "done" ? "line-through opacity-50" : ""
-              }`}
+              className={cn(
+                "flex h-6 items-center overflow-hidden rounded px-1.5 text-left text-xs transition-[filter] hover:brightness-105",
+                task.status === "done" && "line-through opacity-50",
+              )}
             >
               <span className="truncate">{task.title}</span>
             </button>

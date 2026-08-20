@@ -21,18 +21,22 @@ interface Props {
 export function UnscheduledList({ tasks, onOpenTask, onSchedule }: Props) {
   return (
     <Collapsible defaultOpen className="rounded-lg border">
-      <CollapsibleTrigger className="group/trigger flex w-full items-center gap-2 px-3 py-2 text-sm font-medium">
-        <ChevronRightIcon className="size-4 transition-transform group-data-[panel-open]/trigger:rotate-90" />
+      <CollapsibleTrigger className="group/trigger flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-muted/50">
+        <ChevronRightIcon className="size-4 shrink-0 text-muted-foreground transition-transform group-data-[panel-open]/trigger:rotate-90" />
         Unscheduled
-        <span className="text-muted-foreground tabular-nums">{tasks.length}</span>
+        <span className="shrink-0 text-xs text-muted-foreground tabular-nums">{tasks.length}</span>
       </CollapsibleTrigger>
       <CollapsibleContent>
         {tasks.length === 0 ? (
-          <p className="border-t px-3 py-3 text-xs text-muted-foreground">Nothing waiting.</p>
+          <p className="border-t px-3 py-4 text-sm text-muted-foreground">Nothing waiting.</p>
         ) : (
           tasks.map((task) => (
-            <div key={task.id} className="flex items-center gap-2 border-t px-3 py-2">
+            <div
+              key={task.id}
+              className="flex items-center gap-2 border-t px-3 py-2 transition-colors hover:bg-muted/50"
+            >
               <span
+                aria-hidden
                 className="h-6 w-1 shrink-0 rounded-full"
                 style={{ backgroundColor: task.subgroup?.color || NO_SUBGROUP_COLOR }}
               />
@@ -46,7 +50,10 @@ export function UnscheduledList({ tasks, onOpenTask, onSchedule }: Props) {
               >
                 {task.title}
               </button>
-              <SchedulePopover onPick={(day) => onSchedule(task.id, day)} />
+              <SchedulePopover
+                taskTitle={task.title}
+                onPick={(day) => onSchedule(task.id, day)}
+              />
             </div>
           ))
         )}
@@ -55,12 +62,19 @@ export function UnscheduledList({ tasks, onOpenTask, onSchedule }: Props) {
   );
 }
 
-function SchedulePopover({ onPick }: { onPick: (day: string) => void }) {
+function SchedulePopover({
+  taskTitle,
+  onPick,
+}: {
+  taskTitle: string;
+  onPick: (day: string) => void;
+}) {
   const [open, setOpen] = useState(false);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger
+        aria-label={`Schedule "${taskTitle}"`}
         className={cn(buttonVariants({ variant: "outline", size: "xs" }), "shrink-0")}
       >
         Schedule

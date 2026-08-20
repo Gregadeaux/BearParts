@@ -71,7 +71,7 @@ export function AddToQueueDialog({ partName, version, team }: Props) {
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>
+          <DialogTitle className="min-w-0 truncate pr-8">
             Queue {partName} <span className="text-muted-foreground">v{version.version}</span>
           </DialogTitle>
         </DialogHeader>

@@ -27,7 +27,7 @@ export function KanbanColumn({
 
   return (
     <div
-      className={`flex w-[78vw] shrink-0 snap-start flex-col rounded-lg bg-muted/70 dark:bg-muted/50 sm:w-64 lg:w-auto lg:min-w-0 lg:flex-1 ${
+      className={`flex w-[78vw] shrink-0 snap-start flex-col rounded-lg bg-muted/70 transition-shadow dark:bg-muted/50 sm:w-64 lg:w-auto lg:min-w-0 lg:flex-1 ${
         over ? "ring-2 ring-primary/50" : ""
       }`}
       onDragOver={(e) => {
@@ -50,7 +50,9 @@ export function KanbanColumn({
       </div>
       <div className="flex flex-1 flex-col gap-2 overflow-y-auto px-2 pb-2">
         {parts.length === 0 ? (
-          <p className="py-6 text-center text-xs text-muted-foreground">Empty</p>
+          <p className="rounded-lg border border-dashed px-3 py-6 text-center text-sm text-muted-foreground">
+            Nothing here — drop a part in.
+          </p>
         ) : (
           parts.map((p) => (
             <KanbanCard

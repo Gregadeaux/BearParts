@@ -8,6 +8,7 @@ import type { Units } from "@/types/analysis";
 import type { AnalyzedDxf } from "@/services/dxf/analysis.service";
 import { createClient } from "@/lib/supabase/client";
 import { randomId } from "@/lib/id";
+import { formatBytes } from "@/lib/format";
 import { uploadPartFile } from "@/services/storage.service";
 import { createPartAction } from "@/app/actions/parts";
 import { UploadDropzone } from "./upload-dropzone";
@@ -93,6 +94,11 @@ export function NewPartForm({ team }: { team: ProfileRow[] }) {
 
   return (
     <div className="space-y-4">
+      {file && (
+        <p className="truncate text-sm text-muted-foreground">
+          {file.name} · {formatBytes(file.size)}
+        </p>
+      )}
       {fileType === "dxf" && dxfText ? (
         <DxfWorkspace
           dxfText={dxfText}
@@ -127,7 +133,7 @@ export function NewPartForm({ team }: { team: ProfileRow[] }) {
         <Field label="Priority">
           <Select
             value={priority}
-            onValueChange={(v) => setPriority(v as PartPriority)}
+            onValueChange={(v) => setPriority((v ?? "normal") as PartPriority)}
             items={PART_PRIORITIES.map((p) => ({ value: p.value, label: p.label }))}
           >
             <SelectTrigger className="w-full">
@@ -146,7 +152,7 @@ export function NewPartForm({ team }: { team: ProfileRow[] }) {
           <Field label="Units">
             <Select
               value={unitOverride}
-              onValueChange={(v) => setUnitOverride(v as Units | "auto")}
+              onValueChange={(v) => setUnitOverride((v ?? "auto") as Units | "auto")}
               items={[
                 { value: "auto", label: "Auto-detect" },
                 { value: "in", label: "Inches" },

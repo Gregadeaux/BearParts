@@ -51,12 +51,16 @@ export function TaskGroup({ group, groupBy, onOpen, onStatusChange, onDelete, on
           />
         )}
         <span className="truncate text-sm font-semibold">{group.label}</span>
-        <span className="text-xs text-muted-foreground">{group.tasks.length}</span>
+        <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+          {group.tasks.length}
+        </span>
       </CollapsibleTrigger>
 
       <CollapsibleContent className="space-y-1 pl-1">
         {group.tasks.length === 0 && !adding && (
-          <p className="px-3 py-1.5 text-xs text-muted-foreground">No tasks</p>
+          <p className="ml-3 rounded-lg border border-dashed px-3 py-4 text-sm text-muted-foreground">
+            No tasks here yet.
+          </p>
         )}
         {group.tasks.map((task) => (
           <TaskRow

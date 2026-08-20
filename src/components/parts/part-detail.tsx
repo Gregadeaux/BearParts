@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { Download } from "lucide-react";
 import type { Part, ProfileRow } from "@/types/part";
 import { DxfWorkspace } from "@/components/viewer/dxf-workspace";
 import { StlWorkspace } from "@/components/viewer/stl-workspace";
@@ -43,13 +44,14 @@ export function PartDetail({ part, team, userId, fileUrl }: Props) {
     <div className="space-y-4">
       <div className="space-y-1">
         <div className="flex flex-wrap items-center gap-2">
-          <h1 className="text-lg font-semibold">{part.name}</h1>
+          {/* the top bar already renders the part name as the page <h1> */}
+          <h2 className="min-w-0 truncate text-lg font-semibold">{part.name}</h2>
           <StatusBadge status={part.status as never} />
           <PriorityBadge priority={part.priority as never} />
           {fileType === "stl" && <span className="text-xs text-muted-foreground">3D print</span>}
           {fileType === "pdf" && <span className="text-xs text-muted-foreground">drawing</span>}
           {fileType === "step" && <span className="text-xs text-muted-foreground">CAD model</span>}
-          {part.quantity > 1 && <span className="text-sm text-muted-foreground">×{part.quantity}</span>}
+          {part.quantity > 1 && <span className="text-xs text-muted-foreground">×{part.quantity}</span>}
         </div>
         <p className="text-sm text-muted-foreground">
           {part.material && <span>{part.material} · </span>}
@@ -72,7 +74,9 @@ export function PartDetail({ part, team, userId, fileUrl }: Props) {
       <PartActions part={part} team={team} userId={userId} />
 
       {error ? (
-        <p className="text-sm text-destructive">Could not load the part file.</p>
+        <p className="rounded-lg border border-dashed border-destructive/40 px-3 py-8 text-center text-sm text-destructive">
+          Could not load the part file. Try downloading it instead.
+        </p>
       ) : !loaded ? (
         <Skeleton className="h-72 w-full" />
       ) : fileType === "stl" ? (
@@ -94,7 +98,7 @@ export function PartDetail({ part, team, userId, fileUrl }: Props) {
         nativeButton={false}
         render={<a href={fileUrl} download={`${part.name}.${part.file_type}`} />}
       >
-        Download {fileType.toUpperCase()}
+        <Download /> Download {fileType.toUpperCase()}
       </Button>
     </div>
   );

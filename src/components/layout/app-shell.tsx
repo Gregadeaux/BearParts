@@ -23,7 +23,7 @@ export function AppShell({ userName, userAvatar, title, action, children }: Prop
         <header className="sticky top-0 z-40 flex h-13 shrink-0 items-center gap-2 border-b bg-background/95 px-3 backdrop-blur">
           <SidebarTrigger />
           <Separator orientation="vertical" className="mr-1 h-4" />
-          {title && <h1 className="truncate text-sm font-semibold">{title}</h1>}
+          {title && <h1 className="min-w-0 truncate text-sm font-semibold">{title}</h1>}
           <div className="flex-1" />
           {action}
         </header>

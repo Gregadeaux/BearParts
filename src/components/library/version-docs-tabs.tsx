@@ -153,10 +153,19 @@ function DocPanel({
                 : "text-muted-foreground hover:bg-muted",
             )}
           >
-            <button type="button" onClick={() => setSelectedId(doc.id)} className="flex items-center gap-1.5">
-              {kind === "drawing" ? <FileText className="size-3.5" /> : <Route className="size-3.5" />}
+            <button
+              type="button"
+              title={doc.file_name}
+              onClick={() => setSelectedId(doc.id)}
+              className="flex min-w-0 items-center gap-1.5"
+            >
+              {kind === "drawing" ? (
+                <FileText className="size-3.5 shrink-0" />
+              ) : (
+                <Route className="size-3.5 shrink-0" />
+              )}
               <span className="max-w-44 truncate">{doc.file_name}</span>
-              <span className="text-muted-foreground">{formatBytes(doc.size_bytes)}</span>
+              <span className="shrink-0 text-muted-foreground">{formatBytes(doc.size_bytes)}</span>
             </button>
             <button
               type="button"
@@ -194,9 +203,14 @@ function DocPanel({
       </div>
 
       {docs.length === 0 ? (
-        <p className="rounded-lg border border-dashed px-3 py-6 text-center text-sm text-muted-foreground">
+        <div className="flex flex-col items-center gap-1 rounded-lg border border-dashed py-12 text-sm text-muted-foreground">
+          {kind === "drawing" ? (
+            <FileText className="mb-1 size-8 opacity-40" />
+          ) : (
+            <Route className="mb-1 size-8 opacity-40" />
+          )}
           {KIND_META[kind].empty}
-        </p>
+        </div>
       ) : (
         selected && <DocPreview key={selected.id} doc={selected} />
       )}
