@@ -95,6 +95,41 @@ export type Database = {
           },
         ]
       }
+      milestones: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          date: string
+          description: string | null
+          id: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          date: string
+          description?: string | null
+          id?: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          date?: string
+          description?: string | null
+          id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "milestones_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       part_comments: {
         Row: {
           anchor: Json | null

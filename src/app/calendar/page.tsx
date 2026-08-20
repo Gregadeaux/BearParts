@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { getProfile, listProfiles } from "@/services/profiles.service";
 import { listAllTags, listProjects, listSubgroups, listTasks } from "@/services/tasks.service";
+import { listMilestones } from "@/services/milestones.service";
 import { AppShell } from "@/components/layout/app-shell";
 import { CalendarView } from "@/components/calendar/calendar-view";
 import { toDayKey } from "@/components/calendar/calendar-layout";
@@ -12,10 +13,11 @@ export default async function CalendarPage() {
   } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const [profile, team, tasks, subgroups, projects, allTags] = await Promise.all([
+  const [profile, team, tasks, milestones, subgroups, projects, allTags] = await Promise.all([
     getProfile(supabase, user.id),
     listProfiles(supabase),
     listTasks(supabase),
+    listMilestones(supabase),
     listSubgroups(supabase),
     listProjects(supabase),
     listAllTags(supabase),
@@ -30,6 +32,7 @@ export default async function CalendarPage() {
       <main className="mx-auto max-w-6xl space-y-4 p-4">
         <CalendarView
           initialTasks={tasks}
+          initialMilestones={milestones}
           subgroups={subgroups}
           team={team}
           projects={projects}

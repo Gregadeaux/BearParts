@@ -2,9 +2,10 @@
 
 import { useMemo, useState, useSyncExternalStore } from "react";
 import { addMonths, differenceInCalendarDays, format, parseISO, subDays } from "date-fns";
-import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
+import { ChevronLeftIcon, ChevronRightIcon, Flag } from "lucide-react";
 import { toast } from "sonner";
 import type { Person, ProjectRow, SubgroupRow, Task } from "@/types/task";
+import type { MilestoneRow } from "@/services/milestones.service";
 import { useMediaQuery } from "@/lib/use-media-query";
 import { updateTaskAction } from "@/app/actions/tasks";
 import { Button } from "@/components/ui/button";
@@ -18,9 +19,12 @@ import {
   toDayKey,
 } from "./calendar-layout";
 import { CalendarFilters } from "./calendar-filters";
+import { MilestoneDialog, type MilestoneDialogState } from "./milestone-dialog";
+import { MilestoneStrip } from "./milestone-strip";
 import { MonthGrid } from "./month-grid";
 import { UnscheduledList } from "./unscheduled-list";
 import { useCalendarTasks } from "./use-calendar-tasks";
+import { milestonesOnDay, useMilestones } from "./use-milestones";
 
 const MAX_LANES = 3;
 
@@ -29,6 +33,7 @@ const subscribeNever = () => () => {};
 
 interface Props {
   initialTasks: Task[];
+  initialMilestones: MilestoneRow[];
   subgroups: SubgroupRow[];
   team: Person[];
   projects: ProjectRow[];
@@ -43,6 +48,7 @@ type DialogState = Pick<TaskDialogProps, "task" | "defaults">;
 /** Month calendar: bars for dated tasks, drag to reschedule, agenda on phones. */
 export function CalendarView({
   initialTasks,
+  initialMilestones,
   subgroups,
   team,
   projects,
@@ -52,10 +58,12 @@ export function CalendarView({
 }: Props) {
   const { tasks, setTasks, visible, filters, toggleSubgroup, toggleAssignee, toggleMine } =
     useCalendarTasks(initialTasks, userId);
+  const { milestones, refetch: refetchMilestones } = useMilestones(initialMilestones);
   const [cursor, setCursor] = useState(() => parseISO(initialToday));
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [dragTaskId, setDragTaskId] = useState<string | null>(null);
   const [dialog, setDialog] = useState<DialogState | null>(null);
+  const [milestoneDialog, setMilestoneDialog] = useState<MilestoneDialogState | null>(null);
   const compact = !useMediaQuery("(min-width: 1024px)");
 
   // SSR uses the server's date so hydration matches; the browser's takes over after
@@ -139,10 +147,28 @@ export function CalendarView({
           <ChevronRightIcon />
         </Button>
         <div className="flex-1" />
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() =>
+            setMilestoneDialog({ milestone: null, defaultDate: selectedDay ?? today })
+          }
+        >
+          <Flag /> Milestone
+        </Button>
         <Button variant="outline" size="sm" onClick={goToday}>
           Today
         </Button>
       </div>
+
+      <MilestoneStrip
+        milestones={milestones}
+        today={today}
+        onSelect={(m) => {
+          setCursor(parseISO(m.date));
+          if (compact) setSelectedDay(m.date);
+        }}
+      />
 
       <CalendarFilters
         subgroups={subgroups}
@@ -159,6 +185,7 @@ export function CalendarView({
       <MonthGrid
         layouts={layouts}
         tasks={visible}
+        milestones={milestones}
         maxLanes={MAX_LANES}
         monthKey={monthKey}
         today={today}
@@ -167,6 +194,7 @@ export function CalendarView({
         dragging={dragTaskId !== null}
         onDayClick={openDay}
         onTaskClick={(task) => setDialog({ task })}
+        onMilestoneClick={(m) => setMilestoneDialog({ milestone: m, defaultDate: m.date })}
         onTaskDragStart={setDragTaskId}
         onDragEnd={() => setDragTaskId(null)}
         onDropTask={moveTask}
@@ -176,7 +204,9 @@ export function CalendarView({
         <AgendaList
           day={selectedDay}
           tasks={tasksOnDay(visible, selectedDay)}
+          milestones={milestonesOnDay(milestones, selectedDay)}
           onOpenTask={(task) => setDialog({ task })}
+          onOpenMilestone={(m) => setMilestoneDialog({ milestone: m, defaultDate: m.date })}
           onAddTask={(day) => setDialog({ defaults: { dueDate: day } })}
         />
       )}
@@ -202,6 +232,12 @@ export function CalendarView({
           userId={userId ?? ""}
         />
       )}
+
+      <MilestoneDialog
+        state={milestoneDialog}
+        onClose={() => setMilestoneDialog(null)}
+        onSaved={refetchMilestones}
+      />
     </div>
   );
 }

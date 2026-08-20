@@ -1,9 +1,12 @@
 "use client";
 
+import { Flag } from "lucide-react";
 import type { Task } from "@/types/task";
+import type { MilestoneRow } from "@/services/milestones.service";
 import { cn } from "@/lib/utils";
 import { tasksOnDay, type WeekLayout } from "./calendar-layout";
 import { NO_SUBGROUP_COLOR } from "./task-chip";
+import { milestonesOnDay } from "./use-milestones";
 import { WeekRow } from "./week-row";
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -12,6 +15,7 @@ const MAX_DOTS = 3;
 interface Props {
   layouts: WeekLayout[];
   tasks: Task[];
+  milestones: MilestoneRow[];
   maxLanes: number;
   /** yyyy-MM of the month in view */
   monthKey: string;
@@ -22,6 +26,7 @@ interface Props {
   dragging: boolean;
   onDayClick: (day: string) => void;
   onTaskClick: (task: Task) => void;
+  onMilestoneClick: (milestone: MilestoneRow) => void;
   onTaskDragStart: (taskId: string) => void;
   onDragEnd: () => void;
   onDropTask: (taskId: string, day: string) => void;
@@ -48,12 +53,14 @@ type GridProps = Omit<Props, "compact">;
 function FullWeeks({
   layouts,
   tasks,
+  milestones,
   maxLanes,
   monthKey,
   today,
   dragging,
   onDayClick,
   onTaskClick,
+  onMilestoneClick,
   onTaskDragStart,
   onDragEnd,
   onDropTask,
@@ -65,6 +72,7 @@ function FullWeeks({
           key={layout.days[0]}
           layout={layout}
           tasks={tasks}
+          milestones={milestones}
           maxLanes={maxLanes}
           monthKey={monthKey}
           today={today}
@@ -72,6 +80,7 @@ function FullWeeks({
           dragging={dragging}
           onDayClick={onDayClick}
           onTaskClick={onTaskClick}
+          onMilestoneClick={onMilestoneClick}
           onTaskDragStart={onTaskDragStart}
           onDragEnd={onDragEnd}
           onDropTask={onDropTask}
@@ -81,12 +90,21 @@ function FullWeeks({
   );
 }
 
-function CompactWeeks({ layouts, tasks, monthKey, today, selectedDay, onDayClick }: GridProps) {
+function CompactWeeks({
+  layouts,
+  tasks,
+  milestones,
+  monthKey,
+  today,
+  selectedDay,
+  onDayClick,
+}: GridProps) {
   return (
     <div className="grid grid-cols-7">
       {layouts.flatMap((layout) =>
         layout.days.map((day, col) => {
           const dayTasks = tasksOnDay(tasks, day);
+          const hasMilestone = milestonesOnDay(milestones, day).length > 0;
           return (
             <button
               key={day}
@@ -110,6 +128,7 @@ function CompactWeeks({ layouts, tasks, monthKey, today, selectedDay, onDayClick
                 {Number(day.slice(8))}
               </span>
               <span className="flex flex-wrap items-center justify-center gap-0.5">
+                {hasMilestone && <Flag className="size-2.5 text-amber-600 dark:text-amber-400" />}
                 {dayTasks.slice(0, MAX_DOTS).map((t) => (
                   <span
                     key={t.id}

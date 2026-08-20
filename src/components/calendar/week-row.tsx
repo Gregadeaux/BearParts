@@ -2,9 +2,12 @@
 
 import { useState } from "react";
 import type { Task } from "@/types/task";
+import type { MilestoneRow } from "@/services/milestones.service";
 import { cn } from "@/lib/utils";
 import { tasksOnDay, type WeekLayout } from "./calendar-layout";
 import { DayPopover } from "./day-popover";
+import { MilestoneChip } from "./milestone-chip";
+import { milestonesOnDay } from "./use-milestones";
 import { TaskChip } from "./task-chip";
 
 /** Lane height (chip + gap) — keep in sync with the cell min-height. */
@@ -14,6 +17,7 @@ interface Props {
   layout: WeekLayout;
   /** filtered tasks — the row picks out what it needs */
   tasks: Task[];
+  milestones: MilestoneRow[];
   maxLanes: number;
   /** yyyy-MM of the month in view; other days render dimmed */
   monthKey: string;
@@ -23,6 +27,7 @@ interface Props {
   dragging: boolean;
   onDayClick: (day: string) => void;
   onTaskClick: (task: Task) => void;
+  onMilestoneClick: (milestone: MilestoneRow) => void;
   onTaskDragStart: (taskId: string) => void;
   onDragEnd: () => void;
   onDropTask: (taskId: string, day: string) => void;
@@ -32,6 +37,7 @@ interface Props {
 export function WeekRow({
   layout,
   tasks,
+  milestones,
   maxLanes,
   monthKey,
   today,
@@ -39,12 +45,16 @@ export function WeekRow({
   dragging,
   onDayClick,
   onTaskClick,
+  onMilestoneClick,
   onTaskDragStart,
   onDragEnd,
   onDropTask,
 }: Props) {
   const [overDay, setOverDay] = useState<string | null>(null);
   const byId = new Map(tasks.map((t) => [t.id, t]));
+  // milestones get their own row(s) above the task lanes, only in weeks that have them
+  const dayMilestones = layout.days.map((day) => milestonesOnDay(milestones, day));
+  const milestoneRows = Math.max(0, ...dayMilestones.map((list) => list.length));
 
   return (
     <div className="relative" onDragEnd={onDragEnd}>
@@ -71,6 +81,7 @@ export function WeekRow({
               day === today && "bg-accent/40",
               overDay === day && "ring-2 ring-primary/50 ring-inset",
             )}
+            style={milestoneRows > 0 ? { minHeight: `${8 + milestoneRows * 1.625}rem` } : undefined}
           >
             <span
               className={cn(
@@ -89,6 +100,18 @@ export function WeekRow({
         className="pointer-events-none absolute inset-x-0 top-7 grid grid-cols-7 content-start"
         style={{ gridAutoRows: LANE_HEIGHT }}
       >
+        {dayMilestones.flatMap((list, col) =>
+          list.map((milestone, idx) => (
+            <div
+              key={milestone.id}
+              className={cn("min-w-0 px-0.5", dragging && "pointer-events-none")}
+              style={{ gridColumn: col + 1, gridRow: idx + 1 }}
+            >
+              <MilestoneChip milestone={milestone} onClick={() => onMilestoneClick(milestone)} />
+            </div>
+          )),
+        )}
+
         {layout.segments.map((seg) => {
           const task = byId.get(seg.taskId);
           if (!task) return null;
@@ -98,7 +121,7 @@ export function WeekRow({
               className="min-w-0 px-0.5"
               style={{
                 gridColumn: `${seg.colStart + 1} / ${seg.colEnd + 2}`,
-                gridRow: seg.lane + 1,
+                gridRow: seg.lane + 1 + milestoneRows,
               }}
             >
               <TaskChip
@@ -123,7 +146,7 @@ export function WeekRow({
             <div
               key={layout.days[col]}
               className={cn("min-w-0 px-0.5", dragging && "pointer-events-none")}
-              style={{ gridColumn: col + 1, gridRow: maxLanes + 1 }}
+              style={{ gridColumn: col + 1, gridRow: maxLanes + 1 + milestoneRows }}
             >
               <DayPopover
                 day={layout.days[col]}
