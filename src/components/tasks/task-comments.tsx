@@ -10,6 +10,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useLiveTable } from "@/lib/use-live-table";
 import { formatDateTime, initials } from "@/lib/format";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { MentionComposer } from "@/components/comments/mention-composer";
 import { CommentBody } from "@/components/comments/comment-body";
 
@@ -18,10 +19,12 @@ interface Props {
   taskTitle: string;
   team: { id: string; display_name: string }[];
   userId: string;
+  /** panel: full-height column with its own scroll (desktop); inline: grows in place (mobile) */
+  layout?: "inline" | "panel";
 }
 
-/** Chat-style discussion inside the task dialog — live, with @user mentions. */
-export function TaskComments({ taskId, taskTitle, team, userId }: Props) {
+/** Chat-style discussion for a task — live, with @user mentions. */
+export function TaskComments({ taskId, taskTitle, team, userId, layout = "inline" }: Props) {
   const [comments, setComments] = useState<TaskComment[]>([]);
   const [pending, startTransition] = useTransition();
   const endRef = useRef<HTMLDivElement>(null);
@@ -71,59 +74,101 @@ export function TaskComments({ taskId, taskTitle, team, userId }: Props) {
       }
     });
 
+  const list = (
+    <>
+      {comments.map((comment) => (
+        <CommentItem key={comment.id} comment={comment} userId={userId} onRemove={remove} />
+      ))}
+      <div ref={endRef} />
+    </>
+  );
+
+  const composer = (
+    <MentionComposer
+      team={team}
+      versions={[]}
+      onSubmit={post}
+      pending={pending}
+      placeholder="Comment — @ to mention a teammate"
+    />
+  );
+
+  if (layout === "panel") {
+    return (
+      <div className="flex h-full min-h-0 flex-col">
+        <div className="border-b px-3 py-2 text-sm font-medium">
+          Comments
+          {comments.length > 0 && (
+            <span className="ml-1.5 text-xs font-normal text-muted-foreground">
+              {comments.length}
+            </span>
+          )}
+        </div>
+        <ScrollArea className="min-h-0 flex-1">
+          <div className="space-y-3 p-3">
+            {comments.length === 0 && (
+              <p className="py-6 text-center text-xs text-muted-foreground">
+                No comments yet. Start the discussion.
+              </p>
+            )}
+            {list}
+          </div>
+        </ScrollArea>
+        <div className="border-t p-2">{composer}</div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-2">
       <span className="text-xs font-medium text-muted-foreground">
         Comments
         {comments.length > 0 && <span className="ml-1.5 tabular-nums">{comments.length}</span>}
       </span>
+      {comments.length > 0 && <div className="space-y-3">{list}</div>}
+      {composer}
+    </div>
+  );
+}
 
-      {comments.length > 0 && (
-        <div className="space-y-3">
-          {comments.map((comment) => (
-            <div key={comment.id} className="group flex gap-2">
-              <Avatar className="mt-0.5 size-6 shrink-0">
-                {comment.author?.avatar_url && (
-                  <AvatarImage src={comment.author.avatar_url} referrerPolicy="no-referrer" />
-                )}
-                <AvatarFallback className="text-[9px]">
-                  {initials(comment.author?.display_name ?? "?")}
-                </AvatarFallback>
-              </Avatar>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-baseline gap-2">
-                  <span className="text-xs font-medium">
-                    {comment.author?.display_name ?? "Unknown"}
-                  </span>
-                  <span className="text-[11px] text-muted-foreground">
-                    {formatDateTime(comment.created_at)}
-                  </span>
-                  {comment.author_id === userId && (
-                    <button
-                      type="button"
-                      aria-label="Delete comment"
-                      onClick={() => remove(comment.id)}
-                      className="ml-auto hidden text-muted-foreground hover:text-destructive group-hover:block"
-                    >
-                      <X className="size-3.5" />
-                    </button>
-                  )}
-                </div>
-                <CommentBody body={comment.body} knownVersions={[]} />
-              </div>
-            </div>
-          ))}
-          <div ref={endRef} />
+function CommentItem({
+  comment,
+  userId,
+  onRemove,
+}: {
+  comment: TaskComment;
+  userId: string;
+  onRemove: (id: string) => void;
+}) {
+  return (
+    <div className="group flex gap-2">
+      <Avatar className="mt-0.5 size-6 shrink-0">
+        {comment.author?.avatar_url && (
+          <AvatarImage src={comment.author.avatar_url} referrerPolicy="no-referrer" />
+        )}
+        <AvatarFallback className="text-[9px]">
+          {initials(comment.author?.display_name ?? "?")}
+        </AvatarFallback>
+      </Avatar>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-baseline gap-2">
+          <span className="text-xs font-medium">{comment.author?.display_name ?? "Unknown"}</span>
+          <span className="text-[11px] text-muted-foreground">
+            {formatDateTime(comment.created_at)}
+          </span>
+          {comment.author_id === userId && (
+            <button
+              type="button"
+              aria-label="Delete comment"
+              onClick={() => onRemove(comment.id)}
+              className="ml-auto hidden text-muted-foreground hover:text-destructive group-hover:block"
+            >
+              <X className="size-3.5" />
+            </button>
+          )}
         </div>
-      )}
-
-      <MentionComposer
-        team={team}
-        versions={[]}
-        onSubmit={post}
-        pending={pending}
-        placeholder="Comment — @ to mention a teammate"
-      />
+        <CommentBody body={comment.body} knownVersions={[]} />
+      </div>
     </div>
   );
 }

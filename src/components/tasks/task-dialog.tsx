@@ -200,98 +200,95 @@ export function TaskDialog({
       }
     });
 
-  const body = (
-    <div className="flex max-h-[85dvh] flex-col">
-      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
-        <Input
-          autoFocus={!task}
-          value={draft.title}
-          onChange={(e) => patch({ title: e.target.value })}
-          placeholder="Task title"
-          className="h-auto border-0 px-0 py-1 text-lg font-semibold focus-visible:ring-0"
+  const form = (
+    <>
+      <Input
+        autoFocus={!task}
+        value={draft.title}
+        onChange={(e) => patch({ title: e.target.value })}
+        placeholder="Task title"
+        className="h-auto border-0 px-0 py-1 text-lg font-semibold focus-visible:ring-0"
+      />
+      <Textarea
+        value={draft.description}
+        onChange={(e) => patch({ description: e.target.value })}
+        placeholder="Add details…"
+        className="min-h-14 resize-none border-0 px-0 focus-visible:ring-0"
+      />
+      <TaskFormFields
+        draft={draft}
+        onChange={patch}
+        team={team}
+        subgroups={allSubgroups}
+        projects={projects}
+        onSubgroupCreated={(s) => setCreated((c) => [...c, s])}
+      />
+      <SubtaskList
+        items={subtasks}
+        onAdd={addSubtask}
+        onToggle={toggleSubtask}
+        onRemove={removeSubtask}
+      />
+      <TaskAttachments
+        taskId={task?.id ?? null}
+        items={attachments}
+        onItemsChange={setAttachments}
+      />
+      <div className="space-y-1">
+        <span className="text-xs font-medium text-muted-foreground">Tags</span>
+        <TagInput
+          tags={draft.tags}
+          suggestions={allTags}
+          onChange={(tags) => patch({ tags })}
         />
-        <Textarea
-          value={draft.description}
-          onChange={(e) => patch({ description: e.target.value })}
-          placeholder="Add details…"
-          className="min-h-14 resize-none border-0 px-0 focus-visible:ring-0"
-        />
-        <TaskFormFields
-          draft={draft}
-          onChange={patch}
-          team={team}
-          subgroups={allSubgroups}
-          projects={projects}
-          onSubgroupCreated={(s) => setCreated((c) => [...c, s])}
-        />
-        <SubtaskList
-          items={subtasks}
-          onAdd={addSubtask}
-          onToggle={toggleSubtask}
-          onRemove={removeSubtask}
-        />
-        <TaskAttachments
-          taskId={task?.id ?? null}
-          items={attachments}
-          onItemsChange={setAttachments}
-        />
-        <div className="space-y-1">
-          <span className="text-xs font-medium text-muted-foreground">Tags</span>
-          <TagInput
-            tags={draft.tags}
-            suggestions={allTags}
-            onChange={(tags) => patch({ tags })}
-          />
-        </div>
-        {task && (
-          <div className="border-t pt-3">
-            <TaskComments taskId={task.id} taskTitle={task.title} team={team} userId={userId} />
-          </div>
-        )}
       </div>
+    </>
+  );
 
-      <div className="flex items-center gap-2 border-t bg-muted/50 p-3">
-        {task && (
-          <Button
-            variant="destructive"
-            size="sm"
-            disabled={pending}
-            onClick={() => setConfirming(true)}
-          >
-            <Trash2 /> Delete
-          </Button>
-        )}
+  const footer = (
+    <div className="flex items-center gap-2 border-t bg-muted/50 p-3">
+      {task && (
         <Button
-          variant="ghost"
+          variant="destructive"
           size="sm"
-          className="ml-auto"
-          onClick={() => onOpenChange(false)}
+          disabled={pending}
+          onClick={() => setConfirming(true)}
         >
-          Cancel
+          <Trash2 /> Delete
         </Button>
-        <Button size="sm" disabled={pending || !draft.title.trim()} onClick={save}>
-          {pending ? "Saving…" : "Save"}
-        </Button>
-      </div>
-
-      <AlertDialog open={confirming} onOpenChange={setConfirming}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete task?</AlertDialogTitle>
-            <AlertDialogDescription>
-              <span className="font-medium text-foreground">{task?.title}</span> will be removed for
-              good.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction variant="destructive" disabled={pending} onClick={remove}>
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      )}
+      <Button
+        variant="ghost"
+        size="sm"
+        className="ml-auto"
+        onClick={() => onOpenChange(false)}
+      >
+        Cancel
+      </Button>
+      <Button size="sm" disabled={pending || !draft.title.trim()} onClick={save}>
+        {pending ? "Saving…" : "Save"}
+      </Button>
     </div>
+  );
+
+  const confirmDelete = (
+    <AlertDialog open={confirming} onOpenChange={setConfirming}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete task?</AlertDialogTitle>
+          <AlertDialogDescription>
+            <span className="font-medium text-foreground">{task?.title}</span> will be removed for
+            good.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction variant="destructive" disabled={pending} onClick={remove}>
+            Delete
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 
   const heading = task ? "Edit task" : "New task";
@@ -301,17 +298,60 @@ export function TaskDialog({
       <Drawer open={open} onOpenChange={onOpenChange}>
         <DrawerContent>
           <DrawerTitle className="sr-only">{heading}</DrawerTitle>
-          {body}
+          <div className="flex max-h-[85dvh] flex-col">
+            <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
+              {form}
+              {task && (
+                <div className="border-t pt-3">
+                  <TaskComments
+                    taskId={task.id}
+                    taskTitle={task.title}
+                    team={team}
+                    userId={userId}
+                  />
+                </div>
+              )}
+            </div>
+            {footer}
+            {confirmDelete}
+          </div>
         </DrawerContent>
       </Drawer>
     );
   }
 
+  // editing gets a wide two-column layout: form left, discussion right (like part detail)
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent showCloseButton={false} className="gap-0 p-0 sm:max-w-2xl">
+      <DialogContent
+        showCloseButton={false}
+        className={task ? "gap-0 p-0 sm:max-w-[75vw]" : "gap-0 p-0 sm:max-w-2xl"}
+      >
         <DialogTitle className="sr-only">{heading}</DialogTitle>
-        {body}
+        {task ? (
+          <div className="flex h-[85dvh] flex-col">
+            <div className="flex min-h-0 flex-1">
+              <div className="min-h-0 min-w-0 flex-1 space-y-3 overflow-y-auto p-4">{form}</div>
+              <aside className="w-80 shrink-0 border-l lg:w-96">
+                <TaskComments
+                  taskId={task.id}
+                  taskTitle={task.title}
+                  team={team}
+                  userId={userId}
+                  layout="panel"
+                />
+              </aside>
+            </div>
+            {footer}
+            {confirmDelete}
+          </div>
+        ) : (
+          <div className="flex max-h-[85dvh] flex-col">
+            <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4">{form}</div>
+            {footer}
+            {confirmDelete}
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );
