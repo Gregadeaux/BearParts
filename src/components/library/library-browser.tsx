@@ -50,6 +50,10 @@ interface Props {
   projects: ProjectRow[];
   /** part id → signed URL of the latest version's preview PNG */
   thumbUrls?: Record<string, string>;
+  /** folder links become `${basePath}?f=<id>` — defaults to the library page */
+  basePath?: string;
+  /** embedded in a subsystem dashboard: no Library root crumb, no subsystem tools */
+  embedded?: boolean;
 }
 
 /** Folder browser with whole-library search and type filtering. */
@@ -61,6 +65,8 @@ export function LibraryBrowser({
   subsystems,
   projects,
   thumbUrls = {},
+  basePath = "/library",
+  embedded = false,
 }: Props) {
   const router = useRouter();
   const [query, setQuery] = useState("");
@@ -88,9 +94,10 @@ export function LibraryBrowser({
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
-        <LibraryBreadcrumb ancestry={ancestry} />
+        <LibraryBreadcrumb ancestry={ancestry} basePath={basePath} root={embedded ? null : undefined} />
         <div className="ml-auto flex gap-2">
           {currentFolderId &&
+            !embedded &&
             (currentSubsystem ? (
               <Button
                 variant="outline"
@@ -146,6 +153,7 @@ export function LibraryBrowser({
           searching={search.searching}
           thumbUrls={search.thumbUrls}
           matchesType={matchesType}
+          basePath={basePath}
         />
       ) : (
         <BrowseGrid
@@ -155,6 +163,7 @@ export function LibraryBrowser({
           thumbUrls={thumbUrls}
           subsystemByFolder={subsystemByFolder}
           onDeleteFolder={deleteFolder}
+          basePath={basePath}
         />
       )}
     </div>
@@ -168,6 +177,7 @@ function BrowseGrid({
   thumbUrls,
   subsystemByFolder,
   onDeleteFolder,
+  basePath,
 }: {
   currentFolderId: string | null;
   folders: FolderRow[];
@@ -175,6 +185,7 @@ function BrowseGrid({
   thumbUrls: Record<string, string>;
   subsystemByFolder: Map<string, Subsystem>;
   onDeleteFolder: (folder: FolderRow) => void;
+  basePath: string;
 }) {
   if (folders.length === 0 && parts.length === 0) {
     return (
@@ -189,7 +200,7 @@ function BrowseGrid({
       {folders.map((folder) => (
         <ContextMenu key={folder.id}>
           <ContextMenuTrigger>
-            <Link href={`/library?f=${folder.id}`} className="block">
+            <Link href={`${basePath}?f=${folder.id}`} className="block">
               <Card className="flex-row items-center gap-2.5 border-transparent bg-muted/60 p-3 transition-colors hover:bg-muted">
                 <Folder className="size-5 shrink-0 fill-amber-200 text-amber-500" />
                 <span className="min-w-0 flex-1 truncate text-sm font-medium">{folder.name}</span>
@@ -221,11 +232,13 @@ function SearchResults({
   searching,
   thumbUrls,
   matchesType,
+  basePath,
 }: {
   results: ReturnType<typeof useLibrarySearch>["results"];
   searching: boolean;
   thumbUrls: Record<string, string>;
   matchesType: (p: LibraryPartListing) => boolean;
+  basePath: string;
 }) {
   if (!results) {
     return <p className="py-10 text-center text-sm text-muted-foreground">Searching…</p>;
@@ -239,7 +252,7 @@ function SearchResults({
           {results.folders.map((folder) => (
             <Link
               key={folder.id}
-              href={`/library?f=${folder.id}`}
+              href={`${basePath}?f=${folder.id}`}
               className="inline-flex items-center gap-1.5 rounded-full border bg-muted/50 px-3 py-1 text-sm transition-colors hover:bg-muted"
             >
               <Folder className="size-3.5 fill-amber-200 text-amber-500" />
