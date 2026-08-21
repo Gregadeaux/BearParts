@@ -150,6 +150,7 @@ export async function queueFromVersionAction(
     units: version.units,
     analysis: version.analysis ?? undefined,
     sourceVersionId: version.id,
+    thumbPath: version.thumb_path,
   });
   revalidatePath(`/library/parts/${version.library_part_id}`);
   return result;

@@ -24,6 +24,8 @@ export interface NewPartInput {
   analysis?: DxfAnalysis;
   /** set when this queue entry was created from a library version */
   sourceVersionId?: string;
+  /** preview PNG storage path (shared with the source version when present) */
+  thumbPath?: string | null;
 }
 
 export async function listParts(
@@ -84,6 +86,7 @@ export async function createPart(supabase: Client, userId: string, input: NewPar
       units: input.units ?? "unknown",
       analysis: (input.analysis ?? null) as never,
       source_version_id: input.sourceVersionId ?? null,
+      thumb_path: input.thumbPath ?? null,
     })
     .select(PART_SELECT)
     .single();

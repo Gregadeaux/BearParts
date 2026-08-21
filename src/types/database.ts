@@ -463,6 +463,7 @@ export type Database = {
           source_version_id: string | null
           status: string
           submitted_by: string
+          thumb_path: string | null
           units: string
           updated_at: string
         }
@@ -482,6 +483,7 @@ export type Database = {
           source_version_id?: string | null
           status?: string
           submitted_by: string
+          thumb_path?: string | null
           units?: string
           updated_at?: string
         }
@@ -501,6 +503,7 @@ export type Database = {
           source_version_id?: string | null
           status?: string
           submitted_by?: string
+          thumb_path?: string | null
           units?: string
           updated_at?: string
         }

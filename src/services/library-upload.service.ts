@@ -87,5 +87,6 @@ export async function queueImportedVersion(
     units: version.units,
     analysis: version.analysis ?? undefined,
     sourceVersionId: version.id,
+    thumbPath: version.thumb_path,
   });
 }

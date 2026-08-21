@@ -9,7 +9,8 @@ import type { AnalyzedDxf } from "@/services/dxf/analysis.service";
 import { createClient } from "@/lib/supabase/client";
 import { randomId } from "@/lib/id";
 import { formatBytes } from "@/lib/format";
-import { uploadPartFile } from "@/services/storage.service";
+import { uploadPartFile, uploadToPath } from "@/services/storage.service";
+import { generateThumbnail } from "@/lib/thumbnails";
 import { createPartAction } from "@/app/actions/parts";
 import { UploadDropzone } from "./upload-dropzone";
 import { DxfWorkspace } from "@/components/viewer/dxf-workspace";
@@ -71,6 +72,15 @@ export function NewPartForm({ team }: { team: ProfileRow[] }) {
         const supabase = createClient();
         const partId = randomId();
         const filePath = await uploadPartFile(supabase, file, partId, fileType);
+        let thumbPath: string | undefined;
+        try {
+          const thumb = await generateThumbnail(file, fileType);
+          if (thumb) {
+            thumbPath = await uploadToPath(supabase, thumb, `parts/${partId}.thumb.png`, "png");
+          }
+        } catch {
+          // a missing preview never blocks a submit
+        }
         const { id } = await createPartAction({
           name: name.trim() || file.name,
           description: description.trim() || undefined,
@@ -82,6 +92,7 @@ export function NewPartForm({ team }: { team: ProfileRow[] }) {
           fileType,
           units: fileType === "dxf" ? result!.analysis.units : undefined,
           analysis: fileType === "dxf" ? result!.analysis : undefined,
+          thumbPath,
         });
         toast.success("Part submitted");
         router.push(`/parts/${id}`);
