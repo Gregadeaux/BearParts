@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database";
-import type { Part, PartFileType, PartPriority, PartStatus } from "@/types/part";
+import type { Part, PartFileType, PartMethod, PartPriority, PartStatus } from "@/types/part";
+import { defaultMethodFor } from "@/types/part";
 import type { DxfAnalysis, Units } from "@/types/analysis";
 
 type Client = SupabaseClient<Database>;
@@ -26,6 +27,8 @@ export interface NewPartInput {
   sourceVersionId?: string;
   /** preview PNG storage path (shared with the source version when present) */
   thumbPath?: string | null;
+  /** fabrication flow — defaults from the file type when omitted */
+  method?: PartMethod;
 }
 
 export async function listParts(
@@ -78,7 +81,8 @@ export async function createPart(supabase: Client, userId: string, input: NewPar
       material: input.material || null,
       quantity: input.quantity,
       priority: input.priority,
-      status: input.assignedTo ? "assigned" : "queued",
+      status: "queued",
+      method: input.method ?? defaultMethodFor(input.fileType),
       submitted_by: userId,
       assigned_to: input.assignedTo ?? null,
       file_path: input.filePath,
@@ -99,13 +103,37 @@ export async function updateStatus(supabase: Client, id: string, status: PartSta
   if (error) throw new Error(`Could not update status: ${error.message}`);
 }
 
-/** Assign (or unassign with null). Keeps status in sync when leaving/entering the queue. */
+/**
+ * Assign (or unassign with null). Assignment is orthogonal to pipeline stage;
+ * releasing a part (null) also puts it back in the queue lane.
+ */
 export async function assignPart(supabase: Client, id: string, userId: string | null) {
   const { error } = await supabase
     .from("parts")
-    .update({ assigned_to: userId, status: userId ? "assigned" : "queued" })
+    .update(userId ? { assigned_to: userId } : { assigned_to: null, status: "queued" })
     .eq("id", id);
   if (error) throw new Error(`Could not assign part: ${error.message}`);
+}
+
+/** Change fabrication method; stages outside the new pipeline reset to queued. */
+export async function updateMethod(
+  supabase: Client,
+  id: string,
+  method: string,
+  validStatuses: string[],
+) {
+  const { data: current, error: readError } = await supabase
+    .from("parts")
+    .select("status")
+    .eq("id", id)
+    .single();
+  if (readError) throw new Error(`Could not load part: ${readError.message}`);
+  const keep = validStatuses.includes(current.status) || ["done", "rejected"].includes(current.status);
+  const { error } = await supabase
+    .from("parts")
+    .update(keep ? { method } : { method, status: "queued" })
+    .eq("id", id);
+  if (error) throw new Error(`Could not change method: ${error.message}`);
 }
 
 export async function deletePart(supabase: Client, id: string) {

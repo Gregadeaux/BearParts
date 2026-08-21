@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import type { ProfileRow, PartFileType, PartPriority } from "@/types/part";
+
 import type { Units } from "@/types/analysis";
 import type { AnalyzedDxf } from "@/services/dxf/analysis.service";
 import { createClient } from "@/lib/supabase/client";
@@ -27,7 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { PART_PRIORITIES } from "@/types/part";
+import { defaultMethodFor, PART_METHODS, PART_PRIORITIES, type PartMethod } from "@/types/part";
 
 /** Upload → verify in the right viewer → submit. */
 export function NewPartForm({ team }: { team: ProfileRow[] }) {
@@ -46,11 +47,13 @@ export function NewPartForm({ team }: { team: ProfileRow[] }) {
   const [material, setMaterial] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [priority, setPriority] = useState<PartPriority>("normal");
+  const [method, setMethod] = useState<PartMethod>("manual");
   const [assignee, setAssignee] = useState<string>("queue");
 
   const pickFile = async (f: File, type: PartFileType) => {
     setFile(f);
     setFileType(type);
+    setMethod(defaultMethodFor(type));
     if (type === "dxf") setDxfText(await f.text());
     else setStlBuffer(await f.arrayBuffer()); // stl or pdf — both view from bytes
     if (!name) setName(f.name.replace(/\.(dxf|stl|pdf|step|stp)$/i, ""));
@@ -93,6 +96,7 @@ export function NewPartForm({ team }: { team: ProfileRow[] }) {
           units: fileType === "dxf" ? result!.analysis.units : undefined,
           analysis: fileType === "dxf" ? result!.analysis : undefined,
           thumbPath,
+          method,
         });
         toast.success("Part submitted");
         router.push(`/parts/${id}`);
@@ -154,6 +158,24 @@ export function NewPartForm({ team }: { team: ProfileRow[] }) {
               {PART_PRIORITIES.map((p) => (
                 <SelectItem key={p.value} value={p.value}>
                   {p.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </Field>
+        <Field label="Fabrication flow">
+          <Select
+            value={method}
+            onValueChange={(v) => setMethod((v ?? defaultMethodFor(fileType)) as PartMethod)}
+            items={PART_METHODS.map((m) => ({ value: m.value, label: m.label }))}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {PART_METHODS.map((m) => (
+                <SelectItem key={m.value} value={m.value}>
+                  {m.label}
                 </SelectItem>
               ))}
             </SelectContent>

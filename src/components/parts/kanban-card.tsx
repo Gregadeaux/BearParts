@@ -11,19 +11,21 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
-import { PriorityBadge, StatusBadge } from "./status-badge";
+import { MethodBadge, PriorityBadge, StatusBadge } from "./status-badge";
 import { PartThumb } from "./part-thumb";
 import { formatDate, formatInches, initials } from "@/lib/format";
 
 interface Props {
   part: Part;
+  /** show the method chip (cross-method board views) */
+  showMethod?: boolean;
   onDragStart?: (e: React.DragEvent) => void;
   onArchive?: () => void;
   onRequestDelete?: () => void;
 }
 
 /** One kanban card. Assignee's profile circle sits on the top-right corner. */
-export function KanbanCard({ part, onDragStart, onArchive, onRequestDelete }: Props) {
+export function KanbanCard({ part, showMethod, onDragStart, onArchive, onRequestDelete }: Props) {
   const bb = part.analysis?.boundingBox;
   const card = (
     <div className="relative" draggable={Boolean(onDragStart)} onDragStart={onDragStart}>
@@ -51,6 +53,7 @@ export function KanbanCard({ part, onDragStart, onArchive, onRequestDelete }: Pr
             )}
           </div>
           <div className="flex items-center gap-1.5">
+            {showMethod && <MethodBadge method={part.method} />}
             <PriorityBadge priority={part.priority as never} />
             {part.status === "rejected" && <StatusBadge status="rejected" />}
             <span className="ml-auto text-xs text-muted-foreground">{formatDate(part.created_at)}</span>

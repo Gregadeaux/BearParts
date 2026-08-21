@@ -6,7 +6,7 @@ import {
 } from "@/services/library-upload.service";
 import { sendPush } from "@/services/notifications.service";
 import { createFolder } from "@/services/folders.service";
-import { PART_PRIORITIES, type PartPriority } from "@/types/part";
+import { PART_METHODS, PART_PRIORITIES, type PartMethod, type PartPriority } from "@/types/part";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database";
 
@@ -68,11 +68,16 @@ export async function POST(request: Request) {
         ? (rawPriority as PartPriority)
         : "normal";
       const material = ((formData.get("material") as string) || "").trim() || undefined;
+      const rawMethod = formData.get("method");
+      const method = PART_METHODS.some((m) => m.value === rawMethod)
+        ? (rawMethod as PartMethod)
+        : undefined;
       const queued = await queueImportedVersion(supabase, user.id, version, {
         name,
         quantity,
         priority,
         material,
+        method,
       });
       queuedPartId = queued.id;
       await sendPush(

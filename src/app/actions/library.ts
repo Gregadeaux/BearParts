@@ -8,7 +8,7 @@ import { deleteFiles, uploadToPath } from "@/services/storage.service";
 import * as versionDocs from "@/services/version-documents.service";
 import { createLibraryPartFromFile, versionInputFromFile } from "@/services/library-upload.service";
 import { createPartAction } from "./parts";
-import type { PartPriority } from "@/types/part";
+import type { PartMethod, PartPriority } from "@/types/part";
 
 async function requireUser() {
   const supabase = await createClient();
@@ -137,6 +137,7 @@ export async function queueFromVersionAction(
     material?: string;
     description?: string;
     assignedTo?: string | null;
+    method?: PartMethod;
   },
 ) {
   const { supabase } = await requireUser();

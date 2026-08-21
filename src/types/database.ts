@@ -457,6 +457,7 @@ export type Database = {
           file_type: string
           id: string
           material: string | null
+          method: string
           name: string
           priority: string
           quantity: number
@@ -477,6 +478,7 @@ export type Database = {
           file_type?: string
           id?: string
           material?: string | null
+          method?: string
           name: string
           priority?: string
           quantity?: number
@@ -497,6 +499,7 @@ export type Database = {
           file_type?: string
           id?: string
           material?: string | null
+          method?: string
           name?: string
           priority?: string
           quantity?: number

@@ -8,6 +8,8 @@ import { KanbanCard } from "./kanban-card";
 interface Props {
   title: string;
   parts: Part[];
+  /** show each card's method chip (cross-method views) */
+  showMethod?: boolean;
   onDropPart?: (partId: string) => void;
   onCardDragStart?: (e: React.DragEvent, part: Part) => void;
   onArchive?: (part: Part) => void;
@@ -18,6 +20,7 @@ interface Props {
 export function KanbanColumn({
   title,
   parts,
+  showMethod,
   onDropPart,
   onCardDragStart,
   onArchive,
@@ -27,7 +30,7 @@ export function KanbanColumn({
 
   return (
     <div
-      className={`flex w-[78vw] shrink-0 snap-start flex-col rounded-lg bg-muted/70 transition-shadow dark:bg-muted/50 sm:w-64 lg:w-auto lg:min-w-0 lg:flex-1 ${
+      className={`flex w-[78vw] shrink-0 snap-start flex-col rounded-lg bg-muted/70 transition-shadow dark:bg-muted/50 sm:w-64 lg:w-auto lg:min-w-52 lg:flex-1 ${
         over ? "ring-2 ring-primary/50" : ""
       }`}
       onDragOver={(e) => {
@@ -58,6 +61,7 @@ export function KanbanColumn({
             <KanbanCard
               key={p.id}
               part={p}
+              showMethod={showMethod}
               onDragStart={onCardDragStart ? (e) => onCardDragStart(e, p) : undefined}
               onArchive={onArchive ? () => onArchive(p) : undefined}
               onRequestDelete={onRequestDelete ? () => onRequestDelete(p) : undefined}

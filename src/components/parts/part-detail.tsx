@@ -12,7 +12,7 @@ import { StlWorkspace } from "@/components/viewer/stl-workspace";
 import { PdfWorkspace } from "@/components/viewer/pdf-workspace";
 import { StepWorkspace } from "@/components/viewer/step-workspace";
 import { PartActions } from "./part-actions";
-import { StatusBadge, PriorityBadge } from "./status-badge";
+import { MethodBadge, StatusBadge, PriorityBadge } from "./status-badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { formatDate } from "@/lib/format";
@@ -55,6 +55,7 @@ export function PartDetail({ part, team, userId, fileUrl, versionDocs = [], crum
           {/* the top bar already renders the part name as the page <h1> */}
           <h2 className="min-w-0 truncate text-lg font-semibold">{part.name}</h2>
           <StatusBadge status={part.status as never} />
+          <MethodBadge method={part.method} />
           <PriorityBadge priority={part.priority as never} />
           {fileType === "stl" && <span className="text-xs text-muted-foreground">3D print</span>}
           {fileType === "pdf" && <span className="text-xs text-muted-foreground">drawing</span>}

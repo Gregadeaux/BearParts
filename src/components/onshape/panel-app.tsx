@@ -23,6 +23,7 @@ import type {
   StudioPart,
 } from "@/services/onshape/types";
 import { generateThumbnail } from "@/lib/thumbnails";
+import { PART_METHODS, type PartMethod } from "@/types/part";
 import { usePanelSession } from "./use-panel-session";
 import { panelBlob, panelJson } from "./panel-api";
 import { parsePanelContext, useOnshapeBridge, type PanelUrlContext } from "./onshape-bridge";
@@ -114,6 +115,11 @@ export function PanelApp() {
   const [thickness, setThickness] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [queue, setQueue] = useState(false);
+  // fabrication flow defaults per export mode (dxf→laser, step→cnc), keyed so
+  // switching modes re-defaults without effects
+  const [methodPick, setMethodPick] = useState<{ mode: ExportMode; value: PartMethod } | null>(null);
+  const fabMethod: PartMethod =
+    methodPick?.mode === mode ? methodPick.value : mode === "dxf" ? "laser" : "cnc";
 
   const [busy, setBusy] = useState<Busy>(null);
   const [result, setResult] = useState<ImportResult | null>(null);
@@ -281,6 +287,7 @@ export function PanelApp() {
       if (queue) {
         fd.set("queue", "1");
         fd.set("quantity", String(quantity));
+        fd.set("method", fabMethod);
         fd.set(
           "material",
           [material.trim(), thickness.trim() && `${thickness.trim()} in`].filter(Boolean).join(" · "),
@@ -598,15 +605,35 @@ export function PanelApp() {
           <span>Add to fab queue</span>
         </label>
         {queue && (
-          <div className="space-y-1.5">
-            <Label>Quantity</Label>
-            <Input
-              type="number"
-              min={1}
-              value={quantity}
-              onChange={(e) => setQuantity(Math.max(1, Number(e.target.value) || 1))}
-              className="w-24"
-            />
+          <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-1.5">
+              <Label>Quantity</Label>
+              <Input
+                type="number"
+                min={1}
+                value={quantity}
+                onChange={(e) => setQuantity(Math.max(1, Number(e.target.value) || 1))}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Flow</Label>
+              <Select
+                value={fabMethod}
+                items={PART_METHODS.map((m) => ({ value: m.value, label: m.label }))}
+                onValueChange={(v) => v && setMethodPick({ mode, value: v as PartMethod })}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PART_METHODS.map((m) => (
+                    <SelectItem key={m.value} value={m.value}>
+                      {m.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         )}
       </Card>

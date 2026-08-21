@@ -25,7 +25,15 @@ interface Props {
   today: string;
 }
 
-const OPEN_PART_STATUSES = new Set(["queued", "assigned", "in_progress"]);
+const OPEN_PART_STATUSES = new Set([
+  "queued",
+  "toolpaths",
+  "slicing",
+  "saw",
+  "ready",
+  "in_progress",
+  "finishing",
+]);
 const MAX_LIST = 5;
 
 function countdown(days: number): string {

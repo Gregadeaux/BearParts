@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database";
-import type { PartFileType, PartPriority } from "@/types/part";
+import type { PartFileType, PartMethod, PartPriority } from "@/types/part";
 import * as library from "./library.service";
 import * as partsService from "./parts.service";
 import { uploadToPath } from "./storage.service";
@@ -71,6 +71,7 @@ export interface QueueFromVersionOptions {
   priority: PartPriority;
   material?: string;
   description?: string;
+  method?: PartMethod;
 }
 
 /** Send a freshly imported version straight to the fab queue. */

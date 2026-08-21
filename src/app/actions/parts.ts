@@ -7,7 +7,7 @@ import * as storageService from "@/services/storage.service";
 import { sendPush } from "@/services/notifications.service";
 import { notifyUsers } from "@/services/notify.service";
 import type { NewPartInput } from "@/services/parts.service";
-import { PART_STATUSES, type PartStatus } from "@/types/part";
+import { methodMeta, PART_STATUSES, type PartMethod, type PartStatus } from "@/types/part";
 
 async function requireUser() {
   const supabase = await createClient();
@@ -84,6 +84,14 @@ export async function updateStatusAction(partId: string, status: PartStatus) {
       push: status === "done",
     });
   }
+  revalidatePath("/");
+  revalidatePath("/board");
+  revalidatePath(`/parts/${partId}`);
+}
+
+export async function updateMethodAction(partId: string, method: PartMethod) {
+  const { supabase } = await requireUser();
+  await partsService.updateMethod(supabase, partId, method, methodMeta(method).lanes);
   revalidatePath("/");
   revalidatePath("/board");
   revalidatePath(`/parts/${partId}`);

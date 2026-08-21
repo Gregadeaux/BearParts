@@ -4,10 +4,10 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Hammer } from "lucide-react";
-import type { ProfileRow, PartPriority } from "@/types/part";
+import type { ProfileRow, PartMethod, PartPriority } from "@/types/part";
 import type { PartVersion } from "@/types/library";
 import { queueFromVersionAction } from "@/app/actions/library";
-import { PART_PRIORITIES } from "@/types/part";
+import { defaultMethodFor, PART_METHODS, PART_PRIORITIES } from "@/types/part";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -41,6 +41,7 @@ export function AddToQueueDialog({ partName, version, team }: Props) {
 
   const [quantity, setQuantity] = useState(1);
   const [priority, setPriority] = useState<PartPriority>("normal");
+  const [method, setMethod] = useState<PartMethod>(defaultMethodFor(version.file_type));
   const [material, setMaterial] = useState("");
   const [notes, setNotes] = useState("");
   const [assignee, setAssignee] = useState("queue");
@@ -55,6 +56,7 @@ export function AddToQueueDialog({ partName, version, team }: Props) {
           material: material.trim() || undefined,
           description: notes.trim() || undefined,
           assignedTo: assignee === "queue" ? null : assignee,
+          method,
         });
         toast.success("Sent to fab queue");
         setOpen(false);
@@ -99,6 +101,25 @@ export function AddToQueueDialog({ partName, version, team }: Props) {
                 {PART_PRIORITIES.map((p) => (
                   <SelectItem key={p.value} value={p.value}>
                     {p.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Fabrication flow</Label>
+            <Select
+              value={method}
+              onValueChange={(v) => setMethod((v ?? defaultMethodFor(version.file_type)) as PartMethod)}
+              items={PART_METHODS.map((m) => ({ value: m.value, label: m.label }))}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {PART_METHODS.map((m) => (
+                  <SelectItem key={m.value} value={m.value}>
+                    {m.label}
                   </SelectItem>
                 ))}
               </SelectContent>

@@ -3,13 +3,15 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
-import type { Part, PartStatus, ProfileRow } from "@/types/part";
+import { methodMeta, PART_METHODS, type Part, type PartMethod, type PartStatus, type ProfileRow } from "@/types/part";
 import {
   assignPartAction,
   deletePartAction,
   setArchivedAction,
+  updateMethodAction,
   updateStatusAction,
 } from "@/app/actions/parts";
+import { STATUS_LABELS } from "./status-badge";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -60,28 +62,32 @@ export function PartActions({ part, team, userId }: Props) {
     );
   }
 
+  const lanes = methodMeta(part.method).lanes;
+  const laneIndex = lanes.indexOf(status);
+  const nextLane = laneIndex >= 0 && laneIndex < lanes.length - 1 ? lanes[laneIndex + 1] : null;
+  const stageOptions: PartStatus[] = [...lanes, "rejected"];
+
   return (
     <div className="flex flex-wrap items-center gap-2">
-      {status === "queued" && (
+      {!part.assigned_to && status !== "done" && status !== "rejected" && (
         <Button disabled={pending} onClick={() => run(() => assignPartAction(part.id, userId), "It's yours")}>
           Claim
         </Button>
       )}
-      {(status === "assigned" || status === "queued") && (
+      {nextLane && (
         <Button
-          variant={status === "assigned" ? "default" : "secondary"}
           disabled={pending}
-          onClick={() => run(() => updateStatusAction(part.id, "in_progress"), "Marked in progress")}
+          onClick={() =>
+            run(
+              () => updateStatusAction(part.id, nextLane),
+              nextLane === "done" ? "Done! 🎉" : `Moved to ${STATUS_LABELS[nextLane]}`,
+            )
+          }
         >
-          Start
+          {nextLane === "done" ? "Finish" : `→ ${STATUS_LABELS[nextLane]}`}
         </Button>
       )}
-      {status === "in_progress" && (
-        <Button disabled={pending} onClick={() => run(() => updateStatusAction(part.id, "done"), "Done! 🎉")}>
-          Finish
-        </Button>
-      )}
-      {status === "done" && (
+      {(status === "done" || status === "rejected") && (
         <Button
           variant="secondary"
           disabled={pending}
@@ -90,6 +96,52 @@ export function PartActions({ part, team, userId }: Props) {
           Reopen
         </Button>
       )}
+
+      <Select
+        value={status}
+        items={stageOptions.map((s) => ({ value: s, label: STATUS_LABELS[s] }))}
+        onValueChange={(v) => {
+          if (!v || v === status) return;
+          run(
+            () =>
+              v === "queued"
+                ? assignPartAction(part.id, null)
+                : updateStatusAction(part.id, v as PartStatus),
+            `Moved to ${STATUS_LABELS[v as PartStatus]}`,
+          );
+        }}
+      >
+        <SelectTrigger className="w-40" disabled={pending}>
+          <SelectValue placeholder="Stage" />
+        </SelectTrigger>
+        <SelectContent>
+          {stageOptions.map((s) => (
+            <SelectItem key={s} value={s}>
+              {STATUS_LABELS[s]}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <Select
+        value={part.method}
+        items={PART_METHODS.map((m) => ({ value: m.value, label: m.label }))}
+        onValueChange={(v) => {
+          if (!v || v === part.method) return;
+          run(() => updateMethodAction(part.id, v as PartMethod), `Now on the ${v === "print" ? "3DP" : v.toUpperCase()} flow`);
+        }}
+      >
+        <SelectTrigger className="w-28" disabled={pending}>
+          <SelectValue placeholder="Method" />
+        </SelectTrigger>
+        <SelectContent>
+          {PART_METHODS.map((m) => (
+            <SelectItem key={m.value} value={m.value}>
+              {m.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
 
       <Select
         value={part.assigned_to ?? "unassigned"}

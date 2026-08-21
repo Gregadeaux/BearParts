@@ -25,11 +25,11 @@ export default async function BoardPage() {
       title="Board"
       action={<NewPartButton />}
     >
-      <main className="mx-auto max-w-6xl space-y-3 p-4">
+      <main className="space-y-3 p-4">
         <div className="flex justify-end">
           <ArchivedSheet />
         </div>
-        <KanbanBoard initialParts={parts} userId={user.id} />
+        <KanbanBoard initialParts={parts} />
       </main>
     </AppShell>
   );
