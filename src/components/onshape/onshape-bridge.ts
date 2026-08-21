@@ -95,14 +95,16 @@ export function useOnshapeBridge(ctx: PanelUrlContext | null, handlers: BridgeHa
     window.parent.postMessage({ ...base, messageName: "applicationInit" }, "*");
 
     const onMessage = (e: MessageEvent) => {
+      if (e.origin === location.origin) return; // our own popups
+      // the SELECTION payload is undocumented — log everything Onshape sends
+      // so real payload shapes can be captured from the console
+      console.log("[BearParts panel] message from", e.origin, JSON.stringify(e.data));
       // only trust the embedding Onshape server (when known)
       if (ctx.server && e.origin !== ctx.server) return;
-      if (!ctx.server && e.origin === location.origin) return; // our own popups
       const data = e.data as { messageName?: string } | undefined;
       if (!data?.messageName) return;
       const name = String(data.messageName).toUpperCase();
-      if (name === "SELECTION" || name.includes("SELECT")) {
-        console.log("[BearParts panel] selection message", e.data);
+      if (name.includes("SELECT")) {
         const sel = parseSelectionMessage(e.data);
         if (sel) handlersRef.current.onSelection?.(sel);
       }
