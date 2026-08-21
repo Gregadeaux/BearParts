@@ -29,30 +29,26 @@ export function KanbanCard({ part, onDragStart, onArchive, onRequestDelete }: Pr
     <div className="relative" draggable={Boolean(onDragStart)} onDragStart={onDragStart}>
       <Link href={`/parts/${part.id}`} className="block" draggable={false}>
         <Card className="gap-1.5 border-border/80 p-3 shadow-sm transition-all hover:bg-accent/50 hover:shadow-md">
-          <div className="flex items-start gap-2.5">
-            <PartThumb
-              path={part.thumb_path}
-              fileType={part.file_type}
-              alt={`${part.name} preview`}
-              className="size-12"
-            />
-            <div className="min-w-0 flex-1 space-y-1">
-              <p className={`min-w-0 truncate text-sm font-medium ${part.assignee ? "pr-7" : ""}`}>
-                {part.name}
-              </p>
-              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
-                {part.file_type === "stl" && <span className="font-medium">3DP</span>}
-                {part.file_type === "step" && <span className="font-medium">STEP</span>}
-                {part.file_type === "pdf" && <span className="font-medium">PDF</span>}
-                {part.quantity > 1 && <span>×{part.quantity}</span>}
-                {part.material && <span className="truncate">{part.material}</span>}
-                {bb && (
-                  <span className="tabular-nums">
-                    {formatInches(bb.width)} × {formatInches(bb.height)}
-                  </span>
-                )}
-              </div>
-            </div>
+          <PartThumb
+            path={part.thumb_path}
+            fileType={part.file_type}
+            alt={`${part.name} preview`}
+            className="h-24 w-full"
+          />
+          <p className={`min-w-0 truncate text-sm font-medium ${part.assignee ? "pr-7" : ""}`}>
+            {part.name}
+          </p>
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+            {part.file_type === "stl" && <span className="font-medium">3DP</span>}
+            {part.file_type === "step" && <span className="font-medium">STEP</span>}
+            {part.file_type === "pdf" && <span className="font-medium">PDF</span>}
+            {part.quantity > 1 && <span>×{part.quantity}</span>}
+            {part.material && <span className="truncate">{part.material}</span>}
+            {bb && (
+              <span className="tabular-nums">
+                {formatInches(bb.width)} × {formatInches(bb.height)}
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-1.5">
             <PriorityBadge priority={part.priority as never} />

@@ -54,13 +54,13 @@ export function PartThumb({ path, fileType, alt = "", className }: Props) {
         // eslint-disable-next-line @next/next/no-img-element
         <img src={url} alt={alt} className="max-h-full max-w-full object-contain" loading="lazy" />
       ) : fileType === "stl" ? (
-        <Box className="size-5 text-violet-500 opacity-50" />
+        <Box className="size-8 text-violet-500 opacity-40" />
       ) : fileType === "step" ? (
-        <Box className="size-5 text-emerald-600 opacity-50" />
+        <Box className="size-8 text-emerald-600 opacity-40" />
       ) : fileType === "pdf" ? (
-        <FileType2 className="size-5 text-red-400 opacity-50" />
+        <FileType2 className="size-8 text-red-400 opacity-40" />
       ) : (
-        <FileText className="size-5 text-sky-500 opacity-50" />
+        <FileText className="size-8 text-sky-500 opacity-40" />
       )}
     </div>
   );
