@@ -25,6 +25,7 @@ import {
   SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuBadge,
@@ -37,15 +38,33 @@ import {
 import { PushToggle } from "@/components/notifications/push-toggle";
 import { useUnreadCount } from "@/components/notifications/use-unread-count";
 
-const NAV = [
-  { href: "/", label: "Home", icon: House },
-  { href: "/board", label: "Board", icon: SquareKanban },
-  { href: "/library", label: "Library", icon: FolderOpen },
-  { href: "/tasks", label: "Tasks", icon: ListTodo },
-  { href: "/calendar", label: "Calendar", icon: CalendarDays },
-  { href: "/subgroups", label: "Subgroups", icon: Palette },
-  { href: "/orders", label: "Orders", icon: ShoppingCart },
-  { href: "/notifications", label: "Notifications", icon: Bell },
+const NAV_GROUPS = [
+  {
+    label: "Home",
+    items: [
+      { href: "/", label: "Home", icon: House },
+      { href: "/notifications", label: "Notifications", icon: Bell },
+    ],
+  },
+  {
+    label: "Parts",
+    items: [
+      { href: "/board", label: "Board", icon: SquareKanban },
+      { href: "/library", label: "Library", icon: FolderOpen },
+      { href: "/orders", label: "Orders", icon: ShoppingCart },
+    ],
+  },
+  {
+    label: "Tasks",
+    items: [
+      { href: "/tasks", label: "Projects", icon: ListTodo },
+      { href: "/calendar", label: "Calendar", icon: CalendarDays },
+    ],
+  },
+  {
+    label: "Settings",
+    items: [{ href: "/subgroups", label: "Subgroups", icon: Palette }],
+  },
 ];
 
 interface Props {
@@ -104,11 +123,13 @@ export function AppSidebar({ userName, userAvatar }: Props) {
       </SidebarHeader>
 
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {NAV.map((item) => (
-                <SidebarMenuItem key={item.href}>
+        {NAV_GROUPS.map((group) => (
+          <SidebarGroup key={group.label}>
+            <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {group.items.map((item) => (
+                  <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton
                     isActive={isActive(item.href) && !activeProjectId}
                     tooltip={item.label}
@@ -148,11 +169,12 @@ export function AppSidebar({ userName, userAvatar }: Props) {
                       </SidebarMenuSubItem>
                     </SidebarMenuSub>
                   )}
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ))}
       </SidebarContent>
 
       <SidebarFooter>

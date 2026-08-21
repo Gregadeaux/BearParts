@@ -5,7 +5,6 @@ import { listTasks } from "@/services/tasks.service";
 import { listMilestones } from "@/services/milestones.service";
 import { AppShell } from "@/components/layout/app-shell";
 import { HomeDashboard } from "@/components/home/home-dashboard";
-import { NewPartButton } from "@/components/parts/new-part-button";
 import { toDayKey } from "@/components/calendar/calendar-layout";
 
 export default async function HomePage() {
@@ -29,7 +28,6 @@ export default async function HomePage() {
       userName={userName}
       userAvatar={profile?.avatar_url ?? null}
       title="Home"
-      action={<NewPartButton />}
     >
       <main className="mx-auto max-w-6xl p-4">
         <HomeDashboard
