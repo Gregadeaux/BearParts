@@ -31,16 +31,23 @@ export async function proxy(request: NextRequest) {
     pathname.startsWith("/login") ||
     pathname.startsWith("/auth") ||
     pathname.startsWith("/inspect") ||
-    pathname.startsWith("/api/dev-login");
+    pathname.startsWith("/api/dev-login") ||
+    // Onshape panel iframe (no third-party cookies) + its Bearer-auth API
+    pathname.startsWith("/onshape/panel") ||
+    pathname.startsWith("/api/onshape");
 
   if (!user && !isPublic) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
+    url.search = "";
+    if (pathname !== "/") url.searchParams.set("next", pathname);
     return NextResponse.redirect(url);
   }
   if (user && pathname.startsWith("/login")) {
     const url = request.nextUrl.clone();
-    url.pathname = "/";
+    const next = url.searchParams.get("next");
+    url.pathname = next?.startsWith("/") && !next.startsWith("//") ? next : "/";
+    url.search = "";
     return NextResponse.redirect(url);
   }
 

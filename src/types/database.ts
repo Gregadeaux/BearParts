@@ -254,6 +254,44 @@ export type Database = {
           },
         ]
       }
+      onshape_accounts: {
+        Row: {
+          access_token: string
+          created_at: string
+          expires_at: string
+          onshape_user_id: string | null
+          refresh_token: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          access_token: string
+          created_at?: string
+          expires_at: string
+          onshape_user_id?: string | null
+          refresh_token: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          access_token?: string
+          created_at?: string
+          expires_at?: string
+          onshape_user_id?: string | null
+          refresh_token?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onshape_accounts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       part_comments: {
         Row: {
           anchor: Json | null

@@ -6,10 +6,9 @@ import * as folders from "@/services/folders.service";
 import * as library from "@/services/library.service";
 import { deleteFiles, uploadToPath } from "@/services/storage.service";
 import * as versionDocs from "@/services/version-documents.service";
-import { analyzeDxfText } from "@/services/dxf/analysis.service";
+import { createLibraryPartFromFile, versionInputFromFile } from "@/services/library-upload.service";
 import { createPartAction } from "./parts";
-import type { NewVersionInput } from "@/services/library.service";
-import type { PartFileType, PartPriority } from "@/types/part";
+import type { PartPriority } from "@/types/part";
 
 async function requireUser() {
   const supabase = await createClient();
@@ -71,19 +70,6 @@ export async function deleteLibraryPartAction(libraryPartId: string) {
   revalidatePath("/library");
 }
 
-/** Build version metadata from an uploaded file; DXF gets analyzed server-side. */
-async function versionInputFromFile(file: File, note?: string): Promise<NewVersionInput & { fileType: PartFileType }> {
-  const ext = file.name.toLowerCase().match(/\.(dxf|stl|pdf|step|stp)$/)?.[1];
-  const fileType = (ext === "stp" ? "step" : (ext ?? null)) as PartFileType | null;
-  if (!fileType) throw new Error("Only .dxf, .stl, .pdf, and .step files are supported");
-
-  if (fileType === "dxf") {
-    const { analysis } = analyzeDxfText(await file.text());
-    return { filePath: "", fileType, units: analysis.units, analysis, note };
-  }
-  return { filePath: "", fileType, note };
-}
-
 /** Store the client-rendered preview PNG if the form included one. */
 async function maybeUploadThumb(
   supabase: Awaited<ReturnType<typeof createClient>>,
@@ -110,17 +96,13 @@ export async function createLibraryPartAction(formData: FormData) {
   const name = ((formData.get("name") as string) || "").trim();
   if (!file || !folderId) throw new Error("File and folder are required");
 
-  const input = await versionInputFromFile(file);
-  const part = await library.createLibraryPartRow(
-    supabase,
-    user.id,
+  const thumb = formData.get("thumb");
+  const { part } = await createLibraryPartFromFile(supabase, user.id, {
+    file,
     folderId,
-    name || file.name.replace(/\.(dxf|stl|pdf|step|stp)$/i, ""),
-  );
-  input.filePath = library.versionFilePath(part.id, 1, input.fileType);
-  await uploadToPath(supabase, file, input.filePath, input.fileType);
-  input.thumbPath = await maybeUploadThumb(supabase, formData, part.id, 1);
-  await library.insertVersion(supabase, user.id, part.id, 1, input);
+    name,
+    thumb: thumb instanceof File ? thumb : null,
+  });
 
   revalidatePath("/library");
   return { id: part.id };

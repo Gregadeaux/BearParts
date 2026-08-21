@@ -9,12 +9,14 @@ import { DevLoginPanel } from "./dev-login-panel";
 export function LoginCard() {
   const params = useSearchParams();
   const failed = params.get("error") === "auth";
+  const rawNext = params.get("next");
+  const next = rawNext?.startsWith("/") && !rawNext.startsWith("//") ? rawNext : "/";
 
   const signIn = async () => {
     const supabase = createClient();
     await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: `${location.origin}/auth/callback` },
+      options: { redirectTo: `${location.origin}/auth/callback?next=${encodeURIComponent(next)}` },
     });
   };
 
@@ -31,7 +33,7 @@ export function LoginCard() {
         <Button className="w-full" size="lg" onClick={signIn}>
           Sign in with Google
         </Button>
-        {process.env.NODE_ENV !== "production" && <DevLoginPanel />}
+        {process.env.NODE_ENV !== "production" && <DevLoginPanel next={next} />}
       </CardContent>
     </Card>
   );

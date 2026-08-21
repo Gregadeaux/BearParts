@@ -16,7 +16,7 @@ const DEV_ACCOUNTS = [
  * Stand-in for Google OAuth while it isn't configured. The /api/dev-login
  * route hard-404s in production, so this panel is dev-only end to end.
  */
-export function DevLoginPanel() {
+export function DevLoginPanel({ next = "/" }: { next?: string }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 
@@ -32,7 +32,7 @@ export function DevLoginPanel() {
         toast.error(error ?? "Sign-in failed");
         return;
       }
-      router.push("/");
+      router.push(next);
       router.refresh();
     });
 
