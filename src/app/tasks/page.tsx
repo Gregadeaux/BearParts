@@ -4,6 +4,7 @@ import { getProfile, listProfiles } from "@/services/profiles.service";
 import { listAllTags, listProjects, listSubgroups, listTasks } from "@/services/tasks.service";
 import { listSubsystems } from "@/services/subsystems.service";
 import { AppShell } from "@/components/layout/app-shell";
+import { PageBreadcrumb } from "@/components/layout/page-breadcrumb";
 import { ProjectGrid } from "@/components/tasks/project-grid";
 import { TasksView } from "@/components/tasks/tasks-view";
 
@@ -55,6 +56,7 @@ export default async function TasksPage({
   return (
     <AppShell userName={userName} userAvatar={userAvatar} title={title}>
       <main className="mx-auto max-w-6xl space-y-4 p-4">
+        <PageBreadcrumb crumbs={[{ label: "Projects", href: "/tasks" }, { label: title }]} />
         <TasksView
           initialTasks={tasks}
           team={team}

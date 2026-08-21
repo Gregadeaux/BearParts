@@ -121,7 +121,12 @@ export function LibraryBrowser({
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
-        <LibraryBreadcrumb ancestry={ancestry} basePath={basePath} root={embedded ? null : undefined} />
+        <LibraryBreadcrumb
+          ancestry={ancestry}
+          basePath={basePath}
+          root={embedded ? null : undefined}
+          subsystemsByFolder={Object.fromEntries(subsystems.map((s) => [s.folder_id, s.id]))}
+        />
         <div className="ml-auto flex gap-2">
           {currentFolderId &&
             !embedded &&

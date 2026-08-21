@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Blocks, Folder, FolderKanban } from "lucide-react";
+import { Blocks, FolderKanban } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getProfile, listProfiles } from "@/services/profiles.service";
 import { listAllTags, listProjects, listSubgroups, listTasks } from "@/services/tasks.service";
@@ -19,6 +19,7 @@ import { listFolders, getAncestry } from "@/services/folders.service";
 import { listLibraryParts, subtreeFolderIds } from "@/services/library.service";
 import { getFileUrl } from "@/services/storage.service";
 import { AppShell } from "@/components/layout/app-shell";
+import { PageBreadcrumb } from "@/components/layout/page-breadcrumb";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TasksView } from "@/components/tasks/tasks-view";
 import { LibraryBrowser } from "@/components/library/library-browser";
@@ -87,9 +88,21 @@ export default async function SubsystemPage({
     getAncestry(supabase, currentFolderId),
   ]);
 
-  // breadcrumb starts at the subsystem's own folder
+  // the embedded browser's breadcrumb starts at the subsystem's own folder;
+  // the page breadcrumb covers everything above it
   const rootIndex = fullAncestry.findIndex((f) => f.id === subsystem.folder_id);
   const ancestry = rootIndex >= 0 ? fullAncestry.slice(rootIndex) : fullAncestry;
+  const subsystemByFolder = Object.fromEntries(subsystems.map((s) => [s.folder_id, s.id]));
+  const pageCrumbs = [
+    { label: "Library", href: "/library" },
+    ...(rootIndex > 0 ? fullAncestry.slice(0, rootIndex) : []).map((f) => ({
+      label: f.name,
+      href: subsystemByFolder[f.id]
+        ? `/subsystems/${subsystemByFolder[f.id]}`
+        : `/library?f=${f.id}`,
+    })),
+    { label: subsystem.name },
+  ];
 
   const thumbEntries = await Promise.all(
     folderParts
@@ -129,6 +142,7 @@ export default async function SubsystemPage({
       title={subsystem.name}
     >
       <main className="space-y-4 p-4">
+        <PageBreadcrumb crumbs={pageCrumbs} />
         {/* header row spans all columns */}
         <div className="flex flex-wrap items-center gap-2">
           <Blocks className="size-5 shrink-0 text-violet-500" />
@@ -141,15 +155,6 @@ export default async function SubsystemPage({
               className="inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs text-muted-foreground transition-colors hover:bg-muted"
             >
               <FolderKanban className="size-3 shrink-0" /> {subsystem.project.name}
-            </Link>
-          )}
-          {subsystem.folder && (
-            <Link
-              href={`/library?f=${subsystem.folder.id}`}
-              className="inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs text-muted-foreground transition-colors hover:bg-muted"
-            >
-              <Folder className="size-3 shrink-0 fill-amber-200 text-amber-500" />{" "}
-              {subsystem.folder.name}
             </Link>
           )}
           <div className="flex-1" />

@@ -39,6 +39,8 @@ interface Props {
   events: PartEvent[];
   /** version id → its supporting documents (drawings, G-code) */
   documents: Record<string, VersionDocumentRow[]>;
+  /** folder id → subsystem id, for subsystem-aware breadcrumb links */
+  subsystemsByFolder?: Record<string, string>;
 }
 
 /** Library part detail: versions + viewer beside a live discussion panel. */
@@ -50,6 +52,7 @@ export function LibraryPartView({
   initialComments,
   events,
   documents,
+  subsystemsByFolder,
 }: Props) {
   const isDesktop = useMediaQuery("(min-width: 1024px)");
   const [selected, setSelected] = useState<PartVersion>(part.versions[0]);
@@ -221,7 +224,11 @@ export function LibraryPartView({
 
   return (
     <div className="space-y-4">
-      <LibraryBreadcrumb ancestry={ancestry} />
+      <LibraryBreadcrumb
+        ancestry={ancestry}
+        leaf={part.name}
+        subsystemsByFolder={subsystemsByFolder}
+      />
       {header}
       <ActiveQueueEntries part={part} />
 

@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { Download } from "lucide-react";
 import type { Part, ProfileRow } from "@/types/part";
 import type { VersionDocumentRow } from "@/services/version-documents.service";
+import { PageBreadcrumb, type Crumb } from "@/components/layout/page-breadcrumb";
 import { VersionDocsTabs } from "@/components/library/version-docs-tabs";
 import { DxfWorkspace } from "@/components/viewer/dxf-workspace";
 import { StlWorkspace } from "@/components/viewer/stl-workspace";
@@ -23,10 +24,12 @@ interface Props {
   fileUrl: string;
   /** drawings + G-code from the source library version (read-only here) */
   versionDocs?: VersionDocumentRow[];
+  /** navigation trail back to the board or the source library part */
+  crumbs?: Crumb[];
 }
 
 /** Full part page: header info, actions, and the right viewer for the file type. */
-export function PartDetail({ part, team, userId, fileUrl, versionDocs = [] }: Props) {
+export function PartDetail({ part, team, userId, fileUrl, versionDocs = [], crumbs = [] }: Props) {
   const fileType = part.file_type as "dxf" | "stl" | "pdf" | "step";
   const isBinary = fileType !== "dxf";
   const [dxfText, setDxfText] = useState<string | null>(null);
@@ -46,6 +49,7 @@ export function PartDetail({ part, team, userId, fileUrl, versionDocs = [] }: Pr
 
   return (
     <div className="space-y-4">
+      <PageBreadcrumb crumbs={crumbs} />
       <div className="space-y-1">
         <div className="flex flex-wrap items-center gap-2">
           {/* the top bar already renders the part name as the page <h1> */}
