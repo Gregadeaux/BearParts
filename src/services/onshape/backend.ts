@@ -1,7 +1,13 @@
 import { isOnshapeMock } from "./config";
 import * as mock from "./mock";
 import * as real from "./api";
-import type { DxfExportResponse, FacesResponse, OnshapeDocContext, StudioContextResponse } from "./types";
+import type {
+  DxfExportResponse,
+  FacesResponse,
+  OnshapeDocContext,
+  ResolveFaceResponse,
+  StudioContextResponse,
+} from "./types";
 
 /** Mock-aware dispatch — routes talk to this, never to api.ts directly. */
 
@@ -29,6 +35,16 @@ export function shadedViewPng(
 ): Promise<Uint8Array> {
   if (isOnshapeMock()) return Promise.resolve(mock.mockPreviewPng());
   return real.shadedViewPng(accessToken, ctx, partId);
+}
+
+export function resolveFacePart(
+  accessToken: string,
+  ctx: OnshapeDocContext,
+  faceId: string,
+  microversion: string | null,
+): Promise<ResolveFaceResponse> {
+  if (isOnshapeMock()) return Promise.resolve(mock.mockResolveFace());
+  return real.resolveFacePart(accessToken, ctx, faceId, microversion);
 }
 
 export function exportFaceDxf(

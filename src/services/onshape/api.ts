@@ -1,7 +1,13 @@
 import { onshapeCachedJson, onshapeCachedPost, onshapeFetch, onshapeJson } from "./client";
 import { fsToPlain } from "./fs-value";
 import { FACE_EXPORT_SCRIPT, faceExportToDxf, type FaceExportPlain } from "./face-export";
-import type { DxfExportResponse, FacesResponse, OnshapeDocContext, StudioContextResponse } from "./types";
+import type {
+  DxfExportResponse,
+  FacesResponse,
+  OnshapeDocContext,
+  ResolveFaceResponse,
+  StudioContextResponse,
+} from "./types";
 
 /**
  * Real Onshape REST implementation. Onshape enforces per-endpoint rate limits
@@ -125,6 +131,29 @@ export async function planarFaces(
     .sort((a, b) => b.area - a.area)
     .slice(0, 40);
   return { faces };
+}
+
+const RESOLVE_FACE_SCRIPT = `function(context is Context, queries)
+{
+    var owners = evaluateQuery(context, qOwnerBody(qUnion(queries.face)));
+    return { "partId" : size(owners) > 0 ? transientQueriesToStrings(owners)[0] : "" };
+}`;
+
+/** Which part owns this face? (Onshape SELECTION events only carry the face.) */
+export async function resolveFacePart(
+  accessToken: string,
+  ctx: OnshapeDocContext,
+  faceId: string,
+  microversion: string | null,
+): Promise<ResolveFaceResponse> {
+  const plain = (await evalFeatureScript(
+    accessToken,
+    ctx,
+    RESOLVE_FACE_SCRIPT,
+    { face: [faceId] },
+    `owner:${ctxPath(ctx)}:${faceId}:${microversion ?? ""}`,
+  )) as { partId?: string };
+  return { partId: plain.partId || null };
 }
 
 export async function exportFaceDxf(

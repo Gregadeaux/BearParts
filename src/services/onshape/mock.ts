@@ -62,6 +62,10 @@ export function mockDxfExport(faceId: string): DxfExportResponse {
   };
 }
 
+export function mockResolveFace(): { partId: string } {
+  return { partId: "JHD" };
+}
+
 export function mockStepBytes(): Uint8Array {
   return Uint8Array.from(atob(MOCK_STEP_BASE64), (c) => c.charCodeAt(0));
 }

@@ -37,6 +37,8 @@ export function parsePanelContext(params: URLSearchParams): PanelUrlContext | nu
 export interface OnshapeSelection {
   faceId: string | null;
   partId: string | null;
+  /** workspaceMicroversionId from the event — geometry ids are scoped to it */
+  microversion: string | null;
 }
 
 /** Best-effort extraction of face/part ids from an undocumented payload. */
@@ -53,18 +55,22 @@ export function parseSelectionMessage(data: unknown): OnshapeSelection | null {
 
   let faceId: string | null = null;
   let partId: string | null = null;
+  let microversion: string | null = null;
   for (const c of candidates) {
     const type = String(c.entityType ?? c.type ?? "").toUpperCase();
     const id = [c.selectionId, c.id, c.transientId, c.deterministicId].find(
       (v) => typeof v === "string" && v.length > 0,
     ) as string | undefined;
     if (typeof c.partId === "string" && c.partId && !partId) partId = c.partId;
+    if (typeof c.workspaceMicroversionId === "string" && !microversion) {
+      microversion = c.workspaceMicroversionId;
+    }
     if (!id) continue;
     if (type.includes("FACE") && !faceId) faceId = id;
     if (type.includes("BODY") && !partId) partId = id;
   }
   if (!faceId && !partId) return null;
-  return { faceId, partId };
+  return { faceId, partId, microversion };
 }
 
 interface BridgeHandlers {

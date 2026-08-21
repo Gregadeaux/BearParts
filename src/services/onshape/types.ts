@@ -40,6 +40,11 @@ export interface DxfExportResponse {
   envelope: { width: number; height: number };
 }
 
+export interface ResolveFaceResponse {
+  /** deterministic id of the part owning the face, or null */
+  partId: string | null;
+}
+
 export interface StatusResponse {
   configured: boolean;
   mock: boolean;

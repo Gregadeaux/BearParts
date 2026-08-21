@@ -128,7 +128,28 @@ export function PanelApp() {
       if (sel.partId && studioRef.current?.parts.some((p) => p.partId === sel.partId)) {
         setPickedPartId(sel.partId);
       }
-      if (sel.faceId) setPickedFaceId(sel.faceId);
+      if (!sel.faceId) return;
+      setPickedFaceId(sel.faceId);
+      // SELECTION only carries the face — resolve its owning part server-side
+      if (!sel.partId && ctx) {
+        const mv = sel.microversion ? `&mv=${encodeURIComponent(sel.microversion)}` : "";
+        panelJson<{ partId: string | null }>(
+          `/api/onshape/resolve-face?${ctxQuery(ctx)}&faceId=${encodeURIComponent(sel.faceId)}${mv}`,
+        )
+          .then((r) => {
+            if (!r.partId) return;
+            const known = studioRef.current?.parts.some((p) => p.partId === r.partId);
+            if (!known && studioRef.current) {
+              console.warn(
+                "[BearParts panel] resolved part not in parts list",
+                r.partId,
+                studioRef.current.parts.map((p) => p.partId),
+              );
+            }
+            if (known || !studioRef.current) setPickedPartId(r.partId);
+          })
+          .catch(() => {});
+      }
     },
   });
 
