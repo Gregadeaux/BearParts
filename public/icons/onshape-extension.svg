@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" width="96" height="96">
+  <!-- BearParts extension icon: bear paw on stone -->
+  <rect x="2" y="2" width="92" height="92" rx="20" fill="#1c1917"/>
+  <rect x="2" y="2" width="92" height="92" rx="20" fill="none" stroke="#3b82f6" stroke-opacity="0.35" stroke-width="3"/>
+  <g fill="#3b82f6">
+    <!-- toes -->
+    <circle cx="27" cy="43" r="7"/>
+    <circle cx="41" cy="33" r="7.5"/>
+    <circle cx="57" cy="33" r="7.5"/>
+    <circle cx="71" cy="43" r="7"/>
+    <!-- main pad -->
+    <path d="M49 48
+             c 10 0 18 7 18 15
+             c 0 9 -8 14 -18 14
+             c -10 0 -18 -5 -18 -14
+             c 0 -8 8 -15 18 -15 z"/>
+  </g>
+</svg>
