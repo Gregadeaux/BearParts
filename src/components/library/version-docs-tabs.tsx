@@ -20,40 +20,38 @@ import { PdfWorkspace } from "@/components/viewer/pdf-workspace";
 import { GcodeWorkspace } from "@/components/viewer/gcode-workspace";
 
 interface Props {
-  versionId: string;
-  versionNumber: number;
-  libraryPartId: string;
   initialDocs: VersionDocumentRow[];
+  /**
+   * Upload/delete are enabled only when the owning version is provided —
+   * read-only surfaces (fab queue detail) omit it.
+   */
+  editable?: { versionId: string; versionNumber: number; libraryPartId: string };
   /** the model viewer for this version */
   children: React.ReactNode;
 }
 
 /** Model / Drawings / G-code tabs on a version's preview panel. */
-export function VersionDocsTabs({
-  versionId,
-  versionNumber,
-  libraryPartId,
-  initialDocs,
-  children,
-}: Props) {
+export function VersionDocsTabs({ initialDocs, editable, children }: Props) {
   const [docs, setDocs] = useState(initialDocs);
   const drawings = docs.filter((d) => d.kind === "drawing");
   const gcode = docs.filter((d) => d.kind === "gcode");
 
   const upload = async (file: File) => {
+    if (!editable) return;
     const formData = new FormData();
-    formData.set("versionId", versionId);
-    formData.set("libraryPartId", libraryPartId);
-    formData.set("version", String(versionNumber));
+    formData.set("versionId", editable.versionId);
+    formData.set("libraryPartId", editable.libraryPartId);
+    formData.set("version", String(editable.versionNumber));
     formData.set("file", file);
     const doc = await addVersionDocumentAction(formData);
     setDocs((list) => [...list, doc]);
-    toast.success(`${file.name} attached to v${versionNumber}`);
+    toast.success(`${file.name} attached to v${editable.versionNumber}`);
   };
 
   const remove = (doc: VersionDocumentRow) => {
+    if (!editable) return;
     setDocs((list) => list.filter((d) => d.id !== doc.id));
-    deleteVersionDocumentAction(doc.id, libraryPartId).catch(() => {
+    deleteVersionDocumentAction(doc.id, editable.libraryPartId).catch(() => {
       toast.error("Could not delete document");
       setDocs((list) => [...list, doc]);
     });
@@ -75,10 +73,20 @@ export function VersionDocsTabs({
 
       <TabsContent value="model">{children}</TabsContent>
       <TabsContent value="drawing">
-        <DocPanel kind="drawing" docs={drawings} onUpload={upload} onRemove={remove} />
+        <DocPanel
+          kind="drawing"
+          docs={drawings}
+          onUpload={editable ? upload : undefined}
+          onRemove={editable ? remove : undefined}
+        />
       </TabsContent>
       <TabsContent value="gcode">
-        <DocPanel kind="gcode" docs={gcode} onUpload={upload} onRemove={remove} />
+        <DocPanel
+          kind="gcode"
+          docs={gcode}
+          onUpload={editable ? upload : undefined}
+          onRemove={editable ? remove : undefined}
+        />
       </TabsContent>
     </Tabs>
   );
@@ -106,8 +114,8 @@ function DocPanel({
 }: {
   kind: DocumentKind;
   docs: VersionDocumentRow[];
-  onUpload: (file: File) => Promise<void>;
-  onRemove: (doc: VersionDocumentRow) => void;
+  onUpload?: (file: File) => Promise<void>;
+  onRemove?: (doc: VersionDocumentRow) => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -115,7 +123,7 @@ function DocPanel({
   const selected = docs.find((d) => d.id === selectedId) ?? docs[0] ?? null;
 
   const pick = async (file: File | undefined) => {
-    if (!file) return;
+    if (!file || !onUpload) return;
     setUploading(true);
     try {
       await onUpload(file);
@@ -175,31 +183,42 @@ function DocPanel({
             >
               <Download className="size-3.5" />
             </button>
-            <button
-              type="button"
-              aria-label={`Delete ${doc.file_name}`}
-              onClick={() => onRemove(doc)}
-              className="text-muted-foreground hover:text-destructive"
-            >
-              <X className="size-3.5" />
-            </button>
+            {onRemove && (
+              <button
+                type="button"
+                aria-label={`Delete ${doc.file_name}`}
+                onClick={() => onRemove(doc)}
+                className="text-muted-foreground hover:text-destructive"
+              >
+                <X className="size-3.5" />
+              </button>
+            )}
           </span>
         ))}
 
-        <input
-          ref={inputRef}
-          type="file"
-          accept={KIND_META[kind].accept}
-          className="hidden"
-          onChange={(e) => {
-            pick(e.target.files?.[0]);
-            e.target.value = "";
-          }}
-        />
-        <Button variant="outline" size="sm" disabled={uploading} onClick={() => inputRef.current?.click()}>
-          {uploading ? <Loader2 className="animate-spin" /> : <Plus />}
-          {KIND_META[kind].add}
-        </Button>
+        {onUpload && (
+          <>
+            <input
+              ref={inputRef}
+              type="file"
+              accept={KIND_META[kind].accept}
+              className="hidden"
+              onChange={(e) => {
+                pick(e.target.files?.[0]);
+                e.target.value = "";
+              }}
+            />
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={uploading}
+              onClick={() => inputRef.current?.click()}
+            >
+              {uploading ? <Loader2 className="animate-spin" /> : <Plus />}
+              {KIND_META[kind].add}
+            </Button>
+          </>
+        )}
       </div>
 
       {docs.length === 0 ? (

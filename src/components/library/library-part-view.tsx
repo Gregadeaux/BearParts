@@ -152,9 +152,11 @@ export function LibraryPartView({
         // machined/printed models carry supporting docs: drawings + G-code
         <VersionDocsTabs
           key={selected.id}
-          versionId={selected.id}
-          versionNumber={selected.version}
-          libraryPartId={part.id}
+          editable={{
+            versionId: selected.id,
+            versionNumber: selected.version,
+            libraryPartId: part.id,
+          }}
           initialDocs={documents[selected.id] ?? []}
         >
           {viewer}

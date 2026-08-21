@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getPart } from "@/services/parts.service";
 import { getFileUrl } from "@/services/storage.service";
+import { listVersionDocuments } from "@/services/version-documents.service";
 import { listProfiles, getProfile } from "@/services/profiles.service";
 import { AppShell } from "@/components/layout/app-shell";
 import { PartDetail } from "@/components/parts/part-detail";
@@ -22,7 +23,12 @@ export default async function PartPage({ params }: { params: Promise<{ id: strin
   ]);
   if (!part) notFound();
 
-  const fileUrl = await getFileUrl(supabase, part.file_path);
+  const [fileUrl, documents] = await Promise.all([
+    getFileUrl(supabase, part.file_path),
+    // library-sourced parts surface their version's drawings + G-code
+    listVersionDocuments(supabase, part.source_version_id ? [part.source_version_id] : []),
+  ]);
+  const versionDocs = part.source_version_id ? (documents[part.source_version_id] ?? []) : [];
 
   return (
     <AppShell
@@ -32,7 +38,13 @@ export default async function PartPage({ params }: { params: Promise<{ id: strin
       action={<NewPartButton />}
     >
       <main className="mx-auto max-w-5xl space-y-4 p-4">
-        <PartDetail part={part} team={team} userId={user.id} fileUrl={fileUrl} />
+        <PartDetail
+          part={part}
+          team={team}
+          userId={user.id}
+          fileUrl={fileUrl}
+          versionDocs={versionDocs}
+        />
       </main>
     </AppShell>
   );

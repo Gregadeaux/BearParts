@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Download } from "lucide-react";
 import type { Part, ProfileRow } from "@/types/part";
+import type { VersionDocumentRow } from "@/services/version-documents.service";
+import { VersionDocsTabs } from "@/components/library/version-docs-tabs";
 import { DxfWorkspace } from "@/components/viewer/dxf-workspace";
 import { StlWorkspace } from "@/components/viewer/stl-workspace";
 import { PdfWorkspace } from "@/components/viewer/pdf-workspace";
@@ -19,10 +21,12 @@ interface Props {
   team: ProfileRow[];
   userId: string;
   fileUrl: string;
+  /** drawings + G-code from the source library version (read-only here) */
+  versionDocs?: VersionDocumentRow[];
 }
 
 /** Full part page: header info, actions, and the right viewer for the file type. */
-export function PartDetail({ part, team, userId, fileUrl }: Props) {
+export function PartDetail({ part, team, userId, fileUrl, versionDocs = [] }: Props) {
   const fileType = part.file_type as "dxf" | "stl" | "pdf" | "step";
   const isBinary = fileType !== "dxf";
   const [dxfText, setDxfText] = useState<string | null>(null);
@@ -77,19 +81,29 @@ export function PartDetail({ part, team, userId, fileUrl }: Props) {
         <p className="rounded-lg border border-dashed border-destructive/40 px-3 py-8 text-center text-sm text-destructive">
           Could not load the part file. Try downloading it instead.
         </p>
-      ) : !loaded ? (
-        <Skeleton className="h-72 w-full" />
-      ) : fileType === "stl" ? (
-        <StlWorkspace stlBuffer={buffer!} />
-      ) : fileType === "pdf" ? (
-        <PdfWorkspace pdfBuffer={buffer!} />
-      ) : fileType === "step" ? (
-        <StepWorkspace stepBuffer={buffer!} />
       ) : (
-        <DxfWorkspace
-          dxfText={dxfText!}
-          unitOverride={part.units === "unknown" ? undefined : (part.units as never)}
-        />
+        (() => {
+          const viewer = !loaded ? (
+            <Skeleton className="h-72 w-full" />
+          ) : fileType === "stl" ? (
+            <StlWorkspace stlBuffer={buffer!} />
+          ) : fileType === "pdf" ? (
+            <PdfWorkspace pdfBuffer={buffer!} />
+          ) : fileType === "step" ? (
+            <StepWorkspace stepBuffer={buffer!} />
+          ) : (
+            <DxfWorkspace
+              dxfText={dxfText!}
+              unitOverride={part.units === "unknown" ? undefined : (part.units as never)}
+            />
+          );
+          // library versions can carry drawings + G-code — machinists get them here
+          return versionDocs.length > 0 ? (
+            <VersionDocsTabs initialDocs={versionDocs}>{viewer}</VersionDocsTabs>
+          ) : (
+            viewer
+          );
+        })()
       )}
 
       <Button
