@@ -5,4 +5,6 @@ node_modules
 supabase/.temp
 *.md
 .claude
-scripts
+# scripts/ stays in the image: postinstall needs copy-occt-wasm.mjs
+scripts/test-*.mjs
+scripts/create-test-users.mjs
