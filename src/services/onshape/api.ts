@@ -1,4 +1,4 @@
-import { onshapeCachedJson, onshapeCachedPost, onshapeFetch, onshapeJson } from "./client";
+import { cachedCompute, onshapeCachedJson, onshapeFetch, onshapeJson } from "./client";
 import { fsToPlain } from "./fs-value";
 import { FACE_EXPORT_SCRIPT, faceExportToDxf, type FaceExportPlain } from "./face-export";
 import type {
@@ -62,16 +62,17 @@ export async function studioContext(
 
 const FACE_LIST_SCRIPT = `function(context is Context, queries)
 {
-    var faces = evaluateQuery(context, qGeometry(qOwnedByBody(qUnion(queries.part), EntityType.FACE), GeometryType.PLANE));
+    var part = queries.part is array ? qUnion(queries.part) : queries.part;
+    var faces = evaluateQuery(context, qGeometry(qOwnedByBody(part, EntityType.FACE), GeometryType.PLANE));
     var out = [];
     for (var face in faces)
     {
         var plane = evFaceTangentPlane(context, { "face" : face, "parameter" : vector(0.5, 0.5) });
-        var box = evBox3d(context, { "topology" : face, "tight" : true, "cSys" : coordSystem(plane) });
+        var bb = evBox3d(context, { "topology" : face, "tight" : true, "cSys" : coordSystem(plane) });
         out = append(out, {
             "id" : transientQueriesToStrings([face])[0],
-            "w" : box.maxCorner[0] - box.minCorner[0],
-            "h" : box.maxCorner[1] - box.minCorner[1],
+            "w" : bb.maxCorner[0] - bb.minCorner[0],
+            "h" : bb.maxCorner[1] - bb.minCorner[1],
             "area" : evArea(context, { "entities" : face })
         });
     }
@@ -93,19 +94,21 @@ async function evalFeatureScript(
   queries: Record<string, string[]>,
   cacheKey?: string,
 ): Promise<unknown> {
-  const path = `/partstudios${ctxPath(ctx)}/featurescript?rollbackBarIndex=-1`;
-  const body = { script, queries };
-  const res = cacheKey
-    ? await onshapeCachedPost<EvalResponse>(accessToken, path, body, { ttl: MIN_5, cacheKey })
-    : await onshapeJson<EvalResponse>(accessToken, path, {
-        method: "POST",
-        body: JSON.stringify(body),
-      });
-  if (res.result === null || res.result === undefined) {
-    const notice = res.notices?.map((n) => n.message).filter(Boolean).join("; ");
-    throw new Error(`Onshape geometry query failed${notice ? `: ${notice}` : ""}`);
-  }
-  return fsToPlain(res.result);
+  const run = async () => {
+    const res = await onshapeJson<EvalResponse>(
+      accessToken,
+      `/partstudios${ctxPath(ctx)}/featurescript?rollbackBarIndex=-1`,
+      { method: "POST", body: JSON.stringify({ script, queries }) },
+    );
+    // script errors come back as HTTP 200 with a null result — throw so the
+    // failure is never cached
+    if (res.result === null || res.result === undefined) {
+      const notice = res.notices?.map((n) => n.message).filter(Boolean).join("; ");
+      throw new Error(`Onshape geometry query failed${notice ? `: ${notice}` : ""}`);
+    }
+    return fsToPlain(res.result);
+  };
+  return cacheKey ? cachedCompute(cacheKey, MIN_5, run) : run();
 }
 
 export async function planarFaces(
@@ -133,9 +136,12 @@ export async function planarFaces(
   return { faces };
 }
 
+// NOTE: the eval endpoint hands `queries.<name>` over as a ready-made Query
+// (a map), NOT an array — qUnion() on it fails with a signature error.
 const RESOLVE_FACE_SCRIPT = `function(context is Context, queries)
 {
-    var owners = evaluateQuery(context, qOwnerBody(qUnion(queries.face)));
+    var face = queries.face is array ? qUnion(queries.face) : queries.face;
+    var owners = evaluateQuery(context, qOwnerBody(face));
     return { "partId" : size(owners) > 0 ? transientQueriesToStrings(owners)[0] : "" };
 }`;
 

@@ -115,28 +115,28 @@ export async function onshapeCachedJson<T>(
   return promise;
 }
 
-/** POSTs are never cached automatically; use this for cacheable evaluations. */
-export async function onshapeCachedPost<T>(
-  accessToken: string,
-  path: string,
-  body: unknown,
-  options: { ttl: number; cacheKey: string },
+/**
+ * Cache an arbitrary computation. Only RESOLVED values are cached — a compute
+ * that throws is never stored (the FS eval endpoint returns HTTP 200 for
+ * script errors, so callers must validate BEFORE the value lands here).
+ */
+export async function cachedCompute<T>(
+  cacheKey: string,
+  ttl: number,
+  compute: () => Promise<T>,
 ): Promise<T> {
-  const hit = cacheGet(options.cacheKey);
+  const hit = cacheGet(cacheKey);
   if (hit !== undefined) return hit as T;
-  const pending = inflight.get(options.cacheKey);
+  const pending = inflight.get(cacheKey);
   if (pending) return pending as Promise<T>;
 
-  const promise = onshapeJson<T>(accessToken, path, {
-    method: "POST",
-    body: JSON.stringify(body),
-  })
+  const promise = compute()
     .then((value) => {
-      cacheSet(options.cacheKey, value, options.ttl);
+      cacheSet(cacheKey, value, ttl);
       return value;
     })
-    .finally(() => inflight.delete(options.cacheKey));
-  inflight.set(options.cacheKey, promise);
+    .finally(() => inflight.delete(cacheKey));
+  inflight.set(cacheKey, promise);
   return promise;
 }
 

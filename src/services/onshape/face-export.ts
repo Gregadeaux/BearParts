@@ -15,7 +15,7 @@ import type { DxfExportResponse } from "./types";
  */
 export const FACE_EXPORT_SCRIPT = `function(context is Context, queries)
 {
-    var face = qUnion(queries.face);
+    var face = queries.face is array ? qUnion(queries.face) : queries.face;
     var plane = evFaceTangentPlane(context, { "face" : face, "parameter" : vector(0.5, 0.5) });
     var result = {
         "origin" : plane.origin,
