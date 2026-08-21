@@ -24,13 +24,18 @@ interface Props {
 
 /** Colored rings over classified holes; rendered in flipped-Y viewer space. */
 export function HoleMarkers({ holes, selectedIndex, onSelect, unitsPerPx }: Props) {
+  // big holes first so small neighbors render on top and win overlapping taps
+  const ordered = holes
+    .map((hole, index) => ({ hole, index }))
+    .sort((a, b) => b.hole.diameter - a.hole.diameter);
+
   return (
     <g>
-      {holes.map((hole, i) => {
+      {ordered.map(({ hole, index }) => {
         const r = hole.diameter / 2;
-        const selected = i === selectedIndex;
+        const selected = index === selectedIndex;
         return (
-          <g key={i} transform={`translate(${hole.center.x} ${-hole.center.y})`}>
+          <g key={index} transform={`translate(${hole.center.x} ${-hole.center.y})`}>
             <circle
               r={r}
               fill={selected ? holeColor(hole) : "transparent"}
@@ -38,14 +43,15 @@ export function HoleMarkers({ holes, selectedIndex, onSelect, unitsPerPx }: Prop
               stroke={holeColor(hole)}
               strokeWidth={(selected ? 2.5 : 1.5) * unitsPerPx}
             />
-            {/* generous invisible tap target for phones */}
+            {/* tap target: a few px past the rim (a scale-free multiplier let
+                big bores swallow clicks meant for neighboring holes) */}
             <circle
-              r={Math.max(r * 1.4, 14 * unitsPerPx)}
+              r={Math.max(r + 4 * unitsPerPx, 12 * unitsPerPx)}
               fill="transparent"
               style={{ cursor: "pointer" }}
               onClick={(e) => {
                 e.stopPropagation();
-                onSelect(i);
+                onSelect(index);
               }}
             />
           </g>
