@@ -1,3 +1,5 @@
+export const metadata = { title: "New part" };
+
 import { createClient } from "@/lib/supabase/server";
 import { listProfiles, getProfile } from "@/services/profiles.service";
 import { AppShell } from "@/components/layout/app-shell";

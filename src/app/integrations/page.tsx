@@ -1,3 +1,5 @@
+export const metadata = { title: "Integrations" };
+
 import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/services/profiles.service";
 import { hasConnection } from "@/services/onshape/oauth";

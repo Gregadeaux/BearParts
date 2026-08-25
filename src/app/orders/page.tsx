@@ -1,8 +1,24 @@
+import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { ogMeta } from "@/lib/og";
 import { getProfile } from "@/services/profiles.service";
 import { listOrderItems } from "@/services/bom.service";
 import { AppShell } from "@/components/layout/app-shell";
 import { OrderList } from "@/components/orders/order-list";
+
+export async function generateMetadata(): Promise<Metadata> {
+  try {
+    const admin = createAdminClient();
+    const [{ count: toOrder }, { count: ordered }] = await Promise.all([
+      admin.from("bom_items").select("id", { count: "exact", head: true }).eq("status", "to_order"),
+      admin.from("bom_items").select("id", { count: "exact", head: true }).eq("status", "ordered"),
+    ]);
+    return ogMeta("Orders", `${toOrder ?? 0} to order · ${ordered ?? 0} on the way`);
+  } catch {
+    return ogMeta("Orders", "Vendor order lists");
+  }
+}
 
 export default async function OrdersPage() {
   const supabase = await createClient();

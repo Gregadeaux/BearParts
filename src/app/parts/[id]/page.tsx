@@ -1,5 +1,9 @@
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { ogMeta } from "@/lib/og";
+import { methodMeta, PART_STATUSES } from "@/types/part";
 import { getPart } from "@/services/parts.service";
 import { getFileUrl } from "@/services/storage.service";
 import { listVersionDocuments } from "@/services/version-documents.service";
@@ -10,6 +14,32 @@ import { listProfiles, getProfile } from "@/services/profiles.service";
 import { AppShell } from "@/components/layout/app-shell";
 import { PartDetail } from "@/components/parts/part-detail";
 import { NewPartButton } from "@/components/parts/new-part-button";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  try {
+    const { data: p } = await createAdminClient()
+      .from("parts")
+      .select("name, status, method, quantity, material, thumb_path")
+      .eq("id", id)
+      .maybeSingle();
+    if (!p) return ogMeta("Part", "Fab queue part");
+    const status = PART_STATUSES.find((s) => s.value === p.status)?.label ?? p.status;
+    const bits = [
+      status,
+      `${methodMeta(p.method).label} flow`,
+      p.quantity > 1 ? `×${p.quantity}` : null,
+      p.material,
+    ].filter(Boolean);
+    return ogMeta(p.name, bits.join(" · "), p.thumb_path ? `/api/og/part/${id}` : null);
+  } catch {
+    return ogMeta("Part", "Fab queue part");
+  }
+}
 
 export default async function PartPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

@@ -1,3 +1,5 @@
+export const metadata = { title: "Subgroups" };
+
 import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/services/profiles.service";
 import { countTasksBySubgroup, listSubgroups } from "@/services/tasks.service";

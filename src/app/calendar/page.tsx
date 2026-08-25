@@ -1,4 +1,7 @@
+import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { ogMeta } from "@/lib/og";
 import { getProfile, listProfiles } from "@/services/profiles.service";
 import { listAllTags, listProjects, listSubgroups, listTasks } from "@/services/tasks.service";
 import { listMilestones } from "@/services/milestones.service";
@@ -6,6 +9,25 @@ import { listSubsystems } from "@/services/subsystems.service";
 import { AppShell } from "@/components/layout/app-shell";
 import { CalendarView } from "@/components/calendar/calendar-view";
 import { toDayKey } from "@/components/calendar/calendar-layout";
+
+export async function generateMetadata(): Promise<Metadata> {
+  try {
+    const today = new Date().toISOString().slice(0, 10);
+    const { data: next } = await createAdminClient()
+      .from("milestones")
+      .select("title, date")
+      .gte("date", today)
+      .order("date")
+      .limit(1);
+    const m = next?.[0];
+    return ogMeta(
+      "Calendar",
+      m ? `Next milestone: ${m.title} on ${m.date}` : "Tasks and milestones",
+    );
+  } catch {
+    return ogMeta("Calendar", "Tasks and milestones");
+  }
+}
 
 export default async function CalendarPage() {
   const supabase = await createClient();

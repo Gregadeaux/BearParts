@@ -34,7 +34,19 @@ export async function proxy(request: NextRequest) {
     pathname.startsWith("/api/dev-login") ||
     // Onshape panel iframe (no third-party cookies) + its Bearer-auth API
     pathname.startsWith("/onshape/panel") ||
-    pathname.startsWith("/api/onshape");
+    pathname.startsWith("/api/onshape") ||
+    // link-preview images (id-only lookups, service role)
+    pathname.startsWith("/api/og");
+
+  // link-preview crawlers can't sign in — let them render the page shell,
+  // which is empty for anonymous visitors but carries the OG metadata
+  const isCrawler =
+    /facebookexternalhit|Slackbot|Twitterbot|Discordbot|WhatsApp|LinkedInBot|TelegramBot|Googlebot|bingbot|Applebot|Iframely|redditbot|Embedly|SkypeUriPreview/i.test(
+      request.headers.get("user-agent") ?? "",
+    );
+  if (!user && !isPublic && isCrawler && request.method === "GET") {
+    return response;
+  }
 
   if (!user && !isPublic) {
     const url = request.nextUrl.clone();

@@ -1,7 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 import { Blocks, FolderKanban } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { ogMeta } from "@/lib/og";
 import { getProfile, listProfiles } from "@/services/profiles.service";
 import { listAllTags, listProjects, listSubgroups, listTasks } from "@/services/tasks.service";
 import {
@@ -33,6 +36,37 @@ import { SubsystemSelectionProvider } from "@/components/subsystems/selection-co
 import { BomTable } from "@/components/subsystems/bom-table";
 import { StatusBadge } from "@/components/parts/status-badge";
 import { AvatarStack } from "@/components/tasks/avatar-stack";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  try {
+    const admin = createAdminClient();
+    const { data: sub } = await admin
+      .from("subsystems")
+      .select("name, folder_id, projects (name)")
+      .eq("id", id)
+      .maybeSingle();
+    if (!sub) return ogMeta("Subsystem", "Part library subsystem");
+    const folderIds = await subtreeFolderIds(admin, sub.folder_id);
+    const [{ count: partCount }, { count: bomCount }] = await Promise.all([
+      admin.from("library_parts").select("id", { count: "exact", head: true }).in("folder_id", folderIds),
+      admin.from("bom_items").select("id", { count: "exact", head: true }).eq("subsystem_id", id),
+    ]);
+    const project = (sub.projects as unknown as { name: string } | null)?.name;
+    const bits = [
+      project ? `${project} subsystem` : "Subsystem",
+      `${partCount ?? 0} part${partCount === 1 ? "" : "s"}`,
+      `${bomCount ?? 0} BOM item${bomCount === 1 ? "" : "s"}`,
+    ];
+    return ogMeta(sub.name, bits.join(" · "));
+  } catch {
+    return ogMeta("Subsystem", "Part library subsystem");
+  }
+}
 
 export default async function SubsystemPage({
   params,

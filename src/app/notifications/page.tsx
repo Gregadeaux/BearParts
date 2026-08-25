@@ -1,3 +1,5 @@
+export const metadata = { title: "Notifications" };
+
 import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/services/profiles.service";
 import { listNotifications } from "@/services/inbox.service";
