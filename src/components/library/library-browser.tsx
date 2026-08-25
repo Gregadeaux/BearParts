@@ -22,6 +22,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { FavoriteStar } from "./favorite-star";
+import { useSubsystemSelection } from "@/components/subsystems/selection-context";
 import { LibraryBreadcrumb } from "./library-breadcrumb";
 import { LibraryPartTile } from "./library-part-tile";
 import { NewFolderDialog } from "./new-folder-dialog";
@@ -257,6 +258,8 @@ function BrowseGrid({
   basePath: string;
   onDeletePart: (part: LibraryPartListing) => void;
 }) {
+  // present only inside a subsystem workspace — enables click-to-inspect
+  const selection = useSubsystemSelection();
   if (folders.length === 0 && parts.length === 0) {
     return (
       <div className="flex flex-col items-center gap-1 py-16 text-sm text-muted-foreground">
@@ -305,7 +308,16 @@ function BrowseGrid({
       {parts.map((part) => (
         <ContextMenu key={part.id}>
           <ContextMenuTrigger>
-            <LibraryPartTile part={part} thumbUrl={thumbUrls[part.id]} />
+            <LibraryPartTile
+              part={part}
+              thumbUrl={thumbUrls[part.id]}
+              onSelect={
+                selection
+                  ? () => selection.setSelection({ part, thumbUrl: thumbUrls[part.id] ?? null })
+                  : undefined
+              }
+              selected={selection?.selection?.part.id === part.id}
+            />
           </ContextMenuTrigger>
           <ContextMenuContent>
             <ContextMenuItem variant="destructive" onClick={() => onDeletePart(part)}>

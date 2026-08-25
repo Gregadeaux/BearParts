@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Folder, FileText, Box, FileType2 } from "lucide-react";
 import type { LibraryPartListing } from "@/types/library";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 import { formatDate } from "@/lib/format";
 
 interface Props {
@@ -12,6 +14,9 @@ interface Props {
   thumbUrl?: string;
   /** shown under the name for search results */
   folderName?: string | null;
+  /** select-on-click mode (subsystem workspace) — double-click still opens */
+  onSelect?: () => void;
+  selected?: boolean;
 }
 
 function TypeIcon({ type, className }: { type?: string; className: string }) {
@@ -22,10 +27,15 @@ function TypeIcon({ type, className }: { type?: string; className: string }) {
 }
 
 /** One library part card: preview, name, version badge. */
-export function LibraryPartTile({ part, thumbUrl, folderName }: Props) {
-  return (
-    <Link href={`/library/parts/${part.id}`} className="block">
-      <Card className="gap-2 p-3 shadow-sm transition-all hover:bg-accent/50 hover:shadow-md">
+export function LibraryPartTile({ part, thumbUrl, folderName, onSelect, selected }: Props) {
+  const router = useRouter();
+  const card = (
+      <Card
+        className={cn(
+          "gap-2 p-3 shadow-sm transition-all hover:bg-accent/50 hover:shadow-md",
+          selected && "ring-2 ring-primary/60",
+        )}
+      >
         <div className="flex h-24 items-center justify-center overflow-hidden rounded-md bg-white">
           {thumbUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -56,6 +66,24 @@ export function LibraryPartTile({ part, thumbUrl, folderName }: Props) {
           <span className="ml-auto shrink-0">{formatDate(part.updated_at)}</span>
         </div>
       </Card>
+  );
+
+  if (onSelect) {
+    return (
+      <button
+        type="button"
+        className="block w-full text-left"
+        onClick={onSelect}
+        onDoubleClick={() => router.push(`/library/parts/${part.id}`)}
+        title="Click to inspect, double-click to open"
+      >
+        {card}
+      </button>
+    );
+  }
+  return (
+    <Link href={`/library/parts/${part.id}`} className="block">
+      {card}
     </Link>
   );
 }

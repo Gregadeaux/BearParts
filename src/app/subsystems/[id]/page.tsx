@@ -28,6 +28,8 @@ import { LibraryBrowser } from "@/components/library/library-browser";
 import { SubsystemComments } from "@/components/subsystems/subsystem-comments";
 import { SubsystemActions } from "@/components/subsystems/subsystem-actions";
 import { HistoryPanel } from "@/components/subsystems/history-panel";
+import { PartInfoPanel } from "@/components/subsystems/part-info-panel";
+import { SubsystemSelectionProvider } from "@/components/subsystems/selection-context";
 import { BomTable } from "@/components/subsystems/bom-table";
 import { StatusBadge } from "@/components/parts/status-badge";
 import { AvatarStack } from "@/components/tasks/avatar-stack";
@@ -173,11 +175,18 @@ export default async function SubsystemPage({
           />
         </div>
 
-        {/* history | tabbed center (~50%) | discussion */}
+        {/* part info | tabbed center (~50%) | discussion + history */}
+        <SubsystemSelectionProvider>
         <div className="grid gap-4 lg:h-[calc(100dvh-10.5rem)] lg:grid-cols-[20fr_55fr_25fr]">
-          <HistoryPanel
-            uploads={uploads}
-            className="order-2 h-80 lg:order-none lg:h-auto"
+          <PartInfoPanel
+            summary={{
+              name: subsystem.name,
+              projectName: subsystem.project?.name ?? null,
+              partCount: partIds.length,
+              queueCount: queueParts.filter((p) => !["done", "rejected"].includes(p.status)).length,
+              bomCount: bomItems.length,
+            }}
+            className="order-2 lg:order-none"
           />
 
           <div className="order-1 flex min-h-0 min-w-0 flex-col lg:order-none">
@@ -254,15 +263,33 @@ export default async function SubsystemPage({
             </Tabs>
           </div>
 
-          <SubsystemComments
-            subsystemId={subsystem.id}
-            subsystemName={subsystem.name}
-            team={team}
-            userId={user.id}
-            initial={comments}
-            className="order-3 h-96 lg:order-none lg:h-auto"
-          />
+          <div className="order-3 flex h-96 min-h-0 flex-col lg:order-none lg:h-auto">
+            <Tabs defaultValue="discussion" className="flex min-h-0 flex-1 flex-col">
+              <TabsList className="w-full">
+                <TabsTrigger value="discussion" className="flex-1">
+                  Discussion
+                </TabsTrigger>
+                <TabsTrigger value="history" className="flex-1">
+                  History
+                </TabsTrigger>
+              </TabsList>
+              <TabsContent value="discussion" className="min-h-0 flex-1 pt-2">
+                <SubsystemComments
+                  subsystemId={subsystem.id}
+                  subsystemName={subsystem.name}
+                  team={team}
+                  userId={user.id}
+                  initial={comments}
+                  className="h-full"
+                />
+              </TabsContent>
+              <TabsContent value="history" className="min-h-0 flex-1 pt-2">
+                <HistoryPanel uploads={uploads} className="h-full" />
+              </TabsContent>
+            </Tabs>
+          </div>
         </div>
+        </SubsystemSelectionProvider>
       </main>
     </AppShell>
   );
