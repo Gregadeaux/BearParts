@@ -2,8 +2,10 @@ import Link from "next/link";
 import { differenceInCalendarDays, parseISO } from "date-fns";
 import {
   ArrowRight,
+  Blocks,
   CalendarDays,
   Flag,
+  Folder,
   ListTodo,
   SquareKanban,
   UserRound,
@@ -11,6 +13,7 @@ import {
 import type { Part, PartStatus } from "@/types/part";
 import type { Task } from "@/types/task";
 import type { MilestoneRow } from "@/services/milestones.service";
+import type { FavoriteFolder } from "@/services/folder-favorites.service";
 import { cn } from "@/lib/utils";
 import { STATUS_META, formatDay, isOverdue } from "@/components/tasks/task-utils";
 import { STATUS_LABELS } from "@/components/parts/status-badge";
@@ -19,6 +22,7 @@ interface Props {
   parts: Part[];
   tasks: Task[];
   milestones: MilestoneRow[];
+  favorites: FavoriteFolder[];
   userId: string;
   userName: string;
   /** server's yyyy-MM-dd */
@@ -43,7 +47,7 @@ function countdown(days: number): string {
 }
 
 /** The landing page: quick stats and the signed-in user's own work. */
-export function HomeDashboard({ parts, tasks, milestones, userId, userName, today }: Props) {
+export function HomeDashboard({ parts, tasks, milestones, favorites, userId, userName, today }: Props) {
   const openParts = parts.filter((p) => OPEN_PART_STATUSES.has(p.status));
   const openTasks = tasks.filter((t) => t.status !== "done");
   const overdueTasks = openTasks.filter((t) => isOverdue(t.due_date, t.status as never));
@@ -62,6 +66,25 @@ export function HomeDashboard({ parts, tasks, milestones, userId, userName, toda
             : "Nothing assigned to you right now."}
         </p>
       </div>
+
+      {favorites.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          {favorites.map((f) => (
+            <Link
+              key={f.folderId}
+              href={f.href}
+              className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm transition-colors hover:bg-muted"
+            >
+              {f.subsystemId ? (
+                <Blocks className="size-3.5 shrink-0 text-violet-500" />
+              ) : (
+                <Folder className="size-3.5 shrink-0 fill-amber-200 text-amber-500" />
+              )}
+              <span className="max-w-48 truncate">{f.name}</span>
+            </Link>
+          ))}
+        </div>
+      )}
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard

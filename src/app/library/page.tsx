@@ -3,6 +3,7 @@ import { getProfile } from "@/services/profiles.service";
 import { listFolders, getAncestry } from "@/services/folders.service";
 import { listLibraryParts } from "@/services/library.service";
 import { listSubsystems } from "@/services/subsystems.service";
+import { listFavoriteFolderIds } from "@/services/folder-favorites.service";
 import { listProjects } from "@/services/tasks.service";
 import { getFileUrl } from "@/services/storage.service";
 import { AppShell } from "@/components/layout/app-shell";
@@ -20,14 +21,16 @@ export default async function LibraryPage({
   } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const [profile, subfolders, parts, ancestry, subsystems, projects] = await Promise.all([
-    getProfile(supabase, user.id),
-    listFolders(supabase, folderId ?? null),
-    folderId ? listLibraryParts(supabase, folderId) : Promise.resolve([]),
-    folderId ? getAncestry(supabase, folderId) : Promise.resolve([]),
-    listSubsystems(supabase),
-    listProjects(supabase),
-  ]);
+  const [profile, subfolders, parts, ancestry, subsystems, projects, favoriteFolderIds] =
+    await Promise.all([
+      getProfile(supabase, user.id),
+      listFolders(supabase, folderId ?? null),
+      folderId ? listLibraryParts(supabase, folderId) : Promise.resolve([]),
+      folderId ? getAncestry(supabase, folderId) : Promise.resolve([]),
+      listSubsystems(supabase),
+      listProjects(supabase),
+      listFavoriteFolderIds(supabase, user.id),
+    ]);
 
   // signed URLs for the latest-version previews
   const thumbEntries = await Promise.all(
@@ -58,6 +61,7 @@ export default async function LibraryPage({
           subsystems={subsystems}
           projects={projects}
           thumbUrls={thumbUrls}
+          favoriteFolderIds={favoriteFolderIds}
         />
       </main>
     </AppShell>

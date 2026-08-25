@@ -14,6 +14,8 @@ import {
   subsystemUploads,
 } from "@/services/subsystems.service";
 import { listSubsystemComments } from "@/services/subsystem-comments.service";
+import { listFavoriteFolderIds } from "@/services/folder-favorites.service";
+import { FavoriteStar } from "@/components/library/favorite-star";
 import { listBomItems } from "@/services/bom.service";
 import { listFolders, getAncestry } from "@/services/folders.service";
 import { listLibraryParts, subtreeFolderIds } from "@/services/library.service";
@@ -70,6 +72,7 @@ export default async function SubsystemPage({
     folders,
     folderParts,
     fullAncestry,
+    favoriteFolderIds,
   ] = await Promise.all([
     getProfile(supabase, user.id),
     listProfiles(supabase),
@@ -86,6 +89,7 @@ export default async function SubsystemPage({
     listFolders(supabase, currentFolderId),
     listLibraryParts(supabase, currentFolderId),
     getAncestry(supabase, currentFolderId),
+    listFavoriteFolderIds(supabase, user.id),
   ]);
 
   // the embedded browser's breadcrumb starts at the subsystem's own folder;
@@ -158,6 +162,10 @@ export default async function SubsystemPage({
             </Link>
           )}
           <div className="flex-1" />
+          <FavoriteStar
+            folderId={subsystem.folder_id}
+            initialFavorite={favoriteFolderIds.includes(subsystem.folder_id)}
+          />
           <SubsystemActions
             subsystemId={subsystem.id}
             subsystemName={subsystem.name}

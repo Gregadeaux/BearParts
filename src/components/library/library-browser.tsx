@@ -21,6 +21,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { FavoriteStar } from "./favorite-star";
 import { LibraryBreadcrumb } from "./library-breadcrumb";
 import { LibraryPartTile } from "./library-part-tile";
 import { NewFolderDialog } from "./new-folder-dialog";
@@ -64,6 +65,8 @@ interface Props {
   basePath?: string;
   /** embedded in a subsystem dashboard: no Library root crumb, no subsystem tools */
   embedded?: boolean;
+  /** the signed-in user's favorite folder ids — enables the star toggle */
+  favoriteFolderIds?: string[];
 }
 
 /** Folder browser with whole-library search and type filtering. */
@@ -77,6 +80,7 @@ export function LibraryBrowser({
   thumbUrls = {},
   basePath = "/library",
   embedded = false,
+  favoriteFolderIds,
 }: Props) {
   const router = useRouter();
   const [query, setQuery] = useState("");
@@ -128,6 +132,12 @@ export function LibraryBrowser({
           subsystemsByFolder={Object.fromEntries(subsystems.map((s) => [s.folder_id, s.id]))}
         />
         <div className="ml-auto flex gap-2">
+          {currentFolderId && !embedded && favoriteFolderIds && (
+            <FavoriteStar
+              folderId={currentFolderId}
+              initialFavorite={favoriteFolderIds.includes(currentFolderId)}
+            />
+          )}
           {currentFolderId &&
             !embedded &&
             (currentSubsystem ? (
