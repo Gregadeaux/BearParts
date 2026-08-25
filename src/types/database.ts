@@ -166,6 +166,9 @@ export type Database = {
           folder_id: string
           id: string
           name: string
+          onshape_document_id: string | null
+          onshape_element_id: string | null
+          onshape_part_id: string | null
           updated_at: string
         }
         Insert: {
@@ -174,6 +177,9 @@ export type Database = {
           folder_id: string
           id?: string
           name: string
+          onshape_document_id?: string | null
+          onshape_element_id?: string | null
+          onshape_part_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -182,6 +188,9 @@ export type Database = {
           folder_id?: string
           id?: string
           name?: string
+          onshape_document_id?: string | null
+          onshape_element_id?: string | null
+          onshape_part_id?: string | null
           updated_at?: string
         }
         Relationships: [

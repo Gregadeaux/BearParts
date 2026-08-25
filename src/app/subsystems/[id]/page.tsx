@@ -186,6 +186,14 @@ export default async function SubsystemPage({
               queueCount: queueParts.filter((p) => !["done", "rejected"].includes(p.status)).length,
               bomCount: bomItems.length,
             }}
+            queueByPart={queueParts.reduce<Record<string, { id: string; status: string; quantity: number }[]>>(
+              (map, p) => {
+                const libId = p.source_version?.library_part_id;
+                if (libId) (map[libId] ??= []).push({ id: p.id, status: p.status, quantity: p.quantity });
+                return map;
+              },
+              {},
+            )}
             className="order-2 lg:order-none"
           />
 

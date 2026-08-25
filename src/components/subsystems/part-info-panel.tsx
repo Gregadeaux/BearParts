@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { StatusBadge } from "@/components/parts/status-badge";
 import { formatDate, formatInches } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -16,6 +17,12 @@ interface Summary {
   partCount: number;
   queueCount: number;
   bomCount: number;
+}
+
+export interface PanelQueueEntry {
+  id: string;
+  status: string;
+  quantity: number;
 }
 
 function TypeIcon({ type, className }: { type?: string; className?: string }) {
@@ -38,7 +45,16 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
  * Drive-style details pane: subsystem overview until a part is clicked in the
  * Parts tab, then that part's high-level metadata.
  */
-export function PartInfoPanel({ summary, className }: { summary: Summary; className?: string }) {
+export function PartInfoPanel({
+  summary,
+  queueByPart = {},
+  className,
+}: {
+  summary: Summary;
+  /** library part id → its fab-queue entries */
+  queueByPart?: Record<string, PanelQueueEntry[]>;
+  className?: string;
+}) {
   const ctx = useSubsystemSelection();
   const selection = ctx?.selection ?? null;
 
@@ -110,6 +126,27 @@ export function PartInfoPanel({ summary, className }: { summary: Summary; classN
         {latest?.analysis && <Row label="Holes">{holes}</Row>}
         {latest?.units && latest.units !== "unknown" && <Row label="Units">{latest.units}</Row>}
       </div>
+
+      {(queueByPart[part.id] ?? []).length > 0 && (
+        <>
+          <Separator />
+          <div className="space-y-1.5">
+            <p className="text-sm font-medium">Fabrication</p>
+            {(queueByPart[part.id] ?? []).map((entry) => (
+              <Link
+                key={entry.id}
+                href={`/parts/${entry.id}`}
+                className="flex items-center justify-between gap-2 text-sm hover:underline"
+              >
+                <StatusBadge status={entry.status as never} />
+                {entry.quantity > 1 && (
+                  <span className="text-xs text-muted-foreground">×{entry.quantity}</span>
+                )}
+              </Link>
+            ))}
+          </div>
+        </>
+      )}
 
       {latest?.note && (
         <>

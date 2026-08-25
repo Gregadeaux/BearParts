@@ -45,6 +45,17 @@ export interface ResolveFaceResponse {
   partId: string | null;
 }
 
+/** Result of the "is this Onshape part already in BearParts?" lookup. */
+export interface LinkedPartResponse {
+  linked: {
+    libraryPartId: string;
+    name: string;
+    latestVersion: number;
+    folderName: string | null;
+    queue: { id: string; status: string; quantity: number }[];
+  } | null;
+}
+
 export interface StatusResponse {
   configured: boolean;
   mock: boolean;

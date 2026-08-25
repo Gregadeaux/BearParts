@@ -17,11 +17,13 @@ import {
 } from "lucide-react";
 import type {
   FacesResponse,
+  LinkedPartResponse,
   PlanarFace,
   StatusResponse,
   StudioContextResponse,
   StudioPart,
 } from "@/services/onshape/types";
+import { STATUS_LABELS } from "@/components/parts/status-badge";
 import { generateThumbnail } from "@/lib/thumbnails";
 import { PART_METHODS, type PartMethod } from "@/types/part";
 import { usePanelSession } from "./use-panel-session";
@@ -64,6 +66,7 @@ type Busy = null | "exporting" | "importing";
 interface ImportResult {
   libraryPartId: string;
   queuedPartId: string | null;
+  version?: number;
 }
 
 const normalize = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
@@ -123,6 +126,14 @@ export function PanelApp() {
 
   const [busy, setBusy] = useState<Busy>(null);
   const [result, setResult] = useState<ImportResult | null>(null);
+
+  // link state: is the selected Onshape part already in the library?
+  const [linkedFor, setLinkedFor] = useState<{
+    key: string;
+    linked: LinkedPartResponse["linked"];
+  } | null>(null);
+  const [sendAsNewFor, setSendAsNewFor] = useState<string | null>(null);
+  const [linkRefresh, setLinkRefresh] = useState(0);
 
   // ---- Onshape selection bridge -------------------------------------------
   const studioRef = useRef<StudioContextResponse | null>(null);
@@ -218,6 +229,21 @@ export function PanelApp() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session, connected, partId, mode, ctx?.documentId, ctx?.wvmId, ctx?.elementId]);
 
+  // linked-part lookup (DB only — no Onshape API cost)
+  useEffect(() => {
+    if (!session || !ctx || !partId) return;
+    let stale = false;
+    panelJson<LinkedPartResponse>(
+      `/api/onshape/linked?did=${ctx.documentId}&eid=${encodeURIComponent(ctx.elementId)}&partId=${encodeURIComponent(partId)}`,
+    )
+      .then((r) => !stale && setLinkedFor({ key: partId, linked: r.linked }))
+      .catch(() => {});
+    return () => {
+      stale = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session, partId, ctx?.documentId, ctx?.elementId, linkRefresh]);
+
   // shaded-view preview
   useEffect(() => {
     if (!session || !ctx || !connected || !partId) return;
@@ -239,21 +265,24 @@ export function PanelApp() {
 
   const faces = facesFor?.key === partId ? facesFor.faces : null;
   const preview = previewFor?.key === partId ? previewFor.url : null;
+  const linked =
+    linkedFor?.key === partId && sendAsNewFor !== partId ? linkedFor.linked : null;
   // Onshape SELECTION face ids win even when they're not in our list
   const faceId = pickedFaceId ?? faces?.[0]?.faceId ?? null;
   const face: PlanarFace | null = faces?.find((f) => f.faceId === faceId) ?? null;
   const subsystem = subsystems.find((s) => s.id === subsystemId) ?? null;
 
   // ---- submit -------------------------------------------------------------
+  const effectiveName = linked ? linked.name : name;
   const canSubmit =
-    Boolean(session && ctx && connected && partId && name.trim() && busy === null) &&
+    Boolean(session && ctx && connected && partId && effectiveName.trim() && busy === null) &&
     (mode === "step" || Boolean(faceId));
 
   const submit = async () => {
     if (!ctx || !partId) return;
     try {
       setBusy("exporting");
-      const safeName = name.trim().replace(/[\\/:*?"<>|]+/g, "") || "part";
+      const safeName = effectiveName.trim().replace(/[\\/:*?"<>|]+/g, "") || "part";
       let file: File;
       if (mode === "dxf") {
         const res = await panelJson<{ dxf: string; envelope: { width: number; height: number } }>(
@@ -278,8 +307,13 @@ export function PanelApp() {
       const thumb = await generateThumbnail(file, mode).catch(() => null);
       const fd = new FormData();
       fd.set("file", file);
-      fd.set("name", name.trim());
-      if (subsystem) fd.set("folderId", subsystem.folderId);
+      fd.set("name", effectiveName.trim());
+      // identity link — later panel visits recognize this part
+      fd.set("onshapeDocumentId", ctx.documentId);
+      fd.set("onshapeElementId", ctx.elementId);
+      fd.set("onshapePartId", partId);
+      if (linked) fd.set("libraryPartId", linked.libraryPartId);
+      if (!linked && subsystem) fd.set("folderId", subsystem.folderId);
       if (thumb) fd.set("thumb", new File([thumb], "thumb.png", { type: "image/png" }));
       const noteBits = [`From Onshape: ${studio?.documentName ?? "document"} / ${studio?.elementName ?? "tab"}`];
       if (thickness.trim()) noteBits.push(`${thickness.trim()} in thick`);
@@ -298,6 +332,7 @@ export function PanelApp() {
         body: fd,
       });
       setResult(imported);
+      setLinkRefresh((n) => n + 1); // pick up the new link/version state
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Export failed");
     } finally {
@@ -388,7 +423,11 @@ export function PanelApp() {
         <span className="mx-auto flex size-10 items-center justify-center rounded-full bg-primary/10 text-primary">
           <Check className="size-5" />
         </span>
-        <p className="font-medium">&quot;{name}&quot; is in the library</p>
+        <p className="font-medium">
+          {result.version && result.version > 1
+            ? `v${result.version} of "${effectiveName}" uploaded`
+            : `"${effectiveName}" is in the library`}
+        </p>
         {result.queuedPartId && (
           <p className="text-muted-foreground">It&apos;s also on the fab queue.</p>
         )}
@@ -552,13 +591,66 @@ export function PanelApp() {
       {/* 3 — details */}
       <Card className="gap-2.5 p-3">
         <p className="font-medium">{mode === "dxf" ? "3" : "2"} · Details</p>
-        <div className="space-y-1.5">
-          <Label>Part name</Label>
-          <Input
-            value={name}
-            onChange={(e) => setNameEdit({ key: partId, value: e.target.value })}
-          />
-        </div>
+
+        {linked && (
+          <div className="space-y-2 rounded-md border border-primary/30 bg-primary/5 px-3 py-2">
+            <div className="flex items-center gap-2">
+              <Check className="size-3.5 shrink-0 text-primary" />
+              <p className="min-w-0 flex-1 truncate text-sm font-medium" title={linked.name}>
+                {linked.name}
+              </p>
+              <Badge variant="secondary">v{linked.latestVersion}</Badge>
+            </div>
+            {linked.folderName && (
+              <p className="text-xs text-muted-foreground">Filed in {linked.folderName}</p>
+            )}
+            {linked.queue.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {linked.queue.map((q) => (
+                  <Badge key={q.id} variant="outline" className="text-xs">
+                    {STATUS_LABELS[q.status as keyof typeof STATUS_LABELS] ?? q.status}
+                    {q.quantity > 1 ? ` ×${q.quantity}` : ""}
+                  </Badge>
+                ))}
+              </div>
+            )}
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2 text-xs text-muted-foreground"
+                onClick={() => setSendAsNewFor(partId)}
+              >
+                Not the same part? Send as new
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2 text-xs"
+                render={
+                  <a
+                    href={`/library/parts/${linked.libraryPartId}`}
+                    target="_blank"
+                    rel="noreferrer"
+                  />
+                }
+                nativeButton={false}
+              >
+                <ExternalLink className="size-3" /> Open
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {!linked && (
+          <div className="space-y-1.5">
+            <Label>Part name</Label>
+            <Input
+              value={name}
+              onChange={(e) => setNameEdit({ key: partId, value: e.target.value })}
+            />
+          </div>
+        )}
         <div className="grid grid-cols-2 gap-2">
           <div className="space-y-1.5">
             <Label>Material</Label>
@@ -578,6 +670,7 @@ export function PanelApp() {
             />
           </div>
         </div>
+        {!linked && (
         <div className="space-y-1.5">
           <Label>Subsystem</Label>
           <Select
@@ -600,6 +693,7 @@ export function PanelApp() {
             </SelectContent>
           </Select>
         </div>
+        )}
         <label className="flex items-center gap-2 pt-1">
           <Checkbox checked={queue} onCheckedChange={(c) => setQueue(c === true)} />
           <span>Add to fab queue</span>
@@ -646,6 +740,10 @@ export function PanelApp() {
         ) : busy === "importing" ? (
           <>
             <Loader2 className="animate-spin" /> Uploading to BearParts…
+          </>
+        ) : linked ? (
+          <>
+            <Send /> Send new version (v{linked.latestVersion + 1})
           </>
         ) : (
           <>

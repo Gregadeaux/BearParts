@@ -54,6 +54,11 @@ face or a STEP of a part, and imports it into the library (optionally queued).
 - Import lands via `/api/onshape/import` →
   `services/library-upload.service.ts` (shared with the library upload action);
   no subsystem chosen → root "Onshape imports" folder.
+- **Linking**: imports stamp `library_parts.onshape_{document,element,part}_id`;
+  `/api/onshape/linked` (DB-only, zero Onshape cost) tells the panel a part is
+  already exported → panel shows fab status and "Send new version" (import with
+  `libraryPartId` appends via `addLibraryVersionFromFile`). "Send as new"
+  escape hatch bypasses the link.
 
 ## Extension registration (dev portal)
 

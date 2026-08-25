@@ -75,6 +75,8 @@ export interface SubsystemQueuePart {
   quantity: number;
   created_at: string;
   assignee: Pick<ProfileRow, "id" | "display_name" | "avatar_url"> | null;
+  /** which library part this entry was made from (via its source version) */
+  source_version: { library_part_id: string } | null;
 }
 
 /** Fab-queue entries created from any version of the subsystem's parts. */
@@ -93,7 +95,8 @@ export async function subsystemQueueParts(
   const { data, error } = await supabase
     .from("parts")
     .select(`id, name, status, quantity, created_at,
-      assignee:profiles!parts_assigned_to_fkey (id, display_name, avatar_url)`)
+      assignee:profiles!parts_assigned_to_fkey (id, display_name, avatar_url),
+      source_version:part_versions (library_part_id)`)
     .in("source_version_id", versions.map((v) => v.id))
     .is("archived_at", null)
     .order("created_at", { ascending: false });

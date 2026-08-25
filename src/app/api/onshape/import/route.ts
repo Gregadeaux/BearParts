@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { bearerAuth } from "@/lib/supabase/bearer";
 import {
+  addLibraryVersionFromFile,
   createLibraryPartFromFile,
   queueImportedVersion,
 } from "@/services/library-upload.service";
@@ -43,22 +44,55 @@ export async function POST(request: Request) {
   if (!(file instanceof File) || file.size === 0 || !name) {
     return NextResponse.json({ error: "file and name are required" }, { status: 400 });
   }
-  const folderId =
-    typeof rawFolderId === "string" && rawFolderId
+  const thumb = formData.get("thumb");
+  const note = ((formData.get("note") as string) || "").trim() || undefined;
+  // Onshape identity — lets the panel recognize this part on later visits
+  const onshapeDocId = ((formData.get("onshapeDocumentId") as string) || "").trim() || null;
+  const onshapeElementId = ((formData.get("onshapeElementId") as string) || "").trim() || null;
+  const onshapePartId = ((formData.get("onshapePartId") as string) || "").trim() || null;
+  // when set, append a version to this linked part instead of creating one
+  const linkedPartId = ((formData.get("libraryPartId") as string) || "").trim() || null;
+  const folderId = linkedPartId
+    ? "" // unused in version mode
+    : typeof rawFolderId === "string" && rawFolderId
       ? rawFolderId
       : await onshapeImportsFolderId(supabase, user.id);
 
-  const thumb = formData.get("thumb");
-  const note = ((formData.get("note") as string) || "").trim() || undefined;
-
   try {
-    const { part, version } = await createLibraryPartFromFile(supabase, user.id, {
-      file,
-      folderId,
-      name,
-      thumb: thumb instanceof File ? thumb : null,
-      note,
-    });
+    let libraryPartId: string;
+    let version;
+    let versionNumber = 1;
+    if (linkedPartId) {
+      const added = await addLibraryVersionFromFile(supabase, user.id, {
+        libraryPartId: linkedPartId,
+        file,
+        thumb: thumb instanceof File ? thumb : null,
+        note,
+      });
+      libraryPartId = linkedPartId;
+      version = added.version;
+      versionNumber = added.versionNumber;
+    } else {
+      const created = await createLibraryPartFromFile(supabase, user.id, {
+        file,
+        folderId,
+        name,
+        thumb: thumb instanceof File ? thumb : null,
+        note,
+      });
+      libraryPartId = created.part.id;
+      version = created.version;
+      if (onshapeDocId && onshapeElementId && onshapePartId) {
+        await supabase
+          .from("library_parts")
+          .update({
+            onshape_document_id: onshapeDocId,
+            onshape_element_id: onshapeElementId,
+            onshape_part_id: onshapePartId,
+          })
+          .eq("id", libraryPartId);
+      }
+    }
 
     let queuedPartId: string | null = null;
     if (formData.get("queue") === "1") {
@@ -91,7 +125,7 @@ export async function POST(request: Request) {
       );
     }
 
-    return NextResponse.json({ libraryPartId: part.id, queuedPartId });
+    return NextResponse.json({ libraryPartId, queuedPartId, version: versionNumber });
   } catch (e) {
     return NextResponse.json(
       { error: e instanceof Error ? e.message : "Import failed" },

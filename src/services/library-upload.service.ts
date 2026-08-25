@@ -74,6 +74,34 @@ export interface QueueFromVersionOptions {
   method?: PartMethod;
 }
 
+/** Append the next version to an existing library part (Onshape re-exports). */
+export async function addLibraryVersionFromFile(
+  supabase: Client,
+  userId: string,
+  {
+    libraryPartId,
+    file,
+    thumb,
+    note,
+  }: { libraryPartId: string; file: File; thumb?: File | Blob | null; note?: string },
+) {
+  const input = await versionInputFromFile(file, note);
+  const versionNumber = await library.nextVersionNumber(supabase, libraryPartId);
+  input.filePath = library.versionFilePath(libraryPartId, versionNumber, input.fileType);
+  await uploadToPath(supabase, file, input.filePath, input.fileType);
+  if (thumb && thumb.size > 0) {
+    try {
+      const path = library.versionThumbPath(libraryPartId, versionNumber);
+      await uploadToPath(supabase, thumb, path, "png");
+      input.thumbPath = path;
+    } catch {
+      // a missing preview never fails an upload
+    }
+  }
+  const version = await library.insertVersion(supabase, userId, libraryPartId, versionNumber, input);
+  return { version, versionNumber };
+}
+
 /** Send a freshly imported version straight to the fab queue. */
 export async function queueImportedVersion(
   supabase: Client,
