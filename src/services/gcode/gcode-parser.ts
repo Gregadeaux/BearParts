@@ -9,6 +9,8 @@ export interface GcodeSegment {
   to: [number, number, number];
   /** G0 positioning move (drawn faded) vs cutting move */
   rapid: boolean;
+  /** programmed feed (units/min) in effect for this cutting move */
+  feed?: number;
 }
 
 export interface GcodeMeta {
@@ -119,10 +121,11 @@ export function parseGcode(text: string): GcodeToolpath {
     const ty = ny ?? y;
     const tz = nz ?? z;
 
+    const feed = motion !== 0 && currentFeed > 0 ? currentFeed : undefined;
     if (motion === 2 || motion === 3) {
-      emitArc(segments, x, y, z, tx, ty, tz, i, j, r, hasIJ, motion === 2);
+      emitArc(segments, x, y, z, tx, ty, tz, i, j, r, hasIJ, motion === 2, feed);
     } else {
-      segments.push({ from: [x, y, z], to: [tx, ty, tz], rapid: motion === 0 });
+      segments.push({ from: [x, y, z], to: [tx, ty, tz], rapid: motion === 0, feed });
     }
     if (motion !== 0) {
       if (currentFeed > 0) feeds.add(currentFeed);
@@ -206,6 +209,7 @@ function emitArc(
   r: number | null,
   hasIJ: boolean,
   clockwise: boolean,
+  feed?: number,
 ) {
   let cx: number;
   let cy: number;
@@ -218,7 +222,7 @@ function emitArc(
     const dy = y1 - y0;
     const q = Math.hypot(dx, dy);
     if (q < 1e-9 || Math.abs(r) < q / 2 - 1e-9) {
-      out.push({ from: [x0, y0, z0], to: [x1, y1, z1], rapid: false });
+      out.push({ from: [x0, y0, z0], to: [x1, y1, z1], rapid: false, feed });
       return;
     }
     const h = Math.sqrt(Math.max(0, r * r - (q / 2) * (q / 2)));
@@ -226,7 +230,7 @@ function emitArc(
     cx = (x0 + x1) / 2 + side * h * (-dy / q);
     cy = (y0 + y1) / 2 + side * h * (dx / q);
   } else {
-    out.push({ from: [x0, y0, z0], to: [x1, y1, z1], rapid: false });
+    out.push({ from: [x0, y0, z0], to: [x1, y1, z1], rapid: false, feed });
     return;
   }
 
@@ -253,7 +257,7 @@ function emitArc(
     const qx = cx + radius * Math.cos(a);
     const qy = cy + radius * Math.sin(a);
     const qz = z0 + (z1 - z0) * t;
-    out.push({ from: [px, py, pz], to: [qx, qy, qz], rapid: false });
+    out.push({ from: [px, py, pz], to: [qx, qy, qz], rapid: false, feed });
     px = qx;
     py = qy;
     pz = qz;
