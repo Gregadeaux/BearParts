@@ -20,6 +20,8 @@ export interface GcodeMeta {
   cutLevels: number[];
   /** total depth of cut: |deepest level| below Z0, else the level span */
   cutDepth: number | null;
+  /** depth of cut per pass, in pass order (first pass measured from Z0) */
+  passDepths: number[];
   /** uniform step-down between passes, when consistent */
   stepdown: number | null;
 }
@@ -160,12 +162,23 @@ function buildMeta(
     if (cutDepth < 1e-6) cutDepth = null;
   }
 
+  // per-pass DoC: first pass from stock top (Z0 convention), then level→level
+  const passDepths: number[] = [];
+  if (cutLevels.length > 0) {
+    let prev = cutLevels[0] < -1e-6 ? 0 : cutLevels[0];
+    for (const lvl of cutLevels) {
+      const d = prev - lvl;
+      if (d > 1e-6) passDepths.push(Math.round(d * 1e4) / 1e4);
+      prev = lvl;
+    }
+  }
+
   let stepdown: number | null = null;
-  if (cutLevels.length >= 2) {
-    const diffs = cutLevels.slice(1).map((lvl, idx) => cutLevels[idx] - lvl);
-    const first = diffs[0];
-    if (diffs.every((d) => Math.abs(d - first) < 1e-3)) {
-      stepdown = Math.round((diffs.reduce((a, b) => a + b, 0) / diffs.length) * 1e4) / 1e4;
+  if (passDepths.length >= 1) {
+    const first = passDepths[0];
+    if (passDepths.every((d) => Math.abs(d - first) < 1e-3)) {
+      stepdown =
+        Math.round((passDepths.reduce((a, b) => a + b, 0) / passDepths.length) * 1e4) / 1e4;
     }
   }
 
@@ -174,6 +187,7 @@ function buildMeta(
     spindleSpeeds: [...spindleSpeeds].sort((a, b) => a - b),
     cutLevels,
     cutDepth,
+    passDepths,
     stepdown,
   };
 }

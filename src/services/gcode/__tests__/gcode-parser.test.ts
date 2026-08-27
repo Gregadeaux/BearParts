@@ -55,7 +55,8 @@ describe("parseGcode", () => {
     expect(tp.meta.feeds).toEqual([30, 100]);
     expect(tp.meta.cutLevels).toEqual([-0.09, -0.18, -0.26]);
     expect(tp.meta.cutDepth).toBeCloseTo(0.26, 5);
-    // step-downs are 0.09, 0.08 — not uniform enough to report
+    // per-pass DoC always reported, even when not uniform
+    expect(tp.meta.passDepths).toEqual([0.09, 0.09, 0.08]);
     expect(tp.meta.stepdown).toBeNull();
   });
 
@@ -71,6 +72,7 @@ describe("parseGcode", () => {
       G1 X1
     `);
     expect(tp.meta.cutLevels).toEqual([-0.1, -0.2, -0.3]);
+    expect(tp.meta.passDepths).toEqual([0.1, 0.1, 0.1]);
     expect(tp.meta.stepdown).toBeCloseTo(0.1, 5);
     expect(tp.meta.cutDepth).toBeCloseTo(0.3, 5);
   });

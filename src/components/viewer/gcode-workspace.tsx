@@ -41,11 +41,16 @@ export function GcodeWorkspace({ gcodeText }: { gcodeText: string }) {
 
   const chips: string[] = [];
   if (meta.cutDepth !== null) {
-    const passes =
-      meta.cutLevels.length > 1
-        ? ` · ${meta.cutLevels.length} passes${meta.stepdown ? ` @ ${fmt(meta.stepdown)}${unit.trim()}` : ""}`
-        : "";
-    chips.push(`Depth ${fmt(meta.cutDepth)}${unit.trim()}${passes}`);
+    const passes = meta.cutLevels.length > 1 ? ` · ${meta.cutLevels.length} passes` : "";
+    chips.push(`Total depth ${fmt(meta.cutDepth)}${unit.trim()}${passes}`);
+  }
+  if (meta.passDepths.length > 0) {
+    const sorted = [...meta.passDepths].sort((a, b) => a - b);
+    chips.push(
+      meta.stepdown !== null
+        ? `DoC ${fmt(meta.stepdown)}${unit.trim()}`
+        : `DoC ${fmt(sorted[0])}–${fmt(sorted[sorted.length - 1])}${unit.trim()}`,
+    );
   }
   if (meta.feeds.length > 0) chips.push(range(meta.feeds, feedUnit));
   if (meta.spindleSpeeds.length > 0) chips.push(range(meta.spindleSpeeds, "RPM"));
