@@ -28,6 +28,7 @@ export async function proxy(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
   const isPublic =
+    pathname === "/" || // anonymous visitors get the marketing landing page
     pathname.startsWith("/login") ||
     pathname.startsWith("/auth") ||
     pathname.startsWith("/inspect") ||

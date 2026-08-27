@@ -6,6 +6,7 @@ import { listMilestones } from "@/services/milestones.service";
 import { listFavoriteFolders } from "@/services/folder-favorites.service";
 import { AppShell } from "@/components/layout/app-shell";
 import { HomeDashboard } from "@/components/home/home-dashboard";
+import { LandingPage } from "@/components/marketing/landing-page";
 import { toDayKey } from "@/components/calendar/calendar-layout";
 
 export default async function HomePage() {
@@ -13,7 +14,7 @@ export default async function HomePage() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return null; // middleware redirects
+  if (!user) return <LandingPage />;
 
   const [profile, parts, tasks, milestones, favorites] = await Promise.all([
     getProfile(supabase, user.id),
