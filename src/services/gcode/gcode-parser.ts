@@ -11,6 +11,19 @@ export interface GcodeSegment {
   rapid: boolean;
 }
 
+export interface GcodeMeta {
+  /** distinct programmed feed rates on cutting moves (units/min), ascending */
+  feeds: number[];
+  /** distinct spindle speeds (RPM), ascending */
+  spindleSpeeds: number[];
+  /** distinct Z levels with lateral cutting, top first */
+  cutLevels: number[];
+  /** total depth of cut: |deepest level| below Z0, else the level span */
+  cutDepth: number | null;
+  /** uniform step-down between passes, when consistent */
+  stepdown: number | null;
+}
+
 export interface GcodeToolpath {
   segments: GcodeSegment[];
   boundingBox: {
@@ -20,6 +33,7 @@ export interface GcodeToolpath {
   };
   /** true when the file declared inches (G20) */
   inches: boolean;
+  meta: GcodeMeta;
 }
 
 const MAX_SEGMENTS = 250_000;
@@ -34,6 +48,10 @@ export function parseGcode(text: string): GcodeToolpath {
   let motion: 0 | 1 | 2 | 3 = 0;
   let inches = false;
   let sawMove = false;
+  let currentFeed = 0;
+  const feeds = new Set<number>();
+  const spindleSpeeds = new Set<number>();
+  const cutLevels = new Set<number>();
 
   for (const rawLine of text.split(/\r?\n/)) {
     // strip ( ... ) and ; comments, then tokenize words like G1 X1.5
@@ -83,6 +101,12 @@ export function parseGcode(text: string): GcodeToolpath {
         case "R":
           r = value;
           break;
+        case "F":
+          currentFeed = value;
+          break;
+        case "S":
+          if (value > 0) spindleSpeeds.add(value);
+          break;
       }
     }
 
@@ -98,6 +122,14 @@ export function parseGcode(text: string): GcodeToolpath {
     } else {
       segments.push({ from: [x, y, z], to: [tx, ty, tz], rapid: motion === 0 });
     }
+    if (motion !== 0) {
+      if (currentFeed > 0) feeds.add(currentFeed);
+      // a pass level = lateral cutting at constant Z (plunges don't count)
+      const lateral = Math.abs(tx - x) > 1e-9 || Math.abs(ty - y) > 1e-9;
+      if (lateral && Math.abs(tz - z) < 1e-9) {
+        cutLevels.add(Math.round(tz * 1e4) / 1e4);
+      }
+    }
     sawMove = true;
     x = tx;
     y = ty;
@@ -106,7 +138,44 @@ export function parseGcode(text: string): GcodeToolpath {
   }
 
   if (!sawMove || segments.length === 0) throw new Error("No toolpath moves found");
-  return { segments, boundingBox: computeBBox(segments), inches };
+  return {
+    segments,
+    boundingBox: computeBBox(segments),
+    inches,
+    meta: buildMeta(feeds, spindleSpeeds, cutLevels),
+  };
+}
+
+function buildMeta(
+  feeds: Set<number>,
+  spindleSpeeds: Set<number>,
+  cutLevelSet: Set<number>,
+): GcodeMeta {
+  const cutLevels = [...cutLevelSet].sort((a, b) => b - a); // top first
+  let cutDepth: number | null = null;
+  if (cutLevels.length > 0) {
+    const deepest = cutLevels[cutLevels.length - 1];
+    // stock top at Z0 is the near-universal router convention
+    cutDepth = deepest < -1e-6 ? Math.abs(deepest) : cutLevels[0] - deepest;
+    if (cutDepth < 1e-6) cutDepth = null;
+  }
+
+  let stepdown: number | null = null;
+  if (cutLevels.length >= 2) {
+    const diffs = cutLevels.slice(1).map((lvl, idx) => cutLevels[idx] - lvl);
+    const first = diffs[0];
+    if (diffs.every((d) => Math.abs(d - first) < 1e-3)) {
+      stepdown = Math.round((diffs.reduce((a, b) => a + b, 0) / diffs.length) * 1e4) / 1e4;
+    }
+  }
+
+  return {
+    feeds: [...feeds].sort((a, b) => a - b),
+    spindleSpeeds: [...spindleSpeeds].sort((a, b) => a - b),
+    cutLevels,
+    cutDepth,
+    stepdown,
+  };
 }
 
 /** XY-plane arc → chord segments. Helical Z is interpolated linearly. */
