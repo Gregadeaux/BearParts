@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Bell, CalendarDays, FolderOpen, House, ListTodo, LogOut, Palette, Plug, Plus, ShoppingCart, SquareKanban } from "lucide-react";
+import { Bell, CalendarDays, FolderOpen, House, ListTodo, LogOut, Palette, Plug, Plus, ShoppingCart, SquareKanban, UserRound } from "lucide-react";
 import type { ProjectRow } from "@/types/task";
 import { createClient } from "@/lib/supabase/client";
 import { listProjects } from "@/services/tasks.service";
@@ -64,6 +64,7 @@ const NAV_GROUPS = [
   {
     label: "Settings",
     items: [
+      { href: "/profile", label: "Profile", icon: UserRound },
       { href: "/subgroups", label: "Subgroups", icon: Palette },
       { href: "/integrations", label: "Integrations", icon: Plug },
     ],

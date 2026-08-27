@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FlaskConical, Download } from "lucide-react";
 import type { NormalizedEntity } from "@/types/geometry";
+import { createClient } from "@/lib/supabase/client";
 import {
   generateGcode,
   type GcodeGenOptions,
@@ -58,6 +59,30 @@ export function GenerateGcodeDialog({ entities, baseName = "part" }: Props) {
   const [open, setOpen] = useState(false);
   const [opts, setOpts] = useState<GcodeGenOptions>(DEFAULTS);
   const [result, setResult] = useState<GcodeGenResult | null>(null);
+  // opt-in via Profile → "Enable experimental features"
+  const [enabled, setEnabled] = useState(false);
+
+  useEffect(() => {
+    let stale = false;
+    (async () => {
+      const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase
+        .from("profiles")
+        .select("experimental_features")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (!stale && data?.experimental_features) setEnabled(true);
+    })();
+    return () => {
+      stale = true;
+    };
+  }, []);
+
+  if (!enabled) return null;
 
   const setField = (key: keyof GcodeGenOptions, raw: string) => {
     const value = Number(raw);
