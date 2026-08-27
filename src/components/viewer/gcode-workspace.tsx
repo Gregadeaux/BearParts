@@ -52,6 +52,7 @@ export function GcodeWorkspace({ gcodeText }: { gcodeText: string }) {
         : `DoC ${fmt(sorted[0])}–${fmt(sorted[sorted.length - 1])}${unit.trim()}`,
     );
   }
+  if (meta.toolDiameter !== null) chips.push(`Ø${fmt(meta.toolDiameter)}${unit.trim()} tool`);
   if (meta.feeds.length > 0) chips.push(range(meta.feeds, feedUnit));
   if (meta.spindleSpeeds.length > 0) chips.push(range(meta.spindleSpeeds, "RPM"));
 

@@ -65,6 +65,11 @@ export function GcodeViewer({ toolpath, className }: Props) {
   const { size } = toolpath.boundingBox;
   const maxDim = Math.max(size.x, size.y, size.z, 1);
   const camDist = maxDim * 1.8;
+  // true tool radius when the CAM post declared it; scene-scaled otherwise
+  const toolRadius =
+    toolpath.meta.toolDiameter && toolpath.meta.toolDiameter < maxDim
+      ? toolpath.meta.toolDiameter / 2
+      : (maxDim / 90) * 0.7;
 
   const timeline = useMemo(() => buildTimeline(toolpath), [toolpath]);
 
@@ -100,7 +105,7 @@ export function GcodeViewer({ toolpath, className }: Props) {
         <ToolpathScene
           toolpath={toolpath}
           timeline={timeline}
-          markerSize={maxDim / 90}
+          toolRadius={toolRadius}
           animating={started}
           timeRef={timeRef}
           playingRef={playingRef}
@@ -177,7 +182,7 @@ export function GcodeViewer({ toolpath, className }: Props) {
 function ToolpathScene({
   toolpath,
   timeline,
-  markerSize,
+  toolRadius,
   animating,
   timeRef,
   playingRef,
@@ -187,7 +192,7 @@ function ToolpathScene({
 }: {
   toolpath: GcodeToolpath;
   timeline: Timeline;
-  markerSize: number;
+  toolRadius: number;
   animating: boolean;
   timeRef: React.RefObject<number>;
   playingRef: React.RefObject<boolean>;
@@ -302,12 +307,12 @@ function ToolpathScene({
           </lineSegments>
           {/* endmill: amber fluted section + gray shank, tip at the toolpoint */}
           <group ref={marker}>
-            <mesh position={[0, 0, markerSize * 2]} rotation={[Math.PI / 2, 0, 0]}>
-              <cylinderGeometry args={[markerSize * 0.7, markerSize * 0.7, markerSize * 4, 20]} />
+            <mesh position={[0, 0, toolRadius * 3]} rotation={[Math.PI / 2, 0, 0]}>
+              <cylinderGeometry args={[toolRadius, toolRadius, toolRadius * 6, 20]} />
               <meshBasicMaterial color="#f59e0b" />
             </mesh>
-            <mesh position={[0, 0, markerSize * 6.5]} rotation={[Math.PI / 2, 0, 0]}>
-              <cylinderGeometry args={[markerSize * 0.6, markerSize * 0.6, markerSize * 5, 20]} />
+            <mesh position={[0, 0, toolRadius * 9.5]} rotation={[Math.PI / 2, 0, 0]}>
+              <cylinderGeometry args={[toolRadius * 0.85, toolRadius * 0.85, toolRadius * 7, 20]} />
               <meshBasicMaterial color="#9ca3af" />
             </mesh>
           </group>

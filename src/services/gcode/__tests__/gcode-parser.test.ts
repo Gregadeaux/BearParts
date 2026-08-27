@@ -77,6 +77,15 @@ describe("parseGcode", () => {
     expect(tp.meta.cutDepth).toBeCloseTo(0.3, 5);
   });
 
+  it("sniffs tool diameter from CAM post comments", () => {
+    const fusion = parseGcode(`(T1 D=0.25 CR=0. - ZMIN=-0.26 - flat end mill)\nG20\nG1 X1 F30\n`);
+    expect(fusion.meta.toolDiameter).toBeCloseTo(0.25, 5);
+    const generic = parseGcode(`; TOOL DIA: 6.0\nG21\nG1 X10 F800\n`);
+    expect(generic.meta.toolDiameter).toBeCloseTo(6, 5);
+    const none = parseGcode(`G20\nG1 X1 F30\n`);
+    expect(none.meta.toolDiameter).toBeNull();
+  });
+
   it("plunges alone produce no pass levels", () => {
     const tp = parseGcode(`G90\nG0 X0 Y0 Z1\nG1 Z-0.5 F10\n`);
     expect(tp.meta.cutLevels).toEqual([]);

@@ -26,6 +26,25 @@ export interface GcodeMeta {
   passDepths: number[];
   /** uniform step-down between passes, when consistent */
   stepdown: number | null;
+  /** tool diameter from CAM post comments (file units), when declared */
+  toolDiameter: number | null;
+}
+
+/**
+ * G-code has no formal tool geometry — but CAM posts leave it in comments.
+ * Matches Fusion-style "(T1 D=0.25 CR=0 ...)" and "TOOL DIA: 6.0" variants.
+ */
+function sniffToolDiameter(text: string): number | null {
+  for (const [comment] of text.matchAll(/\(([^)]*)\)|;(.*)$/gm)) {
+    const m =
+      comment.match(/\bD\s*=\s*(\d*\.?\d+)/i) ??
+      comment.match(/\b(?:TOOL\s*)?DIA(?:METER)?\s*[:=]?\s*(\d*\.?\d+)/i);
+    if (m) {
+      const d = parseFloat(m[1]);
+      if (d > 0 && d < 100) return d;
+    }
+  }
+  return null;
 }
 
 export interface GcodeToolpath {
@@ -147,7 +166,7 @@ export function parseGcode(text: string): GcodeToolpath {
     segments,
     boundingBox: computeBBox(segments),
     inches,
-    meta: buildMeta(feeds, spindleSpeeds, cutLevels),
+    meta: { ...buildMeta(feeds, spindleSpeeds, cutLevels), toolDiameter: sniffToolDiameter(text) },
   };
 }
 
@@ -155,7 +174,7 @@ function buildMeta(
   feeds: Set<number>,
   spindleSpeeds: Set<number>,
   cutLevelSet: Set<number>,
-): GcodeMeta {
+): Omit<GcodeMeta, "toolDiameter"> {
   const cutLevels = [...cutLevelSet].sort((a, b) => b - a); // top first
   let cutDepth: number | null = null;
   if (cutLevels.length > 0) {
