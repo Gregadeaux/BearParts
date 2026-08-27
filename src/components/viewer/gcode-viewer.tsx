@@ -12,7 +12,7 @@ interface Props {
   className?: string;
 }
 
-const SPEEDS = [1, 2, 4, 10];
+const SPEEDS = [1, 2, 4, 10, 50];
 
 /** Machine-ish assumptions for moves the program doesn't time itself. */
 const rapidRate = (inches: boolean) => (inches ? 400 : 10_000); // units/min
@@ -196,7 +196,7 @@ function ToolpathScene({
   onDone: () => void;
 }) {
   const progressGeo = useRef<THREE.BufferGeometry>(null);
-  const marker = useRef<THREE.Mesh>(null);
+  const marker = useRef<THREE.Group>(null);
   const appliedSeg = useRef(-1);
   const lastUiPush = useRef(0);
 
@@ -300,10 +300,17 @@ function ToolpathScene({
             />
             <lineBasicMaterial vertexColors />
           </lineSegments>
-          <mesh ref={marker}>
-            <sphereGeometry args={[markerSize, 16, 16]} />
-            <meshBasicMaterial color="#f59e0b" />
-          </mesh>
+          {/* endmill: amber fluted section + gray shank, tip at the toolpoint */}
+          <group ref={marker}>
+            <mesh position={[0, 0, markerSize * 2]} rotation={[Math.PI / 2, 0, 0]}>
+              <cylinderGeometry args={[markerSize * 0.7, markerSize * 0.7, markerSize * 4, 20]} />
+              <meshBasicMaterial color="#f59e0b" />
+            </mesh>
+            <mesh position={[0, 0, markerSize * 6.5]} rotation={[Math.PI / 2, 0, 0]}>
+              <cylinderGeometry args={[markerSize * 0.6, markerSize * 0.6, markerSize * 5, 20]} />
+              <meshBasicMaterial color="#9ca3af" />
+            </mesh>
+          </group>
         </>
       )}
     </group>
