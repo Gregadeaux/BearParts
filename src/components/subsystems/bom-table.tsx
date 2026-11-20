@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useCan } from "@/components/auth/role-context";
 import {
   Select,
   SelectContent,
@@ -46,6 +47,7 @@ interface Props {
 /** Bill of materials: custom parts + vendor items with quantities and order status. */
 export function BomTable({ subsystemId, initial, customParts, thumbUrls = {} }: Props) {
   const router = useRouter();
+  const can = useCan();
   const [items, setItems] = useState(initial);
   const [ordering, setOrdering] = useState<BomItemRow | null>(null);
 
@@ -206,14 +208,16 @@ export function BomTable({ subsystemId, initial, customParts, thumbUrls = {} }: 
                           <ShoppingCart className="size-3.5" />
                         </button>
                       )}
-                      <button
-                        type="button"
-                        aria-label={`Remove ${item.name}`}
-                        onClick={() => remove(item)}
-                        className="text-muted-foreground opacity-0 transition-opacity hover:text-destructive focus-visible:opacity-100 group-hover:opacity-100"
-                      >
-                        <Trash2 className="size-3.5" />
-                      </button>
+                      {can.destroy && (
+                        <button
+                          type="button"
+                          aria-label={`Remove ${item.name}`}
+                          onClick={() => remove(item)}
+                          className="text-muted-foreground opacity-0 transition-opacity hover:text-destructive focus-visible:opacity-100 group-hover:opacity-100"
+                        >
+                          <Trash2 className="size-3.5" />
+                        </button>
+                      )}
                     </span>
                   </td>
                 </tr>

@@ -1,17 +1,14 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import { requireUser } from "@/lib/supabase/guards";
 
+/** Own display name / experimental flag only — role changes go through setUserRoleAction. */
 export async function updateProfileAction(input: {
   displayName?: string;
   experimentalFeatures?: boolean;
 }) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not signed in");
+  const { supabase, user } = await requireUser();
 
   const patch: { display_name?: string; experimental_features?: boolean } = {};
   if (input.displayName !== undefined) {

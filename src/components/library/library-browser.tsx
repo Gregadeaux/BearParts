@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { FavoriteStar } from "./favorite-star";
 import { useSubsystemSelection } from "@/components/subsystems/selection-context";
+import { useCan } from "@/components/auth/role-context";
 import { LibraryBreadcrumb } from "./library-breadcrumb";
 import { LibraryPartTile } from "./library-part-tile";
 import { NewFolderDialog } from "./new-folder-dialog";
@@ -84,6 +85,7 @@ export function LibraryBrowser({
   favoriteFolderIds,
 }: Props) {
   const router = useRouter();
+  const can = useCan();
   const [query, setQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<PartFileType | "all">("all");
   const [deletingPart, setDeletingPart] = useState<LibraryPartListing | null>(null);
@@ -197,7 +199,7 @@ export function LibraryBrowser({
           thumbUrls={search.thumbUrls}
           matchesType={matchesType}
           basePath={basePath}
-          onDeletePart={setDeletingPart}
+          onDeletePart={can.destroy ? setDeletingPart : undefined}
         />
       ) : (
         <BrowseGrid
@@ -207,9 +209,9 @@ export function LibraryBrowser({
           typeFiltered={typeFilter !== "all" && parts.length > 0}
           thumbUrls={thumbUrls}
           subsystemByFolder={subsystemByFolder}
-          onDeleteFolder={deleteFolder}
+          onDeleteFolder={can.destroy ? deleteFolder : undefined}
           basePath={basePath}
-          onDeletePart={setDeletingPart}
+          onDeletePart={can.destroy ? setDeletingPart : undefined}
         />
       )}
 
@@ -254,9 +256,10 @@ function BrowseGrid({
   typeFiltered: boolean;
   thumbUrls: Record<string, string>;
   subsystemByFolder: Map<string, Subsystem>;
-  onDeleteFolder: (folder: FolderRow) => void;
+  /** omitted (students) → no delete menus */
+  onDeleteFolder?: (folder: FolderRow) => void;
   basePath: string;
-  onDeletePart: (part: LibraryPartListing) => void;
+  onDeletePart?: (part: LibraryPartListing) => void;
 }) {
   // present only inside a subsystem workspace — enables click-to-inspect
   const selection = useSubsystemSelection();
@@ -275,56 +278,50 @@ function BrowseGrid({
   return (
     <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
       {folders.map((folder) => (
-        <ContextMenu key={folder.id}>
-          <ContextMenuTrigger>
-            {/* subsystem folders open their dashboard; plain folders browse in place */}
-            <Link
-              href={
-                subsystemByFolder.has(folder.id)
-                  ? `/subsystems/${subsystemByFolder.get(folder.id)!.id}`
-                  : `${basePath}?f=${folder.id}`
-              }
-              className="block"
-            >
-              <Card className="flex-row items-center gap-2.5 border-transparent bg-muted/60 p-3 transition-colors hover:bg-muted">
-                <Folder className="size-5 shrink-0 fill-amber-200 text-amber-500" />
-                <span className="min-w-0 flex-1 truncate text-sm font-medium">{folder.name}</span>
-                {subsystemByFolder.has(folder.id) && (
-                  <Blocks
-                    className="size-4 shrink-0 text-violet-500"
-                    aria-label="Subsystem"
-                  />
-                )}
-              </Card>
-            </Link>
-          </ContextMenuTrigger>
-          <ContextMenuContent>
-            <ContextMenuItem variant="destructive" onClick={() => onDeleteFolder(folder)}>
-              Delete folder
-            </ContextMenuItem>
-          </ContextMenuContent>
-        </ContextMenu>
+        <DeleteMenu
+          key={folder.id}
+          label="Delete folder"
+          onDelete={onDeleteFolder && (() => onDeleteFolder(folder))}
+        >
+          {/* subsystem folders open their dashboard; plain folders browse in place */}
+          <Link
+            href={
+              subsystemByFolder.has(folder.id)
+                ? `/subsystems/${subsystemByFolder.get(folder.id)!.id}`
+                : `${basePath}?f=${folder.id}`
+            }
+            className="block"
+          >
+            <Card className="flex-row items-center gap-2.5 border-transparent bg-muted/60 p-3 transition-colors hover:bg-muted">
+              <Folder className="size-5 shrink-0 fill-amber-200 text-amber-500" />
+              <span className="min-w-0 flex-1 truncate text-sm font-medium">{folder.name}</span>
+              {subsystemByFolder.has(folder.id) && (
+                <Blocks
+                  className="size-4 shrink-0 text-violet-500"
+                  aria-label="Subsystem"
+                />
+              )}
+            </Card>
+          </Link>
+        </DeleteMenu>
       ))}
       {parts.map((part) => (
-        <ContextMenu key={part.id}>
-          <ContextMenuTrigger>
-            <LibraryPartTile
-              part={part}
-              thumbUrl={thumbUrls[part.id]}
-              onSelect={
-                selection
-                  ? () => selection.setSelection({ part, thumbUrl: thumbUrls[part.id] ?? null })
-                  : undefined
-              }
-              selected={selection?.selection?.part.id === part.id}
-            />
-          </ContextMenuTrigger>
-          <ContextMenuContent>
-            <ContextMenuItem variant="destructive" onClick={() => onDeletePart(part)}>
-              Delete part
-            </ContextMenuItem>
-          </ContextMenuContent>
-        </ContextMenu>
+        <DeleteMenu
+          key={part.id}
+          label="Delete part"
+          onDelete={onDeletePart && (() => onDeletePart(part))}
+        >
+          <LibraryPartTile
+            part={part}
+            thumbUrl={thumbUrls[part.id]}
+            onSelect={
+              selection
+                ? () => selection.setSelection({ part, thumbUrl: thumbUrls[part.id] ?? null })
+                : undefined
+            }
+            selected={selection?.selection?.part.id === part.id}
+          />
+        </DeleteMenu>
       ))}
     </div>
   );
@@ -343,7 +340,7 @@ function SearchResults({
   thumbUrls: Record<string, string>;
   matchesType: (p: LibraryPartListing) => boolean;
   basePath: string;
-  onDeletePart: (part: LibraryPartListing) => void;
+  onDeletePart?: (part: LibraryPartListing) => void;
 }) {
   if (!results) {
     return <p className="py-10 text-center text-sm text-muted-foreground">Searching…</p>;
@@ -373,23 +370,43 @@ function SearchResults({
       ) : (
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
           {parts.map((part) => (
-            <ContextMenu key={part.id}>
-              <ContextMenuTrigger>
-                <LibraryPartTile
-                  part={part}
-                  thumbUrl={thumbUrls[part.id]}
-                  folderName={part.folderName}
-                />
-              </ContextMenuTrigger>
-              <ContextMenuContent>
-                <ContextMenuItem variant="destructive" onClick={() => onDeletePart(part)}>
-                  Delete part
-                </ContextMenuItem>
-              </ContextMenuContent>
-            </ContextMenu>
+            <DeleteMenu
+              key={part.id}
+              label="Delete part"
+              onDelete={onDeletePart && (() => onDeletePart(part))}
+            >
+              <LibraryPartTile
+                part={part}
+                thumbUrl={thumbUrls[part.id]}
+                folderName={part.folderName}
+              />
+            </DeleteMenu>
           ))}
         </div>
       )}
     </div>
+  );
+}
+
+/** Right-click / long-press delete menu; a plain wrapper when there's nothing to offer. */
+function DeleteMenu({
+  label,
+  onDelete,
+  children,
+}: {
+  label: string;
+  onDelete?: () => void;
+  children: React.ReactNode;
+}) {
+  if (!onDelete) return <div>{children}</div>;
+  return (
+    <ContextMenu>
+      <ContextMenuTrigger>{children}</ContextMenuTrigger>
+      <ContextMenuContent>
+        <ContextMenuItem variant="destructive" onClick={onDelete}>
+          {label}
+        </ContextMenuItem>
+      </ContextMenuContent>
+    </ContextMenu>
   );
 }

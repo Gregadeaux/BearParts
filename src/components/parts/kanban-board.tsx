@@ -8,6 +8,7 @@ import { useLiveTable } from "@/lib/use-live-table";
 import { listParts } from "@/services/parts.service";
 import { assignPartAction, deletePartAction, setArchivedAction, updateStatusAction } from "@/app/actions/parts";
 import { KanbanColumn } from "./kanban-column";
+import { useCan } from "@/components/auth/role-context";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -78,6 +79,7 @@ export function KanbanBoard({ initialParts }: { initialParts: Part[] }) {
   const [parts, setParts] = useState(initialParts);
   const [view, setView] = useState<BoardView>("all");
   const [deleteTarget, setDeleteTarget] = useState<Part | null>(null);
+  const can = useCan();
 
   useLiveTable({
     table: "parts",
@@ -176,8 +178,8 @@ export function KanbanBoard({ initialParts }: { initialParts: Part[] }) {
               e.dataTransfer.setData("text/part-id", part.id);
               e.dataTransfer.effectAllowed = "move";
             }}
-            onArchive={archivePart}
-            onRequestDelete={setDeleteTarget}
+            onArchive={can.destroy ? archivePart : undefined}
+            onRequestDelete={can.destroy ? setDeleteTarget : undefined}
           />
         ))}
       </div>

@@ -1,16 +1,7 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
+import { requireUser } from "@/lib/supabase/guards";
 import { markAllRead, markRead } from "@/services/inbox.service";
-
-async function requireUser() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not signed in");
-  return { supabase, user };
-}
 
 export async function markNotificationReadAction(id: string) {
   const { supabase } = await requireUser();

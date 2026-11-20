@@ -1,7 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import type { createClient } from "@/lib/supabase/server";
+import { requireLead, requireUser } from "@/lib/supabase/guards";
 import * as folders from "@/services/folders.service";
 import * as library from "@/services/library.service";
 import { deleteFiles, uploadToPath } from "@/services/storage.service";
@@ -9,15 +10,6 @@ import * as versionDocs from "@/services/version-documents.service";
 import { createLibraryPartFromFile, versionInputFromFile } from "@/services/library-upload.service";
 import { createPartAction } from "./parts";
 import type { PartMethod, PartPriority } from "@/types/part";
-
-async function requireUser() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not signed in");
-  return { supabase, user };
-}
 
 export async function createFolderAction(name: string, parentId: string | null) {
   const { supabase, user } = await requireUser();
@@ -27,7 +19,7 @@ export async function createFolderAction(name: string, parentId: string | null) 
 }
 
 export async function deleteFolderAction(folderId: string) {
-  const { supabase } = await requireUser();
+  const { supabase } = await requireLead();
   await folders.deleteEmptyFolder(supabase, folderId);
   revalidatePath("/library");
 }
@@ -58,13 +50,13 @@ export async function addVersionDocumentAction(formData: FormData) {
 }
 
 export async function deleteVersionDocumentAction(documentId: string, libraryPartId: string) {
-  const { supabase } = await requireUser();
+  const { supabase } = await requireLead();
   await versionDocs.deleteVersionDocument(supabase, documentId);
   revalidatePath(`/library/parts/${libraryPartId}`);
 }
 
 export async function deleteLibraryPartAction(libraryPartId: string) {
-  const { supabase } = await requireUser();
+  const { supabase } = await requireLead();
   const orphanedPaths = await library.deleteLibraryPart(supabase, libraryPartId);
   await deleteFiles(supabase, orphanedPaths);
   revalidatePath("/library");

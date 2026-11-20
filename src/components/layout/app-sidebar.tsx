@@ -4,8 +4,9 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Bell, CalendarDays, FolderOpen, House, ListTodo, LogOut, Palette, Plug, Plus, ShoppingCart, SquareKanban, UserRound } from "lucide-react";
+import { Bell, CalendarDays, FolderOpen, House, ListTodo, LogOut, Palette, Plug, Plus, ShieldCheck, ShoppingCart, SquareKanban, UserRound, type LucideIcon } from "lucide-react";
 import type { ProjectRow } from "@/types/task";
+import { useCan } from "@/components/auth/role-context";
 import { createClient } from "@/lib/supabase/client";
 import { listProjects } from "@/services/tasks.service";
 import { initials } from "@/lib/format";
@@ -38,7 +39,15 @@ import {
 import { PushToggle } from "@/components/notifications/push-toggle";
 import { useUnreadCount } from "@/components/notifications/use-unread-count";
 
-const NAV_GROUPS = [
+interface NavItem {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  /** hidden unless the viewer can manage users */
+  adminOnly?: boolean;
+}
+
+const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
   {
     label: "Home",
     items: [
@@ -67,6 +76,7 @@ const NAV_GROUPS = [
       { href: "/profile", label: "Profile", icon: UserRound },
       { href: "/subgroups", label: "Subgroups", icon: Palette },
       { href: "/integrations", label: "Integrations", icon: Plug },
+      { href: "/users", label: "Users", icon: ShieldCheck, adminOnly: true },
     ],
   },
 ];
@@ -85,6 +95,11 @@ export function AppSidebar({ userName, userAvatar }: Props) {
   const [projects, setProjects] = useState<ProjectRow[]>([]);
   const [newProjectOpen, setNewProjectOpen] = useState(false);
   const unread = useUnreadCount();
+  const can = useCan();
+  const navGroups = NAV_GROUPS.map((group) => ({
+    ...group,
+    items: group.items.filter((item) => !item.adminOnly || can.manageUsers),
+  }));
 
   useEffect(() => {
     listProjects(createClient()).then(setProjects).catch(() => {});
@@ -127,7 +142,7 @@ export function AppSidebar({ userName, userAvatar }: Props) {
       </SidebarHeader>
 
       <SidebarContent>
-        {NAV_GROUPS.map((group) => (
+        {navGroups.map((group) => (
           <SidebarGroup key={group.label}>
             <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
             <SidebarGroupContent>

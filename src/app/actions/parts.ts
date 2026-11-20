@@ -1,22 +1,13 @@
 ﻿"use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import { requireLead, requireUser } from "@/lib/supabase/guards";
 import * as partsService from "@/services/parts.service";
 import * as storageService from "@/services/storage.service";
 import { sendPush } from "@/services/notifications.service";
 import { notifyUsers } from "@/services/notify.service";
 import type { NewPartInput } from "@/services/parts.service";
 import { methodMeta, PART_STATUSES, type PartMethod, type PartStatus } from "@/types/part";
-
-async function requireUser() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not signed in");
-  return { supabase, user };
-}
 
 export async function createPartAction(input: NewPartInput) {
   const { supabase, user } = await requireUser();
@@ -97,8 +88,9 @@ export async function updateMethodAction(partId: string, method: PartMethod) {
   revalidatePath(`/parts/${partId}`);
 }
 
+/** Archive and restore are both lead-only (DB trigger enforces it too). */
 export async function setArchivedAction(partId: string, archived: boolean) {
-  const { supabase } = await requireUser();
+  const { supabase } = await requireLead();
   await partsService.setArchived(supabase, partId, archived);
   revalidatePath("/");
   revalidatePath("/board");
@@ -106,7 +98,7 @@ export async function setArchivedAction(partId: string, archived: boolean) {
 }
 
 export async function deletePartAction(partId: string) {
-  const { supabase } = await requireUser();
+  const { supabase } = await requireLead();
   const part = await partsService.getPart(supabase, partId);
   await partsService.deletePart(supabase, partId);
   // library-sourced entries share the version's file â€” never delete those from storage

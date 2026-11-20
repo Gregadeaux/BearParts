@@ -9,6 +9,7 @@ import { createClient } from "@/lib/supabase/client";
 import { listArchivedParts } from "@/services/parts.service";
 import { setArchivedAction } from "@/app/actions/parts";
 import { StatusBadge } from "./status-badge";
+import { useCan } from "@/components/auth/role-context";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -20,8 +21,9 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { formatDate } from "@/lib/format";
 
-/** Slide-over listing archived cards with one-tap restore. */
+/** Slide-over listing archived cards; leads/admins get one-tap restore. */
 export function ArchivedSheet() {
+  const can = useCan();
   const [open, setOpen] = useState(false);
   const [parts, setParts] = useState<Part[] | null>(null);
   const [pending, startTransition] = useTransition();
@@ -82,14 +84,16 @@ export function ArchivedSheet() {
                     )}
                   </div>
                   <StatusBadge status={part.status as never} />
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={pending}
-                    onClick={() => restore(part)}
-                  >
-                    Restore
-                  </Button>
+                  {can.destroy && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={pending}
+                      onClick={() => restore(part)}
+                    >
+                      Restore
+                    </Button>
+                  )}
                 </div>
               ))
             )}

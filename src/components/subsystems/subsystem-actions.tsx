@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Trash2 } from "lucide-react";
 import { deleteSubsystemAction } from "@/app/actions/subsystems";
 import { Button } from "@/components/ui/button";
+import { useCan } from "@/components/auth/role-context";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,9 +24,10 @@ interface Props {
   folderId: string;
 }
 
-/** Delete the subsystem (folder, parts, and tasks all survive). */
+/** Delete the subsystem (folder, parts, and tasks all survive). Leads/admins only. */
 export function SubsystemActions({ subsystemId, subsystemName, folderId }: Props) {
   const router = useRouter();
+  const can = useCan();
   const [confirming, setConfirming] = useState(false);
   const [pending, startTransition] = useTransition();
 
@@ -39,6 +41,8 @@ export function SubsystemActions({ subsystemId, subsystemName, folderId }: Props
         toast.error(e instanceof Error ? e.message : "Could not delete subsystem");
       }
     });
+
+  if (!can.destroy) return null;
 
   return (
     <>

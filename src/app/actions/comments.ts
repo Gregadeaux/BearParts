@@ -1,6 +1,6 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
+import { requireUser } from "@/lib/supabase/guards";
 import * as comments from "@/services/comments.service";
 import type { CommentAnchor } from "@/services/comments.service";
 import { notifyUsers } from "@/services/notify.service";
@@ -12,12 +12,7 @@ export async function addCommentAction(
   partName: string,
   anchor?: CommentAnchor,
 ) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not signed in");
-
+  const { supabase, user } = await requireUser();
   const comment = await comments.createComment(supabase, user.id, libraryPartId, body, anchor);
 
   await notifyUsers(supabase, mentionedUserIds(body), {
@@ -30,11 +25,8 @@ export async function addCommentAction(
   return comment;
 }
 
+/** Author or lead/admin — RLS decides, so any signed-in user may try. */
 export async function deleteCommentAction(commentId: string) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not signed in");
+  const { supabase } = await requireUser();
   await comments.deleteComment(supabase, commentId);
 }

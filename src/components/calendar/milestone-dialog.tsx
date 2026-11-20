@@ -24,6 +24,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { DateField } from "@/components/tasks/date-field";
+import { useCan } from "@/components/auth/role-context";
 
 export interface MilestoneDialogState {
   /** null creates a new milestone */
@@ -41,6 +42,7 @@ interface Props {
 
 /** Create/edit a milestone: title + date (+ optional notes). */
 export function MilestoneDialog({ state, onClose, onSaved }: Props) {
+  const can = useCan();
   const [title, setTitle] = useState("");
   const [date, setDate] = useState<string | null>(null);
   const [notes, setNotes] = useState("");
@@ -112,7 +114,7 @@ export function MilestoneDialog({ state, onClose, onSaved }: Props) {
         />
 
         <div className="flex items-center gap-2">
-          {state?.milestone && (
+          {state?.milestone && can.destroy && (
             <Button
               variant="destructive"
               size="sm"

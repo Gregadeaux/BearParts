@@ -1,18 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import { requireLead, requireUser } from "@/lib/supabase/guards";
 import * as milestones from "@/services/milestones.service";
 import type { MilestoneInput } from "@/services/milestones.service";
-
-async function requireUser() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not signed in");
-  return { supabase, user };
-}
 
 export async function createMilestoneAction(input: MilestoneInput) {
   const { supabase, user } = await requireUser();
@@ -28,7 +19,7 @@ export async function updateMilestoneAction(id: string, input: MilestoneInput) {
 }
 
 export async function deleteMilestoneAction(id: string) {
-  const { supabase } = await requireUser();
+  const { supabase } = await requireLead();
   await milestones.deleteMilestone(supabase, id);
   revalidatePath("/calendar");
 }

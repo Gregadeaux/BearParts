@@ -18,12 +18,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PdfWorkspace } from "@/components/viewer/pdf-workspace";
 import { GcodeWorkspace } from "@/components/viewer/gcode-workspace";
+import { useCan } from "@/components/auth/role-context";
 
 interface Props {
   initialDocs: VersionDocumentRow[];
   /**
    * Upload/delete are enabled only when the owning version is provided —
-   * read-only surfaces (fab queue detail) omit it.
+   * read-only surfaces (fab queue detail) omit it. Delete also needs a lead/admin.
    */
   editable?: { versionId: string; versionNumber: number; libraryPartId: string };
   /** the model viewer for this version */
@@ -32,6 +33,7 @@ interface Props {
 
 /** Model / Drawings / G-code tabs on a version's preview panel. */
 export function VersionDocsTabs({ initialDocs, editable, children }: Props) {
+  const can = useCan();
   const [docs, setDocs] = useState(initialDocs);
   const drawings = docs.filter((d) => d.kind === "drawing");
   const gcode = docs.filter((d) => d.kind === "gcode");
@@ -77,7 +79,7 @@ export function VersionDocsTabs({ initialDocs, editable, children }: Props) {
           kind="drawing"
           docs={drawings}
           onUpload={editable ? upload : undefined}
-          onRemove={editable ? remove : undefined}
+          onRemove={editable && can.destroy ? remove : undefined}
         />
       </TabsContent>
       <TabsContent value="gcode">
@@ -85,7 +87,7 @@ export function VersionDocsTabs({ initialDocs, editable, children }: Props) {
           kind="gcode"
           docs={gcode}
           onUpload={editable ? upload : undefined}
-          onRemove={editable ? remove : undefined}
+          onRemove={editable && can.destroy ? remove : undefined}
         />
       </TabsContent>
     </Tabs>

@@ -1,15 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import { requireUser } from "@/lib/supabase/guards";
 import { disconnect } from "@/services/onshape/oauth";
 
 export async function disconnectOnshapeAction() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not signed in");
+  const { supabase, user } = await requireUser();
   await disconnect(supabase, user.id);
   revalidatePath("/integrations");
 }

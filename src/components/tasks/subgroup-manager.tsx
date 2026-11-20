@@ -23,6 +23,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useCan } from "@/components/auth/role-context";
 import { SUBGROUP_COLORS } from "./task-utils";
 
 interface Props {
@@ -31,8 +32,9 @@ interface Props {
   taskCounts: Record<string, number>;
 }
 
-/** Admin list: rename inline, recolor via swatch popover, create, delete. */
+/** Admin list: rename inline, recolor via swatch popover, create, delete (leads/admins). */
 export function SubgroupManager({ initialSubgroups, taskCounts }: Props) {
+  const can = useCan();
   const [subgroups, setSubgroups] = useState(initialSubgroups);
   const [deleting, setDeleting] = useState<SubgroupRow | null>(null);
   const [pending, startTransition] = useTransition();
@@ -85,15 +87,17 @@ export function SubgroupManager({ initialSubgroups, taskCounts }: Props) {
             <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
               {taskCounts[subgroup.id] ?? 0} tasks
             </span>
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              aria-label={`Delete ${subgroup.name}`}
-              onClick={() => setDeleting(subgroup)}
-              className="text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:text-destructive"
-            >
-              <Trash2 />
-            </Button>
+            {can.destroy && (
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                aria-label={`Delete ${subgroup.name}`}
+                onClick={() => setDeleting(subgroup)}
+                className="text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:text-destructive"
+              >
+                <Trash2 />
+              </Button>
+            )}
           </div>
         ))}
         {subgroups.length === 0 && (

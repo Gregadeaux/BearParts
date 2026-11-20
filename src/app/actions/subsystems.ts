@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import { requireLead, requireUser } from "@/lib/supabase/guards";
 import * as subsystems from "@/services/subsystems.service";
 import * as comments from "@/services/subsystem-comments.service";
 import * as bom from "@/services/bom.service";
@@ -11,15 +11,6 @@ import { buildCartPermalink, lookupShopifyProduct } from "@/services/shopify.ser
 import { orderQty } from "@/services/bom.service";
 import { notifyUsers } from "@/services/notify.service";
 import { commentPreview, mentionedUserIds } from "@/lib/mentions";
-
-async function requireUser() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not signed in");
-  return { supabase, user };
-}
 
 export async function createSubsystemAction(input: {
   name: string;
@@ -33,7 +24,7 @@ export async function createSubsystemAction(input: {
 }
 
 export async function deleteSubsystemAction(id: string) {
-  const { supabase } = await requireUser();
+  const { supabase } = await requireLead();
   await subsystems.deleteSubsystem(supabase, id);
   revalidatePath("/library");
 }
@@ -56,6 +47,7 @@ export async function addSubsystemCommentAction(
   return comment;
 }
 
+/** Author or lead/admin — RLS decides, so any signed-in user may try. */
 export async function deleteSubsystemCommentAction(commentId: string) {
   const { supabase } = await requireUser();
   await comments.deleteSubsystemComment(supabase, commentId);
@@ -81,7 +73,7 @@ export async function setBomStatusAction(ids: string[], status: BomStatus) {
 }
 
 export async function deleteBomItemAction(id: string) {
-  const { supabase } = await requireUser();
+  const { supabase } = await requireLead();
   await bom.deleteBomItem(supabase, id);
 }
 

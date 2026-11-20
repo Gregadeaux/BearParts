@@ -13,6 +13,7 @@ import { randomId } from "@/lib/id";
 import { formatBytes } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { FilePreviewDialog, type PreviewFile } from "@/components/viewer/file-preview-dialog";
+import { useCan } from "@/components/auth/role-context";
 
 /** Saved attachment, or a staged local file waiting for the task to be created. */
 export interface AttachmentItem {
@@ -35,6 +36,7 @@ interface Props {
 
 /** Attachment list in the task dialog: upload anything, preview dxf/stl/pdf, download. */
 export function TaskAttachments({ taskId, items, onItemsChange }: Props) {
+  const can = useCan();
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [preview, setPreview] = useState<PreviewFile | null>(null);
@@ -157,14 +159,17 @@ export function TaskAttachments({ taskId, items, onItemsChange }: Props) {
                   >
                     <Download className="size-3.5" />
                   </button>
-                  <button
-                    type="button"
-                    aria-label={`Remove ${item.file_name}`}
-                    onClick={() => remove(item)}
-                    className="text-muted-foreground hover:text-destructive"
-                  >
-                    <X className="size-3.5" />
-                  </button>
+                  {/* staged files are local; deleting a saved one is lead/admin only */}
+                  {(item.staged || !taskId || can.destroy) && (
+                    <button
+                      type="button"
+                      aria-label={`Remove ${item.file_name}`}
+                      onClick={() => remove(item)}
+                      className="text-muted-foreground hover:text-destructive"
+                    >
+                      <X className="size-3.5" />
+                    </button>
+                  )}
                 </span>
               </li>
             );

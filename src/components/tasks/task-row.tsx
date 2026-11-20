@@ -22,6 +22,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useCan } from "@/components/auth/role-context";
 import { AvatarStack } from "./avatar-stack";
 import { StatusDot, StatusSelect } from "./status-select";
 import { formatDay, isOverdue } from "./task-utils";
@@ -35,6 +36,7 @@ interface Props {
 
 /** One task: single line on desktop, two-line card on phones. */
 export function TaskRow({ task, onOpen, onStatusChange, onDelete }: Props) {
+  const can = useCan();
   const [confirming, setConfirming] = useState(false);
   const done = task.status === "done";
   const overdue = isOverdue(task.due_date, task.status);
@@ -73,7 +75,10 @@ export function TaskRow({ task, onOpen, onStatusChange, onDelete }: Props) {
         <TagBadges tags={task.tags} />
         <AvatarStack people={task.assignees} />
         <span className={cn("w-12 shrink-0 text-right text-xs tabular-nums", dueClass)}>{due}</span>
-        <RowMenu onEdit={() => onOpen(task)} onDelete={() => setConfirming(true)} />
+        {/* Edit-only would just duplicate the title link, so students get no menu */}
+        {can.destroy && (
+          <RowMenu onEdit={() => onOpen(task)} onDelete={() => setConfirming(true)} />
+        )}
       </div>
 
       {/* mobile */}

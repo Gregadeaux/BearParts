@@ -12,6 +12,7 @@ import {
   updateStatusAction,
 } from "@/app/actions/parts";
 import { STATUS_LABELS } from "./status-badge";
+import { useCan } from "@/components/auth/role-context";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -30,6 +31,7 @@ interface Props {
 /** Claim / start / finish / assign controls for a part. */
 export function PartActions({ part, team, userId }: Props) {
   const router = useRouter();
+  const can = useCan();
   const [pending, startTransition] = useTransition();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const status = part.status as PartStatus;
@@ -50,13 +52,15 @@ export function PartActions({ part, team, userId }: Props) {
   if (archived) {
     return (
       <div className="flex flex-wrap items-center gap-2">
-        <Button
-          variant="secondary"
-          disabled={pending}
-          onClick={() => run(() => setArchivedAction(part.id, false), "Restored to the board")}
-        >
-          Restore
-        </Button>
+        {can.destroy && (
+          <Button
+            variant="secondary"
+            disabled={pending}
+            onClick={() => run(() => setArchivedAction(part.id, false), "Restored to the board")}
+          >
+            Restore
+          </Button>
+        )}
         <span className="text-sm text-muted-foreground">This part is archived.</span>
       </div>
     );
@@ -170,30 +174,34 @@ export function PartActions({ part, team, userId }: Props) {
         </SelectContent>
       </Select>
 
-      <Button
-        variant="ghost"
-        size="sm"
-        disabled={pending}
-        onClick={() => run(() => setArchivedAction(part.id, true), "Archived")}
-      >
-        Archive
-      </Button>
+      {can.destroy && (
+        <>
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={pending}
+            onClick={() => run(() => setArchivedAction(part.id, true), "Archived")}
+          >
+            Archive
+          </Button>
 
-      <Button
-        variant={confirmDelete ? "destructive" : "ghost"}
-        size="sm"
-        disabled={pending}
-        onClick={() => {
-          if (!confirmDelete) return setConfirmDelete(true);
-          run(async () => {
-            await deletePartAction(part.id);
-            router.push("/board");
-          }, "Part deleted");
-        }}
-        onBlur={() => setConfirmDelete(false)}
-      >
-        {confirmDelete ? "Really delete?" : "Delete"}
-      </Button>
+          <Button
+            variant={confirmDelete ? "destructive" : "ghost"}
+            size="sm"
+            disabled={pending}
+            onClick={() => {
+              if (!confirmDelete) return setConfirmDelete(true);
+              run(async () => {
+                await deletePartAction(part.id);
+                router.push("/board");
+              }, "Part deleted");
+            }}
+            onBlur={() => setConfirmDelete(false)}
+          >
+            {confirmDelete ? "Really delete?" : "Delete"}
+          </Button>
+        </>
+      )}
     </div>
   );
 }

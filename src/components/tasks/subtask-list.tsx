@@ -15,7 +15,8 @@ interface Props {
   items: SubtaskItem[];
   onAdd: (title: string) => void;
   onToggle: (id: string, done: boolean) => void;
-  onRemove: (id: string) => void;
+  /** omitted → no remove buttons (students can't delete saved subtasks) */
+  onRemove?: (id: string) => void;
 }
 
 /** Checklist inside the task dialog: toggle, remove, quick-add on Enter. */
@@ -60,14 +61,16 @@ export function SubtaskList({ items, onAdd, onToggle, onRemove }: Props) {
               >
                 {subtask.title}
               </span>
-              <button
-                type="button"
-                aria-label={`Remove "${subtask.title}"`}
-                onClick={() => onRemove(subtask.id)}
-                className="shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 hover:text-destructive"
-              >
-                <X className="size-3.5" />
-              </button>
+              {onRemove && (
+                <button
+                  type="button"
+                  aria-label={`Remove "${subtask.title}"`}
+                  onClick={() => onRemove(subtask.id)}
+                  className="shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 hover:text-destructive"
+                >
+                  <X className="size-3.5" />
+                </button>
+              )}
             </li>
           ))}
         </ul>

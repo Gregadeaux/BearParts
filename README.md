@@ -17,6 +17,17 @@ on their phones at the mill.
 Next.js (App Router) · Supabase (Postgres, Auth, Storage, Realtime) · shadcn/ui ·
 custom SVG DXF viewer · web-push. Architecture notes live in `.claude/skills/`.
 
+## Roles
+
+| Role    | Can                                       |
+| ------- | ----------------------------------------- |
+| Student | Add and edit parts, tasks, orders         |
+| Lead    | Everything a student can + delete/archive |
+| Admin   | Everything a lead can + change roles      |
+
+New sign-ups start as **Student**. Admins change roles at `/users` (Settings → Users);
+everyone can see their own role on `/profile`. There must always be at least one admin.
+
 ## Local dev
 
 ```bash

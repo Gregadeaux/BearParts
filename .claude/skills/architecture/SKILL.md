@@ -21,7 +21,9 @@ Rules:
    No business logic, no direct supabase queries in pages/components.
 2. **Services take a `SupabaseClient` argument** (dependency injection) so the same
    service runs in server components, route handlers, and the browser. Never
-   instantiate a client inside a service.
+   instantiate a client inside a service. (Documented exceptions, both
+   `server-only`: `notifications.service.ts` push fan-out and `users.service.ts`,
+   which needs the service role for auth emails — its callers must verify admin.)
 3. **Server-only secrets** (service-role key, VAPID private key) are only read in
    `lib/supabase/admin.ts` and `services/notifications.service.ts` — files imported
    exclusively from server code (route handlers / server actions).
@@ -32,3 +34,11 @@ Rules:
    the mill is the primary viewer persona. Test at 390px width.
 7. **Keep copy terse.** Labels over paragraphs; the team is high-schoolers in a
    hurry, not enterprise users.
+8. **Roles** (`admin` / `lead` / `student`, `src/types/role.ts`). Students create,
+   edit, move, and complete anything but can't delete or archive; leads also delete
+   and archive; admins also change roles (`/users`). Server guards live in
+   `src/lib/supabase/guards.ts`: `requireUser` / `requireLead` / `requireAdmin` for
+   actions, `getViewer()` for server components. **Every new destructive action must
+   use `requireLead()` AND ship a lead-only delete policy**
+   (`using (public.is_lead_or_admin())`). The UI hides destructive controls via
+   `useCan` — hiding is UX; RLS is the real gate.

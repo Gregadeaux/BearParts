@@ -37,6 +37,7 @@ import { SubtaskList, type SubtaskItem } from "./subtask-list";
 import { TaskAttachments, toItem, type AttachmentItem } from "./task-attachments";
 import { TaskComments } from "./task-comments";
 import { TaskFormFields, type TaskDraft } from "./task-form-fields";
+import { useCan } from "@/components/auth/role-context";
 
 export interface TaskDialogProps {
   open: boolean;
@@ -103,6 +104,7 @@ export function TaskDialog({
   userId,
 }: TaskDialogProps): React.JSX.Element {
   const isMobile = useMediaQuery("(max-width: 639px)");
+  const can = useCan();
   const [draft, setDraft] = useState<TaskDraft>(() => emptyDraft(defaults));
   const [subtasks, setSubtasks] = useState<SubtaskItem[]>([]);
   const [attachments, setAttachments] = useState<AttachmentItem[]>([]);
@@ -237,7 +239,7 @@ export function TaskDialog({
         items={subtasks}
         onAdd={addSubtask}
         onToggle={toggleSubtask}
-        onRemove={removeSubtask}
+        onRemove={!task || can.destroy ? removeSubtask : undefined}
       />
       <TaskAttachments
         taskId={task?.id ?? null}
@@ -257,7 +259,7 @@ export function TaskDialog({
 
   const footer = (
     <div className="flex items-center gap-2 border-t bg-muted/50 p-3">
-      {task && (
+      {task && can.destroy && (
         <Button
           variant="destructive"
           size="sm"

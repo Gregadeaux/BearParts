@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { ServiceWorkerRegistrar } from "@/components/pwa/service-worker-registrar";
+import { RoleProvider } from "@/components/auth/role-context";
+import { getViewer } from "@/lib/supabase/guards";
 import "./globals.css";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
@@ -23,11 +25,13 @@ export const viewport: Viewport = {
   userScalable: false, // pinch zoom belongs to the DXF viewer, not the page
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  // reads auth cookies, so every route renders per request (all real pages already did)
+  const viewer = await getViewer();
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}>
-        {children}
+        <RoleProvider role={viewer?.role ?? null}>{children}</RoleProvider>
         <Toaster position="top-center" />
         <ServiceWorkerRegistrar />
       </body>

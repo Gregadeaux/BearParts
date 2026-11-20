@@ -10,9 +10,21 @@ description: How this repo talks to Supabase — project ref, migrations, auth, 
 - **Schema changes = new numbered migration** in `supabase/migrations/`, applied with
   `npx supabase db push`. Never edit an applied migration; never change schema via
   dashboard.
-- **RLS philosophy:** the whole authenticated team can read and update parts (open
-  shop-floor trust model); inserts must set `submitted_by = auth.uid()`; deletes are
-  submitter-or-admin. Profiles auto-create via the `on_auth_user_created` trigger.
+- **RLS philosophy:** open shop-floor trust for read / create / edit — the whole
+  authenticated team can select, insert, and update nearly everything (inserts set
+  `submitted_by` / `author_id` = `auth.uid()` where those columns exist). **Destruction
+  is role-gated** (`profiles.role`: `admin` / `lead` / `student`, migration 0027):
+  every delete policy — including `storage.objects` in the `dxf` bucket — is
+  `using (public.is_lead_or_admin())`. Exceptions: comment authors delete their own
+  comments (leads delete anyone's); users delete their own notifications, push subs,
+  folder favorites, Onshape account; `task_assignees` / `task_tags` stay fully open
+  (replacing those sets is an edit). Archiving/restoring parts is lead-only via the
+  `parts_guard_archive` trigger. Role changes are admin-only and the last admin can't
+  be demoted (`profiles_guard_role` trigger; service role bypasses the admin check,
+  not the last-admin check). SQL helpers: `current_user_role()`, `is_lead_or_admin()`,
+  `is_admin()` (security definer). New tables: split select/insert/update open +
+  lead-only delete — never `for all`. Profiles auto-create as `student` via the
+  `on_auth_user_created` trigger. Verify with `node scripts/test-roles.mjs`.
 - **Storage:** all files live in the private `dxf` bucket (historical name).
   Quick queue uploads: `parts/<partId>.<ext>`. Library versions:
   `library/<libraryPartId>/v<n>.<ext>`. Task attachments (any format):

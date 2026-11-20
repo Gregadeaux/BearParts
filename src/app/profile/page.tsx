@@ -1,6 +1,7 @@
 export const metadata = { title: "Profile" };
 
 import { createClient } from "@/lib/supabase/server";
+import { getViewer } from "@/lib/supabase/guards";
 import { getProfile } from "@/services/profiles.service";
 import { AppShell } from "@/components/layout/app-shell";
 import { ProfileSettings } from "@/components/profile/profile-settings";
@@ -12,7 +13,7 @@ export default async function ProfilePage() {
   } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const profile = await getProfile(supabase, user.id);
+  const [profile, viewer] = await Promise.all([getProfile(supabase, user.id), getViewer()]);
 
   return (
     <AppShell
@@ -26,6 +27,7 @@ export default async function ProfilePage() {
           displayName={profile?.display_name ?? ""}
           avatarUrl={profile?.avatar_url ?? null}
           email={user.email ?? null}
+          role={viewer?.role ?? null}
           experimentalFeatures={Boolean(profile?.experimental_features)}
         />
       </main>

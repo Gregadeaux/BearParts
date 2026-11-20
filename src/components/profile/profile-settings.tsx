@@ -6,9 +6,18 @@ import { toast } from "sonner";
 import { FlaskConical } from "lucide-react";
 import { updateProfileAction } from "@/app/actions/profile";
 import { initials } from "@/lib/format";
+import { roleLabel, type Role } from "@/types/role";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,10 +26,12 @@ interface Props {
   displayName: string;
   avatarUrl: string | null;
   email: string | null;
+  /** read-only here; admins change it at /users */
+  role: Role | null;
   experimentalFeatures: boolean;
 }
 
-export function ProfileSettings({ displayName, avatarUrl, email, experimentalFeatures }: Props) {
+export function ProfileSettings({ displayName, avatarUrl, email, role, experimentalFeatures }: Props) {
   const router = useRouter();
   const [name, setName] = useState(displayName);
   const [experimental, setExperimental] = useState(experimentalFeatures);
@@ -56,7 +67,14 @@ export function ProfileSettings({ displayName, avatarUrl, email, experimentalFea
       <Card className="max-w-xl">
         <CardHeader>
           <CardTitle className="text-base">Account</CardTitle>
-          {email && <CardDescription>{email}</CardDescription>}
+          {email && <CardDescription className="min-w-0 truncate">{email}</CardDescription>}
+          {role && (
+            <CardAction>
+              <Badge variant="secondary" title="Your role — admins can change it">
+                {roleLabel(role)}
+              </Badge>
+            </CardAction>
+          )}
         </CardHeader>
         <CardContent className="flex items-end gap-3">
           <Avatar className="size-10">

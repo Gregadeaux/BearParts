@@ -16,6 +16,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { MentionComposer } from "@/components/comments/mention-composer";
 import { CommentBody } from "@/components/comments/comment-body";
+import { useCan } from "@/components/auth/role-context";
 
 interface Props {
   subsystemId: string;
@@ -35,6 +36,7 @@ export function SubsystemComments({
   initial,
   className,
 }: Props) {
+  const can = useCan();
   const [comments, setComments] = useState(initial);
   const [pending, startTransition] = useTransition();
   const endRef = useRef<HTMLDivElement>(null);
@@ -115,7 +117,7 @@ export function SubsystemComments({
                   <span className="shrink-0 text-[11px] text-muted-foreground">
                     {formatDateTime(comment.created_at)}
                   </span>
-                  {comment.author_id === userId && (
+                  {(comment.author_id === userId || can.destroy) && (
                     <button
                       type="button"
                       aria-label="Delete comment"

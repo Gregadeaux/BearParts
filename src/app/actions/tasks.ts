@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import { requireLead, requireUser } from "@/lib/supabase/guards";
 import * as tasks from "@/services/tasks.service";
 import type { TaskInput } from "@/services/tasks.service";
 import * as taskComments from "@/services/task-comments.service";
@@ -10,15 +10,6 @@ import { getDownloadUrl, getFileUrl } from "@/services/storage.service";
 import { notifyUsers } from "@/services/notify.service";
 import { commentPreview, mentionedUserIds } from "@/lib/mentions";
 import { TASK_STATUSES } from "@/types/task";
-
-async function requireUser() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not signed in");
-  return { supabase, user };
-}
 
 function revalidate() {
   revalidatePath("/tasks");
@@ -70,7 +61,7 @@ export async function updateTaskAction(
 }
 
 export async function deleteTaskAction(taskId: string) {
-  const { supabase } = await requireUser();
+  const { supabase } = await requireLead();
   await tasks.deleteTask(supabase, taskId);
   revalidate();
 }
@@ -89,7 +80,7 @@ export async function setSubtaskDoneAction(subtaskId: string, done: boolean) {
 }
 
 export async function deleteSubtaskAction(subtaskId: string) {
-  const { supabase } = await requireUser();
+  const { supabase } = await requireLead();
   await tasks.deleteSubtask(supabase, subtaskId);
   revalidate();
 }
@@ -116,7 +107,7 @@ export async function updateSubgroupAction(id: string, patch: { name?: string; c
 }
 
 export async function deleteSubgroupAction(id: string) {
-  const { supabase } = await requireUser();
+  const { supabase } = await requireLead();
   await tasks.deleteSubgroup(supabase, id);
   revalidate();
   revalidatePath("/subgroups");
@@ -136,6 +127,7 @@ export async function addTaskCommentAction(taskId: string, body: string, taskTit
   return comment;
 }
 
+/** Author or lead/admin — RLS decides, so any signed-in user may try. */
 export async function deleteTaskCommentAction(commentId: string) {
   const { supabase } = await requireUser();
   await taskComments.deleteTaskComment(supabase, commentId);
@@ -153,7 +145,7 @@ export async function addTaskAttachmentAction(formData: FormData) {
 }
 
 export async function deleteTaskAttachmentAction(attachmentId: string) {
-  const { supabase } = await requireUser();
+  const { supabase } = await requireLead();
   await attachments.deleteAttachment(supabase, attachmentId);
   revalidate();
 }
