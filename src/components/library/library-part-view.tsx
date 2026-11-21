@@ -23,6 +23,7 @@ import { StepWorkspace } from "@/components/viewer/step-workspace";
 import { VersionDocsTabs } from "./version-docs-tabs";
 import { DrawingButton } from "@/components/drawing/drawing-button";
 import { partPageUrl } from "@/components/drawing/part-url";
+import { PrintLabelButton } from "@/components/label/print-label-button";
 import type { VersionDocumentRow } from "@/services/version-documents.service";
 import { StatusBadge } from "@/components/parts/status-badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -124,7 +125,7 @@ export function LibraryPartView({
       <span className="shrink-0 text-sm text-muted-foreground">
         {part.versions.length} version{part.versions.length === 1 ? "" : "s"}
       </span>
-      <div className="ml-auto flex shrink-0 gap-2">
+      <div className="ml-auto flex min-w-0 flex-wrap justify-end gap-2">
         {selected && (
           <DrawingButton
             source={{
@@ -142,6 +143,7 @@ export function LibraryPartView({
             }}
           />
         )}
+        <PrintLabelButton content={{ title: part.name, url: partPageUrl({ libraryPartId: part.id }) }} />
         <UploadVersionDialog libraryPartId={part.id} />
         {selected && <AddToQueueDialog partName={part.name} version={selected} team={team} />}
       </div>

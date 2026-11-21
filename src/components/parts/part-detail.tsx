@@ -13,6 +13,7 @@ import type { VersionDocumentRow } from "@/services/version-documents.service";
 import { DrawingButton } from "@/components/drawing/drawing-button";
 import { partPageUrl } from "@/components/drawing/part-url";
 import { VerifyButton } from "@/components/verify/verify-button";
+import { PrintLabelButton } from "@/components/label/print-label-button";
 import { VerificationBadge } from "@/components/verify/verification-badge";
 import { VerificationHistory } from "@/components/verify/verification-history";
 import { ThicknessField } from "./thickness-field";
@@ -126,6 +127,14 @@ export function PartDetail({
       <div className="flex flex-wrap items-center gap-2">
         <VerifyButton part={part} dxf={dxf} mesh={mesh} fileError={error} />
         <DrawingButton source={drawingSource} />
+        <PrintLabelButton
+          content={{
+            title: part.name,
+            material: part.material,
+            qty: part.quantity,
+            url: partPageUrl({ partId: part.id }),
+          }}
+        />
       </div>
 
       {error ? (
