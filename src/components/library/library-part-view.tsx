@@ -21,6 +21,7 @@ import { StlWorkspace } from "@/components/viewer/stl-workspace";
 import { PdfWorkspace } from "@/components/viewer/pdf-workspace";
 import { StepWorkspace } from "@/components/viewer/step-workspace";
 import { VersionDocsTabs } from "./version-docs-tabs";
+import { DrawingButton } from "@/components/drawing/drawing-button";
 import type { VersionDocumentRow } from "@/services/version-documents.service";
 import { StatusBadge } from "@/components/parts/status-badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -123,6 +124,22 @@ export function LibraryPartView({
         {part.versions.length} version{part.versions.length === 1 ? "" : "s"}
       </span>
       <div className="ml-auto flex shrink-0 gap-2">
+        {selected && (
+          <DrawingButton
+            source={{
+              name: part.name,
+              filePath: selected.file_path,
+              fileType: selected.file_type,
+              units: selected.units,
+              analysis: selected.analysis,
+              material: null,
+              thicknessIn: selected.thickness_in,
+              quantity: null,
+              drafter: selected.uploader?.display_name ?? null,
+              revision: `v${selected.version}`,
+            }}
+          />
+        )}
         <UploadVersionDialog libraryPartId={part.id} />
         {selected && <AddToQueueDialog partName={part.name} version={selected} team={team} />}
       </div>
