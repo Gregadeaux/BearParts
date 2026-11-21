@@ -48,6 +48,7 @@ export function buildDxfSheet(entities: NormalizedEntity[], analysis: DxfAnalysi
     hasCallouts: features.holes.length + radiusGroups.length > 0 || features.outerCircle !== null,
     tableLegendLines: tableLegend.length,
     farEdge,
+    qr: Boolean(meta.url),
   });
 
   const layer = new Layer();

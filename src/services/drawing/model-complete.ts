@@ -1,4 +1,4 @@
-import type { ModelFeatures } from "@/services/dimensions/model-features";
+import type { ModelFeatures, ModelPlane } from "@/services/dimensions/model-features";
 
 type V3 = [number, number, number];
 
@@ -10,7 +10,7 @@ type V3 = [number, number, number];
  * the bounding box) with holes. Fillets, chamfers, cones, angled faces → no.
  * (The caller separately confirms every callout was actually placed.)
  */
-export function isComplete(f: ModelFeatures, bounds: { min: V3; max: V3 }): boolean {
+export function isComplete(f: ModelFeatures, bounds: { min: V3; max: V3 }, dimensionedPlanes: ModelPlane[] = []): boolean {
   if (f.otherAreaFraction > 1e-3) return false;
   if (f.cylinders.some((c) => !c.full)) return false;
   const holesOk = f.holes.every((h) => h.thru || h.members.every((i) => f.cylinders[i].blind));
@@ -26,6 +26,7 @@ export function isComplete(f: ModelFeatures, bounds: { min: V3; max: V3 }): bool
   }
   if (f.cylinders.some((c) => c.kind === "boss")) return false;
   return f.planes.every((p) => {
+    if (dimensionedPlanes.includes(p)) return true; // e.g. a tube's inside faces (WALL)
     const n: V3 = [p.normal.x, p.normal.y, p.normal.z];
     const k = n.findIndex((c) => Math.abs(c) > 0.9999);
     if (k < 0) return false;

@@ -10,7 +10,15 @@
 import type { MeasuredDimension, VerificationResult } from "@/types/verification";
 import { checkDimension, type KeyDimension, type KeyDimensionKind } from "./key-dimensions";
 
-const KINDS: KeyDimensionKind[] = ["length", "width", "height", "thickness", "hole_diameter"];
+const KINDS: KeyDimensionKind[] = [
+  "length",
+  "width",
+  "height",
+  "thickness",
+  "hole_diameter",
+  "hole_spacing",
+  "edge_distance",
+];
 const MAX_DIMENSIONS = 50;
 /** No FRC part is 500" — anything bigger is a typo (or millimeters). */
 export const MAX_READING_IN = 500;

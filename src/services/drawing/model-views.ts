@@ -38,38 +38,40 @@ export function viewPolys(pv: PlacedView): Pt[][] {
 export const v3 = (p: Vec3): V3 => [p.x, p.y, p.z];
 
 /**
- * Drawing orientation: a turned part's axis becomes model X (horizontal in
- * FRONT, a circle in RIGHT); otherwise the axis shared by most holes becomes
- * Z (circles in TOP, like a plate). Returns a proper rotation (rows = new
- * x, y, z axes) or null to keep the model as authored.
+ * Drawing orientation (a proper rotation, rows = new x, y, z axes; null =
+ * keep the model as authored):
+ *  - turned part: its axis becomes X (side view in FRONT, circles in RIGHT);
+ *  - anything else: the longest extent becomes X (horizontal in FRONT/TOP),
+ *    the shallowest becomes Y (depth), so FRONT shows the biggest face —
+ *    a tube's wide face, a plate's face with its holes.
  */
-export function drawingFrame(f: ModelFeatures): [V3, V3, V3] | null {
-  let target: { axis: V3; to: "x" | "z" } | null = null;
-  if (f.turned) target = { axis: v3(f.turned.axis), to: "x" };
-  else {
-    const byAxis = new Map<string, { axis: V3; n: number }>();
-    for (const h of f.holes) {
-      const a = v3(h.axis);
-      const key = a.map((c) => c.toFixed(3)).join();
-      const e = byAxis.get(key) ?? { axis: a, n: 0 };
-      e.n += h.count;
-      byAxis.set(key, e);
-    }
-    const best = [...byAxis.values()].sort((a, b) => b.n - a.n)[0];
-    if (best) target = { axis: best.axis, to: "z" };
-  }
-  if (!target) return null;
-  const a = target.axis;
-  if (target.to === "x") {
+export function drawingFrame(f: ModelFeatures | null, positions: ArrayLike<number>): [V3, V3, V3] | null {
+  if (f?.turned) {
+    const a = v3(f.turned.axis);
     if (Math.abs(a[0]) > 0.9999) return null;
     const ref: V3 = Math.abs(a[2]) < 0.9 ? [0, 0, 1] : [0, 1, 0];
     const z = norm(sub(ref, scale(a, dot(ref, a))));
     return [a, cross(z, a), z];
   }
-  if (Math.abs(a[2]) > 0.9999) return null;
-  const ref: V3 = Math.abs(a[0]) < 0.9 ? [1, 0, 0] : [0, 1, 0];
-  const x = norm(sub(ref, scale(a, dot(ref, a))));
-  return [x, cross(a, x), a];
+  const lo = [Infinity, Infinity, Infinity], hi = [-Infinity, -Infinity, -Infinity];
+  for (let i = 0; i < positions.length; i += 3) {
+    for (let k = 0; k < 3; k++) {
+      lo[k] = Math.min(lo[k], positions[i + k]);
+      hi[k] = Math.max(hi[k], positions[i + k]);
+    }
+  }
+  const ext = [0, 1, 2].map((k) => hi[k] - lo[k]);
+  const tol = Math.max(...ext) * 1e-3;
+  // stable order: keep the authored axis when extents tie
+  const longest = [0, 1, 2].reduce((m, k) => (ext[k] > ext[m] + tol ? k : m), 0);
+  const [a, b] = [0, 1, 2].filter((k) => k !== longest);
+  const [depth, height] = ext[a] <= ext[b] + tol ? [a, b] : [b, a];
+  if (longest === 0 && depth === 1) return null;
+  const unit = (k: number): V3 => [k === 0 ? 1 : 0, k === 1 ? 1 : 0, k === 2 ? 1 : 0];
+  const rows: [V3, V3, V3] = [unit(longest), unit(depth), unit(height)];
+  // permutation → keep it a rotation (det +1)
+  if (dot(cross(rows[0], rows[1]), rows[2]) < 0) rows[1] = scale(rows[1], -1);
+  return rows;
 }
 
 /** Apply a frame from `drawingFrame` to triangle positions. */

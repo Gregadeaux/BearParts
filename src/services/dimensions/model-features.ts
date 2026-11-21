@@ -42,6 +42,26 @@ export interface HolePattern {
   thru: boolean;
   /** members equally spaced on a circle about a common center */
   boltCircle: { center: Vec3; diameter: number } | null;
+  /** indices into `ModelFeatures.stacks`: the physical holes of this pattern */
+  stacks: number[];
+}
+
+/**
+ * One physical drilled hole: the coaxial bores of equal diameter it leaves
+ * in every wall it crosses (a hole through both walls of a tube is two
+ * cylinders but one stack).
+ */
+export interface HoleStack {
+  axis: Vec3;
+  /** axis point closest to the model origin (same as the members' origins) */
+  center: Vec3;
+  diameter: number;
+  /** indices into `cylinders`, ordered along `axis` */
+  members: number[];
+  /** [start, end] along `axis` from `center`, over all members */
+  extent: [number, number];
+  /** a line down the hole's axis meets no material: open through the whole part */
+  throughPart: boolean;
 }
 
 export interface ModelPlane {
@@ -69,10 +89,14 @@ export interface ModelFeatures {
   cylinders: ModelCylinder[];
   /** full bores grouped by diameter and direction (singles included) */
   holes: HolePattern[];
+  /** physical holes: coaxial bores of one diameter merged across walls */
+  stacks: HoleStack[];
   planes: ModelPlane[];
   turned: TurnedProfile | null;
   /** share of surface area on faces that are neither planes nor cylinders */
   otherAreaFraction: number;
+  /** axis-aligned bounding box of the model */
+  bounds: { min: Vec3; max: Vec3 };
 }
 
 type V = [number, number, number];
@@ -126,13 +150,28 @@ export function recognizeModelFeatures(positions: ArrayLike<number>, faceIds: Ar
     return out;
   });
   for (const c of cylinders) if (c.kind === "bore") c.blind = hasBottom(c, faces, tol);
+  const holes = holePatterns(cylinders, tol);
+  const stacks = holeStacks(holes, cylinders, positions, tol);
   return {
     cylinders,
-    holes: holePatterns(cylinders, tol),
+    holes,
+    stacks,
     planes,
     turned: turnedProfile(cylinders, planes, positions, tol),
     otherAreaFraction: otherArea / totalArea,
+    bounds: boundsOf(positions),
   };
+}
+
+function boundsOf(p: ArrayLike<number>): { min: Vec3; max: Vec3 } {
+  const lo = [Infinity, Infinity, Infinity], hi = [-Infinity, -Infinity, -Infinity];
+  for (let i = 0; i + 2 < p.length; i += 3) {
+    for (let k = 0; k < 3; k++) {
+      lo[k] = Math.min(lo[k], p[i + k]);
+      hi[k] = Math.max(hi[k], p[i + k]);
+    }
+  }
+  return { min: vec(lo as V), max: vec(hi as V) };
 }
 
 function collectFaces(p: ArrayLike<number>, ids: ArrayLike<number>): Face[] {
@@ -330,7 +369,7 @@ function holePatterns(cyls: ModelCylinder[], tol: number): HolePattern[] {
       (h) => Math.abs(h.diameter - c.diameter) < tol * 2 && Math.abs(dot(toV(h.axis), toV(c.axis))) > 0.9999,
     );
     if (g) g.members.push(i);
-    else groups.push({ axis: c.axis, diameter: c.diameter, count: 0, members: [i], thru: true, boltCircle: null });
+    else groups.push({ axis: c.axis, diameter: c.diameter, count: 0, members: [i], thru: true, boltCircle: null, stacks: [] });
   });
   for (const g of groups) {
     g.count = g.members.length;
@@ -338,6 +377,72 @@ function holePatterns(cyls: ModelCylinder[], tol: number): HolePattern[] {
     g.boltCircle = boltCircle(g.members.map((i) => cyls[i]), tol);
   }
   return groups.sort((a, b) => b.diameter - a.diameter);
+}
+
+/**
+ * Merge each pattern's coaxial members into physical holes and test whether
+ * each is open through the whole part (a ray down its axis hits nothing).
+ */
+function holeStacks(holes: HolePattern[], cyls: ModelCylinder[], p: ArrayLike<number>, tol: number): HoleStack[] {
+  const stacks: HoleStack[] = [];
+  for (const h of holes) {
+    for (const i of h.members) {
+      const c = cyls[i];
+      const s = stacks.find((st) => st.diameter === h.diameter && sameAxisLine(cyls[st.members[0]], c, tol) && Math.abs(dot(toV(st.axis), toV(c.axis))) > 0.9999);
+      if (s) {
+        s.members.push(i);
+        s.extent = [Math.min(s.extent[0], c.extent[0]), Math.max(s.extent[1], c.extent[1])];
+      } else {
+        stacks.push({ axis: c.axis, center: c.origin, diameter: h.diameter, members: [i], extent: [...c.extent], throughPart: false });
+      }
+    }
+  }
+  const blocked = lineHits(p, stacks);
+  stacks.forEach((s, k) => {
+    s.members.sort((a, b) => cyls[a].extent[0] - cyls[b].extent[0]);
+    s.throughPart = s.members.every((i) => !cyls[i].blind) && !blocked[k];
+    const idx = holes.findIndex((h) => h.members.includes(s.members[0]));
+    if (idx >= 0) holes[idx].stacks.push(k);
+  });
+  return stacks;
+}
+
+/** For each stack: does the infinite line down its axis cross any triangle? */
+function lineHits(p: ArrayLike<number>, stacks: HoleStack[]): boolean[] {
+  const hit = stacks.map(() => false);
+  const triCount = Math.floor(p.length / 9);
+  // group stacks by direction so each triangle is projected once per direction
+  const byDir = new Map<string, number[]>();
+  stacks.forEach((s, k) => {
+    const key = [s.axis.x, s.axis.y, s.axis.z].map((v) => v.toFixed(4)).join();
+    byDir.set(key, [...(byDir.get(key) ?? []), k]);
+  });
+  for (const ks of byDir.values()) {
+    const a = toV(stacks[ks[0]].axis);
+    const u = norm(Math.abs(a[0]) < 0.9 ? cross(a, [1, 0, 0]) : cross(a, [0, 1, 0]));
+    const w = cross(a, u);
+    const pts = ks.map((k) => [dot(toV(stacks[k].center), u), dot(toV(stacks[k].center), w)]);
+    for (let t = 0; t < triCount; t++) {
+      const q = [0, 1, 2].map((j) => [p[t * 9 + j * 3], p[t * 9 + j * 3 + 1], p[t * 9 + j * 3 + 2]] as V);
+      const uv = q.map((v) => [dot(v, u), dot(v, w)]);
+      const area = (uv[1][0] - uv[0][0]) * (uv[2][1] - uv[0][1]) - (uv[2][0] - uv[0][0]) * (uv[1][1] - uv[0][1]);
+      if (Math.abs(area) < 1e-12) continue; // parallel to the line (hole walls)
+      const lo0 = Math.min(uv[0][0], uv[1][0], uv[2][0]), hi0 = Math.max(uv[0][0], uv[1][0], uv[2][0]);
+      const lo1 = Math.min(uv[0][1], uv[1][1], uv[2][1]), hi1 = Math.max(uv[0][1], uv[1][1], uv[2][1]);
+      ks.forEach((k, j) => {
+        if (hit[k]) return;
+        const [x, y] = pts[j];
+        if (x < lo0 || x > hi0 || y < lo1 || y > hi1) return;
+        // barycentric test in the projected plane; inclusive, so a facet vertex
+        // sitting exactly on the hole's axis still counts as material
+        const b0 = ((uv[1][0] - x) * (uv[2][1] - y) - (uv[2][0] - x) * (uv[1][1] - y)) / area;
+        const b1 = ((uv[2][0] - x) * (uv[0][1] - y) - (uv[0][0] - x) * (uv[2][1] - y)) / area;
+        const b2 = 1 - b0 - b1;
+        if (b0 >= -1e-9 && b1 >= -1e-9 && b2 >= -1e-9) hit[k] = true;
+      });
+    }
+  }
+  return hit;
 }
 
 /** ≥3 holes equally spaced on a circle → its center and diameter. */

@@ -15,4 +15,9 @@ export interface DrawingSource {
   quantity: number | null;
   drafter: string | null;
   revision: string | null;
+  /**
+   * Absolute link to the part's page (library part when it has one, else the
+   * queue part) — printed as a QR code on the sheet. No QR when absent.
+   */
+  url?: string | null;
 }

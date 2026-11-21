@@ -28,6 +28,48 @@ export function fitFigure(
   return { viewBox: [cx - vw / 2, -cy - vh / 2, vw, vh], upp };
 }
 
+/** share of the figure a focused span fills (both axes), and the least context around it */
+export const FOCUS_FRACTION = 0.45;
+
+/**
+ * Zoom onto a short span a→b (two adjacent holes, or an edge and a hole) so
+ * it fills ~FOCUS_FRACTION of the figure, centered on its midpoint, with at
+ * least `minSpan` world units across. Never zooms out past the whole-part
+ * fit (`fit`) — a long span just shows the whole part.
+ */
+export function focusFigure(
+  a: Point,
+  b: Point,
+  size: { width: number; height: number },
+  minSpan: number,
+  fit: { viewBox: [number, number, number, number]; upp: number },
+): { viewBox: [number, number, number, number]; upp: number } {
+  const needW = Math.max(Math.abs(b.x - a.x) / FOCUS_FRACTION, minSpan);
+  const needH = Math.max(Math.abs(b.y - a.y) / FOCUS_FRACTION, minSpan * (size.height / size.width));
+  const upp = Math.max(needW / size.width, needH / size.height);
+  if (upp >= fit.upp) return fit;
+  const [vw, vh] = [size.width * upp, size.height * upp];
+  const [cx, cy] = [(a.x + b.x) / 2, (a.y + b.y) / 2];
+  return { viewBox: [cx - vw / 2, -cy - vh / 2, vw, vh], upp };
+}
+
+/**
+ * The datum edge as a segment: through the edge point `a`, perpendicular to
+ * the edge→hole direction, spanning the part's bounding box.
+ */
+export function edgeLine2D(a: Point, b: Point, bbox: BoundingBox): [Point, Point] {
+  const len = Math.hypot(b.x - a.x, b.y - a.y) || 1;
+  const p = { x: -(b.y - a.y) / len, y: (b.x - a.x) / len };
+  const ts = [bbox.min, bbox.max, { x: bbox.min.x, y: bbox.max.y }, { x: bbox.max.x, y: bbox.min.y }].map(
+    (c) => (c.x - a.x) * p.x + (c.y - a.y) * p.y,
+  );
+  const [lo, hi] = [Math.min(...ts), Math.max(...ts)];
+  return [
+    { x: a.x + p.x * lo, y: a.y + p.y * lo },
+    { x: a.x + p.x * hi, y: a.y + p.y * hi },
+  ];
+}
+
 export interface DimensionLine2D {
   /** ends of the dimension line (arrow tips) */
   a: Point;

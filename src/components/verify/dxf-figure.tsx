@@ -6,14 +6,17 @@ import type { KeyDimension } from "@/services/dimensions/key-dimensions";
 import { entitiesToSvgPaths } from "@/services/dxf/render.service";
 import {
   arrowHead,
+  edgeLine2D,
   extentDimensionLine,
   fitFigure,
+  focusFigure,
   holeRingRadius,
   rotateBBox,
   rotatePoint,
   shouldRotate,
 } from "@/services/dimensions/figure";
 import { useElementSize } from "./use-element-size";
+import { DxfSpanMarks } from "./dxf-span-marks";
 
 /** room around the profile for the dimension line, px */
 const PAD_PX = 22;
@@ -28,8 +31,9 @@ interface Props {
 /**
  * The real DXF profile with the thing to measure called out: a bold
  * dimension arrow for overall length/width, every hole of the group ringed
- * (everything else dimmed), or a dimmed profile for thickness. Never prints
- * a number — entry is blind.
+ * (everything else dimmed), a zoomed pattern span (two adjacent holes, or
+ * the datum edge and its nearest hole), or a dimmed profile for thickness.
+ * Never prints a number — entry is blind.
  * Same y-flip convention as DxfViewer (CAD y-up under scale(1,-1)); tall
  * profiles are turned a quarter (rotate(90) in CAD space) to fill the figure.
  */
@@ -40,8 +44,16 @@ export function DxfFigure({ entities, bbox, dim }: Props) {
   // tall parts turn a quarter so they fill the wide figure
   const turned = shouldRotate(bbox, size);
   const frame = turned ? rotateBBox(bbox) : bbox;
-  const { viewBox, upp } = fitFigure(frame, size, PAD_PX);
   const feature = dim.feature;
+  const inFrame = (p: Point) => (turned ? rotatePoint(p) : p);
+  // pattern distances zoom onto their span (two holes, or an edge and a hole)
+  const span =
+    feature?.type === "span"
+      ? { ...feature, a: inFrame({ x: feature.a[0], y: feature.a[1] }), b: inFrame({ x: feature.b[0], y: feature.b[1] }) }
+      : null;
+  const fit = fitFigure(frame, size, PAD_PX);
+  // ≥ 8 hole diameters across: enough part around the span to recognize where it is
+  const { viewBox, upp } = span ? focusFigure(span.a, span.b, size, span.diameter * 8, fit) : fit;
   const axis = feature?.type === "extent" && (feature.axis === "x" || feature.axis === "y") ? feature.axis : null;
   // dimension lines live in the (possibly turned) frame; geometry is turned by the SVG transform
   const extent = axis
@@ -112,6 +124,16 @@ export function DxfFigure({ entities, bbox, dim }: Props) {
               );
             })}
           </g>
+          {span && (
+            <DxfSpanMarks
+              a={span.a}
+              b={span.b}
+              ends={span.ends}
+              edge={span.ends === "edge" ? edgeLine2D(span.a, span.b, frame) : null}
+              diameter={span.diameter}
+              upp={upp}
+            />
+          )}
         </g>
       </svg>
       {dim.kind === "thickness" && (

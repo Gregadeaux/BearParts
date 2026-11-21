@@ -5,7 +5,9 @@
 
 export function fmtIn(value: number, places = 3): string {
   const factor = 10 ** places;
-  const rounded = Math.round(Math.abs(value) * factor) / factor;
+  // settle float noise first (mesh .0624999 is .0625) so halves round up
+  const clean = Math.round(Math.abs(value) * 1e6) / 1e6;
+  const rounded = Math.round(clean * factor) / factor;
   let s = rounded.toFixed(places);
   if (s.startsWith("0.")) s = s.slice(1);
   return value < 0 && rounded !== 0 ? `-${s}` : s;

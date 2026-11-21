@@ -42,8 +42,9 @@ Decisions that must stay consistent:
 
 Same rules as the DXF layer: pure, isomorphic, inches, unit-tested.
 
-- **Tolerances live only in `key-dimensions.ts`**: `DEFAULT_TOLERANCE_IN` ±0.010"
-  (length / width / height / thickness), `HOLE_TOLERANCE_IN` ±0.005" (hole ⌀).
+- **Tolerances live only in `tolerances.ts`** (re-exported by `key-dimensions.ts`):
+  `DEFAULT_TOLERANCE_IN` ±0.010" (length / width / height / thickness / hole
+  spacing / edge distance), `HOLE_TOLERANCE_IN` ±0.005" (hole ⌀).
   Pass = |measured − nominal| ≤ tolerance (deviation rounded to 0.0001" so float
   noise never flips a result). Nominals are rounded to the thou — what the
   student sees is exactly what's judged.
@@ -73,21 +74,40 @@ Same rules as the DXF layer: pure, isomorphic, inches, unit-tested.
   (the pre-reveal value; null = it was skipped) via `markRevisions`; summary
   and history show "re-measured". Re-editing a step stays blind.
 - **STEP holes** (`step-holes.ts`): STEP parts get the box dimensions plus
-  hole sizes from B-rep feature recognition (`model-features.ts` →
-  `holes`), merged at the thou per axis direction, ranked by count × size,
-  capped at `MAX_HOLE_STEPS` (4) — the summary says how many sizes were left
-  out. The shop-table match (`classifyDiameter`) is the note (reveal only).
-  Face ids come from the viewer's own parse (`parseStep` keeps them via
-  `flattenOcct`) — no extra tessellation. Recognition runs lazily when Verify
-  opens and is cached in `parts.model_size_in` as
-  `{ x, y, z, holes: [{ d, n, axis, c }], holesFound, holesV }` (≤ 6 groups,
-  ≤ 160 centers each, evenly subsampled). Rows without the current
-  `HOLES_CACHE_VERSION` re-derive once; bump it when recognition or trims
-  change. Recognition trouble → box only. STL stays box-only (no faces).
+  hole sizes from B-rep feature recognition → `modelHolePatterns`: counts are
+  PHYSICAL holes per face (a hole through both walls of a tube counts once:
+  39×/13× on a 2x1, not 78×/26×), merged at the thou per axis direction,
+  ranked by count × size, capped at `MAX_HOLE_STEPS` (4). The shop-table
+  match (`classifyDiameter`) is the note (reveal only). Face ids come from
+  the viewer's own parse (`parseStep` keeps them via `flattenOcct`) — no
+  extra tessellation. Recognition runs lazily when Verify opens and is cached
+  in `parts.model_size_in` (holes-cache.ts) as `{ x, y, z, holes: [{ d, n,
+  axis, c }], holesFound, patterns: [PatternCheck], patternsFound, holesV }`
+  (≤ 6 groups, ≤ 160 centers each, ≤ 8 pattern checks). Rows without the
+  current `HOLES_CACHE_VERSION` (3) re-derive once; bump it when recognition,
+  counting, or trims change. Recognition trouble → box only. STL: box only.
+- **Hole-pattern checks** (`pattern-dims.ts`, kinds `hole_spacing` /
+  `edge_distance`, ±0.010"): the pitch and hole-to-edge distances the drawing
+  dimensions, from the SAME `hole-patterns.ts` (`modelHolePatterns` for STEP,
+  `dxfHolePatterns` for DXF) so sheet and verify can't disagree. Per pattern
+  (most important first, count × size; irregular sets skipped; pitch only
+  with ≥ 2 holes in that direction): "Hole spacing — along length", "Hole to
+  end", "Hole to side edge", "Hole spacing — across". Deduped part-wide: the
+  same pitch anywhere, or the same edge role + distance on another
+  face/pattern, is asked once. Capped at `MAX_PATTERN_STEPS` (4) after the
+  sizes; the summary counts what was left out. Exact 64ths are snapped
+  (.4375 stays .438, note "7/16"). Hints give ONE caliper method, no numbers:
+  spacing "Inside jaws across both holes, minus one hole ⌀"; edge "Edge to
+  near side of hole, plus half the hole ⌀" — the student enters the final
+  distance. DXF sheets print hole ordinates, not pitch: the drawing test
+  checks these kinds are derivable from the printed ordinates.
 - **Figures** (`figure.ts`, `figure-3d.ts`, `bore-view.ts`, `components/verify/*-figure.tsx`): optional
   `KeyDimension.feature` says what to highlight — `extent` (model axis),
-  `holes` (DXF group centers), or `bores` (3D axis + centers, viewed straight
-  down the axis with the group ringed). DXF draws the real profile (tall profiles turned a
+  `holes` (DXF group centers), `bores` (3D axis + centers, viewed straight
+  down the axis with the group ringed), or `span` (pattern checks: two
+  adjacent holes, or the datum edge drawn bold + its nearest hole, with a
+  double arrow; zoomed so the span is ~45% of the figure with ≥ 8 hole ⌀ of
+  context, never past the whole-part fit). DXF draws the real profile (tall profiles turned a
   quarter to fill the wide figure); STEP/STL reuse the page viewer's mesh
   (never re-parsed) in an orthographic view turned only ABOUT the measured
   axis so it stays true-length and unskewed. `feature` is display-only and is

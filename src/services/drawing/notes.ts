@@ -16,6 +16,8 @@ export interface DrawingMeta {
   fileName: string;
   /** extra truthful note about unit conversion, if any */
   unitsNote: string | null;
+  /** part page link for the QR code; none drawn when null */
+  url?: string | null;
 }
 
 export type TitleFields = Omit<TitleBlockData, "scale" | "toleranceIn" | "holeToleranceIn" | "thirdAngle">;
@@ -30,6 +32,7 @@ export function titleFields(m: DrawingMeta): TitleFields {
     quantity: m.quantity ? String(m.quantity) : "",
     revision: m.revision ?? "",
     fileName: m.fileName,
+    qrUrl: m.url ?? null,
   };
 }
 

@@ -13,11 +13,15 @@ const HINTS: Record<KeyDimension["kind"], string> = {
   height: "Top to bottom",
   thickness: "Stock thickness",
   hole_diameter: "Measure the worst one",
+  // calipers can't touch a center: one correct method each, enter the result
+  hole_spacing: "Inside jaws across both holes, minus one hole ⌀",
+  edge_distance: "Edge to near side of hole, plus half the hole ⌀",
 };
 
 /**
  * One terse line under the title on the (blind) entry step: how to hold the
- * calipers. Never the hole-match note — "1/4-20 tap" gives the nominal away.
+ * calipers. Never a number, never the hole-match note — "1/4-20 tap" gives
+ * the nominal away.
  */
 export function dimensionHint(dim: Pick<KeyDimension, "kind" | "count">): string {
   if (dim.kind !== "hole_diameter") return HINTS[dim.kind];

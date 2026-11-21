@@ -42,7 +42,11 @@ export function arrowhead(layer: Layer, tip: Pt, dir: Pt) {
  * Unidirectional text, centered in a break in the dimension line; when the
  * span is too tight, arrows go outside and the text sits beside the line.
  */
-export function linearDim(layer: Layer, a: Pt, b: Pt, axis: "h" | "v", at: number, value: string, textFrac = 0.5) {
+export function linearDim(
+  layer: Layer, a: Pt, b: Pt, axis: "h" | "v", at: number, value: string, textFrac = 0.5,
+  /** tight spans: value beside the line (default), or in line past the start/end arrow */
+  tight: "side" | "start" | "end" = "side",
+) {
   const h = DIM.textH;
   const tw = textWidth(value, h);
   if (axis === "h") {
@@ -64,9 +68,13 @@ export function linearDim(layer: Layer, a: Pt, b: Pt, axis: "h" | "v", at: numbe
       layer.path(line(pt(l.x - out, at), pt(r.x + out, at)));
       arrowhead(layer, pt(l.x, at), pt(1, 0));
       arrowhead(layer, pt(r.x, at), pt(-1, 0));
-      // text on the side away from the feature
-      const below = at < Math.min(l.y, r.y);
-      layer.text(text(value, pt(mid, at + (below ? -DIM.textGap : DIM.textGap)), h, { align: "center", valign: below ? "top" : "bottom" }));
+      if (tight === "start") layer.text(text(value, pt(l.x - out - 0.05, at), h, { align: "right", valign: "middle" }));
+      else if (tight === "end") layer.text(text(value, pt(r.x + out + 0.05, at), h, { align: "left", valign: "middle" }));
+      else {
+        // text on the side away from the feature
+        const below = at < Math.min(l.y, r.y);
+        layer.text(text(value, pt(mid, at + (below ? -DIM.textGap : DIM.textGap)), h, { align: "center", valign: below ? "top" : "bottom" }));
+      }
     }
     return;
   }
@@ -78,7 +86,7 @@ export function linearDim(layer: Layer, a: Pt, b: Pt, axis: "h" | "v", at: numbe
   const span = hi.y - lo.y;
   // where the value breaks the line (0.5 = middle; turned parts move it off the axis)
   const room = h / 2 + DIM.textGap + DIM.arrowL + 0.03;
-  const mid = Math.min(Math.max(lo.y + span * textFrac, lo.y + room), hi.y - room);
+  const mid = span > 2 * room ? Math.min(Math.max(lo.y + span * textFrac, lo.y + room), hi.y - room) : (lo.y + hi.y) / 2;
   if (span >= h + 2 * DIM.arrowL + 2 * DIM.textGap + 0.06) {
     layer.path(line(pt(at, lo.y), pt(at, mid - h / 2 - DIM.textGap)));
     layer.path(line(pt(at, mid + h / 2 + DIM.textGap), pt(at, hi.y)));
@@ -90,9 +98,13 @@ export function linearDim(layer: Layer, a: Pt, b: Pt, axis: "h" | "v", at: numbe
     layer.path(line(pt(at, lo.y - out), pt(at, hi.y + out)));
     arrowhead(layer, pt(at, lo.y), pt(0, 1));
     arrowhead(layer, pt(at, hi.y), pt(0, -1));
-    // text on the side away from the feature
-    const side = at < Math.min(lo.x, hi.x) ? -1 : 1;
-    layer.text(text(value, pt(at + side * (DIM.textGap + tw / 2), mid), h, { align: "center", valign: "middle" }));
+    if (tight === "start") layer.text(text(value, pt(at, lo.y - out - 0.05), h, { align: "center", valign: "top" }));
+    else if (tight === "end") layer.text(text(value, pt(at, hi.y + out + 0.05), h, { align: "center", valign: "bottom" }));
+    else {
+      // text on the side away from the feature
+      const side = at < Math.min(lo.x, hi.x) ? -1 : 1;
+      layer.text(text(value, pt(at + side * (DIM.textGap + tw / 2), mid), h, { align: "center", valign: "middle" }));
+    }
   }
 }
 
@@ -105,7 +117,7 @@ export function linearDim(layer: Layer, a: Pt, b: Pt, axis: "h" | "v", at: numbe
  */
 export function ordinateDim(
   layer: Layer,
-  axis: "x" | "y" | "x-above",
+  axis: "x" | "y" | "x-above" | "y-right",
   from: Pt,
   edge: number,
   labelPos: number,
@@ -135,6 +147,17 @@ export function ordinateDim(
       : [from, pt(x, yA), pt(labelPos, yB), pt(labelPos, yEnd)];
     layer.path(polyline(pts, false, "thin"));
     layer.text(text(value, pt(labelPos, yEnd - 0.04), h, { align: "right", valign: "middle", rotate: 90 }));
+    return;
+  }
+  if (axis === "y-right") {
+    // mirror of "y": values right of the view
+    const y = from.y;
+    const xA = edge + DIM.jogRun;
+    const xB = xA + DIM.jogLen;
+    const xEnd = xB + 0.05;
+    const pts = Math.abs(labelPos - y) < 1e-4 ? [from, pt(xEnd, y)] : [from, pt(xA, y), pt(xB, labelPos), pt(xEnd, labelPos)];
+    layer.path(polyline(pts, false, "thin"));
+    layer.text(text(value, pt(xEnd + 0.04, labelPos), h, { align: "left", valign: "middle" }));
     return;
   }
   const y = from.y;

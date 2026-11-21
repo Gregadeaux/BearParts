@@ -1,6 +1,6 @@
-import { Occupancy } from "./collision";
+import { boxInside, Occupancy } from "./collision";
 import type { PathShape, Pt, Shape, TextShape } from "./primitives";
-import { textBox } from "./text-metrics";
+import { textBox, type Box } from "./text-metrics";
 
 /** Sample a path into polylines (Béziers flattened) — for collision checks. */
 export function flattenPath(s: PathShape, perCurve = 8): Pt[][] {
@@ -57,5 +57,40 @@ export class Layer {
       if (s.kind === "path") this.path(s, obstacle);
       else this.text(s, obstacle);
     }
+  }
+
+  /**
+   * Build an annotation on a scratch layer and keep it only if its text
+   * stays inside `region` and clear of everything already drawn, and its
+   * lines don't run through existing text.
+   */
+  tryAdd(region: Box, build: (scratch: Layer) => void): Box | null {
+    const scratch = new Layer();
+    build(scratch);
+    const ext: Box = { x0: Infinity, y0: Infinity, x1: -Infinity, y1: -Infinity };
+    const grow = (b: Box) => {
+      ext.x0 = Math.min(ext.x0, b.x0);
+      ext.y0 = Math.min(ext.y0, b.y0);
+      ext.x1 = Math.max(ext.x1, b.x1);
+      ext.y1 = Math.max(ext.y1, b.y1);
+    };
+    for (const s of scratch.shapes) {
+      if (s.kind === "text") {
+        const b = textBox(s, 0.02);
+        if (!boxInside(b, region) || this.occ.boxHits(b)) return null;
+        grow(b);
+      } else {
+        for (const poly of flattenPath(s)) {
+          for (let i = 0; i + 1 < poly.length; i++) {
+            if (this.occ.segHitsBoxes(poly[i], poly[i + 1])) return null;
+            grow({ x0: poly[i].x, y0: poly[i].y, x1: poly[i].x, y1: poly[i].y });
+          }
+          const last = poly[poly.length - 1];
+          grow({ x0: last.x, y0: last.y, x1: last.x, y1: last.y });
+        }
+      }
+    }
+    this.addAll(scratch.shapes);
+    return ext;
   }
 }

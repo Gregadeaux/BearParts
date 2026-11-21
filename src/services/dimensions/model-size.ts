@@ -18,7 +18,8 @@ import {
   HOLES_CACHE_VERSION,
   type CachedHoleGroup,
   type CachedHoles,
-} from "./step-holes";
+} from "./holes-cache";
+import type { PatternCheck } from "./pattern-dims";
 
 export interface ModelSize {
   x: number;
@@ -53,12 +54,14 @@ export function asModelSize(value: unknown): ModelSize | null {
 }
 
 /**
- * The whole cached row: box + (STEP only) recognized hole groups. A row
- * without `holes` predates hole recognition and is treated as "not yet".
+ * The whole cached row: box + (STEP only) recognized hole groups and pattern
+ * checks. A row without the current `holesV` is treated as "not yet".
  */
 export interface ModelSizeCache extends ModelSize {
   holes?: CachedHoleGroup[];
   holesFound?: number;
+  patterns?: PatternCheck[];
+  patternsFound?: number;
   /** HOLES_CACHE_VERSION the holes were derived with */
   holesV?: number;
 }
@@ -66,7 +69,15 @@ export interface ModelSizeCache extends ModelSize {
 /** The cache row for a box and (STEP) its derived holes. */
 export function modelSizeCache(size: ModelSize, holes?: CachedHoles | null): ModelSizeCache {
   const box = { x: size.x, y: size.y, z: size.z };
-  return holes ? { ...box, holes: holes.groups, holesFound: holes.found, holesV: HOLES_CACHE_VERSION } : box;
+  if (!holes) return box;
+  return {
+    ...box,
+    holes: holes.groups,
+    holesFound: holes.found,
+    patterns: holes.patterns,
+    patternsFound: holes.patternsFound,
+    holesV: HOLES_CACHE_VERSION,
+  };
 }
 
 /** Validate + trim a cache payload (server action input or a stored row). */

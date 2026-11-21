@@ -45,6 +45,8 @@ export interface PlanInput {
   tableLegendLines: number;
   /** give the overall size as a far-edge ordinate instead of a linear dim */
   farEdge: { x: boolean; y: boolean };
+  /** a QR cell beside the title block narrows the notes */
+  qr?: boolean;
 }
 
 /**
@@ -102,7 +104,7 @@ export function planDxf(input: PlanInput): DxfPlan {
       if (ys.length === 1) ys = [];
     }
     const notes = input.notesFor(profileDimensioned);
-    const region = { ...frameRegion(notes) };
+    const region = { ...frameRegion(notes, input.qr) };
 
     let table: DxfPlan["table"] = null;
     if (holeMode === "table") {

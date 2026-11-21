@@ -70,7 +70,7 @@ export function VerifySummary({
       <p className="-mt-2 text-xs text-muted-foreground">
         Tap a row to fix a typo — changes are marked re-measured.
         {omittedHoles > 0 &&
-          ` ${omittedHoles} more hole size${omittedHoles === 1 ? "" : "s"} not in this check.`}
+          ` ${omittedHoles} more hole check${omittedHoles === 1 ? "" : "s"} (sizes or spacing) not in this one.`}
       </p>
 
       <Input

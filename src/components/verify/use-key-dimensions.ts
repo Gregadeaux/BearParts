@@ -15,6 +15,8 @@ import {
 import { asCachedHoles, deriveStepHoles, type CachedHoles } from "@/services/dimensions/step-holes";
 import { cacheModelSizeAction } from "@/app/actions/parts";
 
+const NO_HOLES: CachedHoles = { groups: [], found: 0, patterns: [], patternsFound: 0 };
+
 interface Options {
   /** the page's STEP/STL mesh, parsed once by the 3D viewer (STEP carries face ids) */
   mesh: StlMesh | null;
@@ -59,7 +61,7 @@ export function useKeyDimensions(
   const [derived, setDerived] = useState<CachedHoles | null>(null);
   // a mesh without face ids can't be recognized — box only
   const holes: CachedHoles | null =
-    cachedHoles ?? derived ?? (isStep && mesh && !mesh.faceIds ? { groups: [], found: 0 } : null);
+    cachedHoles ?? derived ?? (isStep && mesh && !mesh.faceIds ? NO_HOLES : null);
   const needHoles = isStep && holes === null;
 
   // recognize lazily, off the render path, once per part (then it's cached)

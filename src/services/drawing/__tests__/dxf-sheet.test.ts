@@ -42,12 +42,20 @@ const BEARING_PLATE = dxf({
 
 describe("DXF drawing sheet", () => {
   it("shows every key dimension the verify flow checks", () => {
-    const { analysis, sheet } = sheetFor(BEARING_PLATE);
+    const { analysis, sheet, plan } = sheetFor(BEARING_PLATE);
     const all = texts(sheet.shapes).map((t) => t.text).join("\n");
+    const { width: W, height: H } = analysis.boundingBox;
     for (const d of keyDimensionsFromAnalysis(analysis, { thicknessIn: meta.thicknessIn })) {
       const value = fmtIn(d.nominal);
       if (d.kind === "hole_diameter") expect(all).toContain(`${DIA}${value}`);
-      else expect(all).toContain(value);
+      else if (d.kind === "hole_spacing" || d.kind === "edge_distance") {
+        // DXF sheets locate holes by ordinates from the datum: pitch and
+        // hole-to-edge are differences of printed ordinates / the overall size
+        const derivable = [[...plan.xs, W], [...plan.ys, H]].some((vals) =>
+          vals.some((p) => vals.some((q) => Math.abs(Math.abs(p - q) - d.nominal) < 0.0015)),
+        );
+        expect(derivable, `${d.label} ${value}`).toBe(true);
+      } else expect(all).toContain(value);
     }
   });
 

@@ -22,6 +22,7 @@ import { PdfWorkspace } from "@/components/viewer/pdf-workspace";
 import { StepWorkspace } from "@/components/viewer/step-workspace";
 import { VersionDocsTabs } from "./version-docs-tabs";
 import { DrawingButton } from "@/components/drawing/drawing-button";
+import { partPageUrl } from "@/components/drawing/part-url";
 import type { VersionDocumentRow } from "@/services/version-documents.service";
 import { StatusBadge } from "@/components/parts/status-badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -137,6 +138,7 @@ export function LibraryPartView({
               quantity: null,
               drafter: selected.uploader?.display_name ?? null,
               revision: `v${selected.version}`,
+              url: partPageUrl({ libraryPartId: part.id }),
             }}
           />
         )}

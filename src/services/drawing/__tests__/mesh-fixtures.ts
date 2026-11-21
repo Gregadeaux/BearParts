@@ -43,6 +43,102 @@ export function revolve(profile: [number, number][], segments = 48): FaceMesh {
 }
 
 /**
+ * One planar face built from rectangular cells between grid lines (a, b in
+ * the face's own 2-D frame), each cell edge sampled alike so neighboring
+ * faces weld. `hole(i, j)` → diameter of a hole centered in that cell.
+ * Returns the hole-rim points so walls can be stitched to them.
+ */
+function cellFace(
+  m: FaceMesh, face: number, P: (a: number, b: number) => P3, normal: P3,
+  la: number[], lb: number[], include: (i: number, j: number) => boolean,
+  hole: (i: number, j: number) => number | null, perSide: number,
+): Map<string, { rim: P3[]; center: P3 }> {
+  const rims = new Map<string, { rim: P3[]; center: P3 }>();
+  for (let i = 0; i + 1 < la.length; i++) {
+    for (let j = 0; j + 1 < lb.length; j++) {
+      if (!include(i, j)) continue;
+      const [a0, a1, b0, b1] = [la[i], la[i + 1], lb[j], lb[j + 1]];
+      const corners: [number, number][] = [[a0, b0], [a1, b0], [a1, b1], [a0, b1]];
+      const ring: [number, number][] = [];
+      for (let s = 0; s < 4; s++) {
+        const [p, q] = [corners[s], corners[(s + 1) % 4]];
+        for (let k = 0; k < perSide; k++) ring.push([p[0] + ((q[0] - p[0]) * k) / perSide, p[1] + ((q[1] - p[1]) * k) / perSide]);
+      }
+      const ca = (a0 + a1) / 2, cb = (b0 + b1) / 2;
+      const d = hole(i, j);
+      const rim: P3[] = [];
+      for (let k = 0; k < ring.length; k++) {
+        const [p, q] = [ring[k], ring[(k + 1) % ring.length]];
+        if (d === null) {
+          tri(m, face, P(ca, cb), P(p[0], p[1]), P(q[0], q[1]), normal);
+          continue;
+        }
+        const onCircle = (r: [number, number]): P3 => {
+          const ang = Math.atan2(r[1] - cb, r[0] - ca);
+          return P(ca + (d / 2) * Math.cos(ang), cb + (d / 2) * Math.sin(ang));
+        };
+        tri(m, face, P(p[0], p[1]), P(q[0], q[1]), onCircle(q), normal);
+        tri(m, face, P(p[0], p[1]), onCircle(q), onCircle(p), normal);
+        rim.push(onCircle(p));
+      }
+      if (d !== null) rims.set(`${i},${j}`, { rim, center: P(ca, cb) });
+    }
+  }
+  return rims;
+}
+
+/** Hole wall between two rims (same sampling); outward normal points at the axis. */
+function holeWall(m: FaceMesh, face: number, outer: P3[], inner: P3[], center: P3, axis: P3) {
+  for (let k = 0; k < outer.length; k++) {
+    const k2 = (k + 1) % outer.length;
+    const d = sub(center, outer[k]);
+    const along = d[0] * axis[0] + d[1] * axis[1] + d[2] * axis[2];
+    const toAxis: P3 = [d[0] - axis[0] * along, d[1] - axis[1] * along, d[2] - axis[2] * along];
+    tri(m, face, outer[k], outer[k2], inner[k2], toAxis);
+    tri(m, face, outer[k], inner[k2], inner[k], toAxis);
+  }
+}
+
+/**
+ * Rectangular tube along X (L × W × H, wall t). Grid lines `gx` (0..L),
+ * `gy` (0, t, …, W−t, W), `gz` (0, t, …, H−t, H). Holes sit at cell
+ * centers: `wide` on the z faces (top only, or through both walls), `narrow`
+ * on the y faces.
+ */
+export function holedTube(
+  L: number, W: number, H: number, t: number, gx: number[], gy: number[], gz: number[],
+  wide: { cells: [number, number][]; d: number; both: boolean } | null,
+  narrow: { cells: [number, number][]; d: number; both: boolean } | null, perSide = 4,
+): FaceMesh {
+  const m: FaceMesh = { positions: [], faceIds: [] };
+  let id = 0;
+  const has = (set: [number, number][] | undefined, i: number, j: number) => Boolean(set?.some(([a, b]) => a === i && b === j));
+  const inside = (lines: number[], j: number, lo: number, hi: number) => lines[j] >= lo - 1e-9 && lines[j + 1] <= hi + 1e-9;
+  // z faces (wide): outer/inner, top and bottom
+  for (const top of [true, false]) {
+    const holeOn = (i: number, j: number) => (wide && has(wide.cells, i, j) && (top || wide.both) ? wide.d : null);
+    const zo = top ? H : 0, zi = top ? H - t : t, n = top ? 1 : -1;
+    const outer = cellFace(m, id++, (a, b) => [a, b, zo], [0, 0, n], gx, gy, () => true, holeOn, perSide);
+    const inner = cellFace(m, id++, (a, b) => [a, b, zi], [0, 0, -n], gx, gy, (_i, j) => inside(gy, j, t, W - t), holeOn, perSide);
+    for (const [key, o] of outer) holeWall(m, id++, o.rim, inner.get(key)!.rim, o.center, [0, 0, 1]);
+  }
+  // y faces (narrow)
+  for (const far of [true, false]) {
+    const holeOn = (i: number, j: number) => (narrow && has(narrow.cells, i, j) && (far || narrow.both) ? narrow.d : null);
+    const yo = far ? W : 0, yi = far ? W - t : t, n = far ? 1 : -1;
+    const outer = cellFace(m, id++, (a, b) => [a, yo, b], [0, n, 0], gx, gz, () => true, holeOn, perSide);
+    const inner = cellFace(m, id++, (a, b) => [a, yi, b], [0, -n, 0], gx, gz, (_i, j) => inside(gz, j, t, H - t), holeOn, perSide);
+    for (const [key, o] of outer) holeWall(m, id++, o.rim, inner.get(key)!.rim, o.center, [0, 1, 0]);
+  }
+  // end rings
+  for (const end of [0, L]) {
+    const ring = (i: number, j: number) => !(inside(gy, i, t, W - t) && inside(gz, j, t, H - t));
+    cellFace(m, id++, (a, b) => [end, a, b], [end === 0 ? -1 : 1, 0, 0], gy, gz, ring, () => null, perSide);
+  }
+  return m;
+}
+
+/**
  * Rectangular plate (W × H × T, lying in XY, Z up) on a grid of square
  * cells; holes `[cx, cy, d]` must sit at cell centers. Every cell edge is
  * sampled alike so faces weld without T-junctions.

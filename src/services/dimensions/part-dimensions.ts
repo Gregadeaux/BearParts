@@ -1,7 +1,12 @@
 /** Which key dimensions a queue part gets, and where they come from. */
 
 import type { DxfAnalysis } from "@/types/analysis";
-import { keyDimensionsFromAnalysis, keyDimensionsFromBox, type KeyDimension } from "./key-dimensions";
+import {
+  dxfPatternDimensions,
+  keyDimensionsFromAnalysis,
+  keyDimensionsFromBox,
+  type KeyDimension,
+} from "./key-dimensions";
 import { asModelSize } from "./model-size";
 import { keyDimensionsFromHoles, type CachedHoles } from "./step-holes";
 
@@ -18,7 +23,7 @@ export interface DimensionSourceInput {
 export interface PartDimensions {
   /** null while a STEP/STL model still has to be measured; [] = nothing to check */
   dims: KeyDimension[] | null;
-  /** hole sizes recognized but left out of the check (cap) */
+  /** hole sizes / pattern checks recognized but left out (caps) */
   omittedHoles: number;
 }
 
@@ -31,7 +36,11 @@ export function isVerifiable(fileType: string): boolean {
 export function partDimensions(input: DimensionSourceInput): PartDimensions {
   const opts = { thicknessIn: input.thicknessIn };
   if (input.fileType === "dxf") {
-    return { dims: input.analysis ? keyDimensionsFromAnalysis(input.analysis, opts) : [], omittedHoles: 0 };
+    if (!input.analysis) return { dims: [], omittedHoles: 0 };
+    return {
+      dims: keyDimensionsFromAnalysis(input.analysis, opts),
+      omittedHoles: dxfPatternDimensions(input.analysis).omitted,
+    };
   }
   if (input.fileType === "step" || input.fileType === "stl") {
     const size = asModelSize(input.modelSize);

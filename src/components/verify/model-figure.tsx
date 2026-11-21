@@ -8,10 +8,11 @@ import type { StlMesh } from "@/services/stl/stl-parser";
 import type { KeyDimensionFeature } from "@/services/dimensions/key-dimensions";
 import { holeRingRadius } from "@/services/dimensions/figure";
 import { modelFraming, modelView, type Axis, type Vec3 } from "@/services/dimensions/figure-3d";
-import { boreView } from "@/services/dimensions/bore-view";
+import { boreView, edgeLine3D, spanFraming } from "@/services/dimensions/bore-view";
 import { useElementSize } from "./use-element-size";
 import { ModelDimensionLine } from "./model-dimension-line";
 import { ModelBoreMarks } from "./model-bore-marks";
+import { ModelSpanMarks } from "./model-span-marks";
 
 const PAD_PX = 30;
 const AXIS_INDEX: Record<Axis, number> = { x: 0, y: 1, z: 2 };
@@ -29,7 +30,8 @@ interface Props {
  * orbitable. Extents: a true-length dimension line, the camera on the
  * biggest face containing the axis (close-up when it'd be a sliver). Holes:
  * straight down the hole axis, the group ringed, the rest of the part
- * lighter. Loaded lazily (three.js) for STEP/STL parts only.
+ * lighter. Pattern distances: the same view zoomed onto two adjacent holes,
+ * or the datum edge and its hole. Loaded lazily (three.js) for STEP/STL only.
  */
 export function ModelFigure({ mesh, feature, inchesPerUnit }: Props) {
   const ref = useRef<HTMLDivElement>(null);
@@ -41,16 +43,26 @@ export function ModelFigure({ mesh, feature, inchesPerUnit }: Props) {
 
   const bores = feature?.type === "bores" ? feature : null;
   const axis = feature?.type === "extent" ? feature.axis : null;
+  // pattern distances: model units (cached in inches, bbox-centered)
+  const toUnits = (p: Vec3) => p.map((v) => v / inchesPerUnit) as Vec3;
+  const span =
+    feature?.type === "span"
+      ? { ...feature, a: toUnits(feature.a), b: toUnits(feature.b), d: feature.diameter / inchesPerUnit }
+      : null;
   // extents (or nothing to point at: frame the biggest face)
   const viewAxis = axis ?? smallestAxis(size);
   const view = modelView(size, viewAxis);
   const extentShot = axis
     ? modelFraming(size, axis, view, px, PAD_PX)
     : modelFraming(size, viewAxis, { ...view, dimOnScreen: "horizontal" }, px, PAD_PX);
-  // holes: straight down their axis
-  const bore = bores ? boreView(size, bores.axis) : null;
-  const zoom = bore ? fitZoom(bore.width, bore.height) : extentShot.zoom;
-  const target: Vec3 = bore ? [0, 0, 0] : extentShot.target;
+  // holes and pattern spans: straight down the hole axis; spans zoom onto their two ends
+  const downAxis = bores ?? span;
+  const bore = downAxis ? boreView(size, downAxis.axis) : null;
+  const boreFit = bore ? fitZoom(bore.width, bore.height) : 0;
+  // ≥ 8 hole diameters across: enough part around the span to recognize where it is
+  const spanShot = bore && span ? spanFraming(bore, span.a, span.b, px, span.d * 8, boreFit) : null;
+  const zoom = spanShot?.zoom ?? (bore ? boreFit : extentShot.zoom);
+  const target: Vec3 = spanShot?.target ?? (bore ? [0, 0, 0] : extentShot.target);
 
   // own copy: the page's viewer centers its geometry in place on the shared array
   const geometry = useMemo(() => {
@@ -68,6 +80,9 @@ export function ModelFigure({ mesh, feature, inchesPerUnit }: Props) {
       <Canvas
         orthographic
         frameloop="demand"
+        // measure layout size: the dialog's zoom-in animation would otherwise
+        // freeze the canvas at 95% (transforms don't trigger a re-measure)
+        resize={{ offsetSize: true }}
         camera={{ near: -maxDim * 10, far: maxDim * 10, zoom }}
         className="touch-none"
       >
@@ -95,8 +110,19 @@ export function ModelFigure({ mesh, feature, inchesPerUnit }: Props) {
             unit={1 / zoom}
           />
         )}
-        <AimCamera dir={dir} up={bore ? bore.upVec : view.upVec} zoom={zoom} target={target} distance={maxDim * 3} />
+        {bore && span && (
+          <ModelSpanMarks
+            view={bore}
+            a={span.a}
+            b={span.b}
+            ends={span.ends}
+            edge={span.ends === "edge" ? edgeLine3D(span.a, span.b, bore.cameraDir, size) : null}
+            radius={holeRingRadius(span.d, 1 / zoom)}
+            unit={1 / zoom}
+          />
+        )}
         <OrbitControls makeDefault enableDamping={false} />
+        <AimCamera dir={dir} up={bore ? bore.upVec : view.upVec} zoom={zoom} target={target} distance={maxDim * 3} />
       </Canvas>
     </div>
   );
@@ -117,6 +143,9 @@ interface AimProps {
 /** Re-aim whenever the dimension, framing, or figure size changes. Renders nothing. */
 function AimCamera({ dir, up, zoom, target, distance }: AimProps) {
   const get = useThree((s) => s.get);
+  // re-aim once OrbitControls registers: its update() would otherwise swing
+  // the camera back toward its own default target at the origin
+  const controlsReady = useThree((s) => s.controls !== null);
   const [dx, dy, dz] = dir;
   const [ux, uy, uz] = up;
   const [tx, ty, tz] = target;
@@ -133,6 +162,6 @@ function AimCamera({ dir, up, zoom, target, distance }: AimProps) {
     orbit?.target?.set(tx, ty, tz);
     orbit?.update?.();
     invalidate();
-  }, [get, dx, dy, dz, ux, uy, uz, tx, ty, tz, zoom, distance]);
+  }, [get, controlsReady, dx, dy, dz, ux, uy, uz, tx, ty, tz, zoom, distance]);
   return null;
 }

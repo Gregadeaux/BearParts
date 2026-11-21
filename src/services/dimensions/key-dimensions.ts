@@ -4,18 +4,29 @@
  * from the DXF analysis (2D parts) or the model bounding box (STEP/STL).
  *
  * Pure and isomorphic (no React / Supabase / Node), like src/services/dxf.
- * Everything is in inches. The shop tolerances live HERE and nowhere else.
+ * Everything is in inches. Shop tolerances: tolerances.ts (re-exported here).
  */
 
 import type { AnalyzedHole, DxfAnalysis, HoleGroup, HoleMatch } from "@/types/analysis";
 import type { Point } from "@/types/geometry";
+import { DEFAULT_TOLERANCE_IN, HOLE_TOLERANCE_IN } from "./tolerances";
+import { dxfPatternDimensions } from "./pattern-dims";
 
-/** ± shop default for lengths, widths, heights, and thickness. */
-export const DEFAULT_TOLERANCE_IN = 0.01;
-/** ± shop default for hole diameters. */
-export const HOLE_TOLERANCE_IN = 0.005;
+export { DEFAULT_TOLERANCE_IN, HOLE_TOLERANCE_IN };
+export { dxfPatternDimensions };
 
-export type KeyDimensionKind = "length" | "width" | "height" | "thickness" | "hole_diameter";
+export type KeyDimensionKind =
+  | "length"
+  | "width"
+  | "height"
+  | "thickness"
+  | "hole_diameter"
+  /** center-to-center pitch along a hole pattern direction */
+  | "hole_spacing"
+  /** datum edge → nearest hole center */
+  | "edge_distance";
+
+type V3 = [number, number, number];
 
 /**
  * Where a dimension lives on the part, for the verify figure. Display-only:
@@ -24,16 +35,15 @@ export type KeyDimensionKind = "length" | "width" | "height" | "thickness" | "ho
  *  - holes: every hole in the group (DXF coordinates, inches)
  *  - bores: a 3D hole group — shared axis + member centers (inches, relative
  *    to the model's bounding-box center)
+ *  - span: a pattern distance — two adjacent hole centers ("holes"), or a
+ *    datum-edge point and the nearest hole center ("edge"); DXF coordinates
+ *    (z = 0) or 3D relative to the bbox center, viewed down `axis`
  */
 export type KeyDimensionFeature =
   | { type: "extent"; axis: "x" | "y" | "z" }
   | { type: "holes"; centers: Point[]; diameter: number }
-  | {
-      type: "bores";
-      axis: [number, number, number];
-      centers: [number, number, number][];
-      diameter: number;
-    };
+  | { type: "bores"; axis: V3; centers: V3[]; diameter: number }
+  | { type: "span"; ends: "holes" | "edge"; a: V3; b: V3; axis: V3; diameter: number };
 
 export interface KeyDimension {
   /** stable within a part, e.g. "length", "hole-0.201" */
@@ -123,8 +133,8 @@ function holeDimensions(groups: HoleGroup[], holes: AnalyzedHole[]): KeyDimensio
 
 /**
  * DXF parts: overall length (larger extent), overall width (smaller extent),
- * one entry per hole group, and thickness when known. Square profiles call
- * x the length.
+ * thickness when known, one entry per hole group, then the most important
+ * hole-pattern distances. Square profiles call x the length.
  */
 export function keyDimensionsFromAnalysis(analysis: DxfAnalysis, opts?: Opts): KeyDimension[] {
   const out: KeyDimension[] = [];
@@ -138,6 +148,7 @@ export function keyDimensionsFromAnalysis(analysis: DxfAnalysis, opts?: Opts): K
   // a flat profile has no thickness feature to point at — the figure says so instead
   if (usable(thickness)) out.push(makeDim("thickness", "Thickness", thickness));
   out.push(...holeDimensions(analysis.holeGroups, analysis.holes ?? []));
+  out.push(...dxfPatternDimensions(analysis).dims);
   return out;
 }
 

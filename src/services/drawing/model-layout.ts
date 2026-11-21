@@ -1,5 +1,8 @@
+import { ordinateBand } from "./dims";
 import type { LineView } from "./hlr";
 import { STANDARD_SCALES } from "./layout-math";
+import { levelOffset } from "./model-hole-dims";
+import { planRows, type ViewHolePlan } from "./model-hole-plan";
 import type { Box } from "./text-metrics";
 
 /** Sheet space (inches) reserved around views for dimensions and callouts. */
@@ -26,8 +29,36 @@ export interface ModelLayout {
   front: Box;
   top: Box | null;
   right: Box;
-  iso: Box;
+  /** null when the isometric was dropped for a larger view scale */
+  iso: Box | null;
   isoScale: number;
+}
+
+/**
+ * Space each side of each view needs: one row per pattern dimension
+ * (edge distance, pitch) plus the overall dimension, wider for vertical
+ * rows whose horizontal text sits beside the line.
+ */
+export function sheetBands(plans: ViewHolePlan[], turned: boolean, tube: boolean): Bands {
+  if (turned) {
+    return { left: 0.95, bottom: ordinateBand(0.5) + 0.35, top: 1.2, gapSide: 1.3, gapTop: 0.55, topLeft: 0, topTop: 0, calloutRoom: 1.4 };
+  }
+  const rows = (view: string, dir: "u" | "v") => planRows(plans, view, dir);
+  const ords = (view: string) => Boolean(plans.find((q) => q.view === view)?.ordinates);
+  // vertical rows stack past each other's values (text beside the line)
+  const band = (n: number, vertical: boolean, ordinates: boolean) =>
+    Math.max(n === 0 ? 0.2 : vertical ? 0.375 + (n - 1) * 0.8 + 0.7 : levelOffset(n - 1) + 0.25, ordinates ? ordinateBand(0.5) : 0);
+  const label = 0.35;
+  return {
+    left: band(rows("front", "v") + 1, true, ords("front")),
+    bottom: Math.max(band(rows("front", "u") + 1, false, ords("front")), band(rows("right", "u") + 1, false, ords("right"))) + label,
+    top: 0.3,
+    gapSide: 0.55,
+    gapTop: 0.45,
+    topLeft: band(rows("top", "v"), true, ords("top")),
+    topTop: band(rows("top", "u"), false, ords("top")),
+    calloutRoom: Math.max(band(rows("right", "v"), true, ords("right")), plans.length || tube ? 0.6 : 0.3),
+  };
 }
 
 /**
@@ -43,13 +74,15 @@ export function layoutViews(
   showTop: boolean,
   b: Bands,
 ): ModelLayout {
-  let fallback: ModelLayout | null = null;
+  // the largest scale whose orthographic views fit wins; the isometric comes
+  // along only if it still has a usable corner (legible dimensions matter more)
   for (const s of STANDARD_SCALES) {
     const l = arrange(region, size, iso, showTop, b, s);
-    fallback = l;
-    if (l && l.isoScale >= Math.min(s, 0.25)) return l;
+    if (!l) continue;
+    if (l.isoScale < Math.min(s, 0.25) * 0.8) return { ...l, iso: null, isoScale: 0 };
+    return l;
   }
-  return fallback ?? arrange(region, size, iso, showTop, b, STANDARD_SCALES[STANDARD_SCALES.length - 1], true)!;
+  return arrange(region, size, iso, showTop, b, STANDARD_SCALES[STANDARD_SCALES.length - 1], true)!;
 }
 
 function arrange(

@@ -11,6 +11,7 @@ import type { DrawingSource } from "@/types/drawing";
 import type { PartVerification } from "@/types/verification";
 import type { VersionDocumentRow } from "@/services/version-documents.service";
 import { DrawingButton } from "@/components/drawing/drawing-button";
+import { partPageUrl } from "@/components/drawing/part-url";
 import { VerifyButton } from "@/components/verify/verify-button";
 import { VerificationBadge } from "@/components/verify/verification-badge";
 import { VerificationHistory } from "@/components/verify/verification-history";
@@ -71,6 +72,7 @@ export function PartDetail({
     quantity: part.quantity,
     drafter: part.submitter?.display_name ?? null,
     revision: part.source_version ? `v${part.source_version.version}` : null,
+    url: partPageUrl({ libraryPartId: part.source_version?.library_part?.id, partId: part.id }),
   };
 
   useEffect(() => {

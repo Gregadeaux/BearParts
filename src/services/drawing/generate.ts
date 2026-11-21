@@ -27,6 +27,7 @@ export function drawingMeta(source: DrawingSource, inputs: DrawingInputs, unitsN
     revision: source.revision,
     fileName: `${source.name}.${source.fileType}`,
     unitsNote,
+    url: source.url ?? null,
   };
 }
 

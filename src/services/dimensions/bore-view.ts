@@ -24,6 +24,52 @@ const norm3 = (a: Vec3): Vec3 => {
   return [a[0] / l, a[1] / l, a[2] / l];
 };
 
+const sub3 = (a: Vec3, b: Vec3): Vec3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+const dot3 = (a: Vec3, b: Vec3) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+
+/** share of the figure a focused span fills on screen */
+const FOCUS_FRACTION = 0.45;
+
+/**
+ * Down-axis framing for a short span a→b (adjacent holes, or edge → hole):
+ * it fills ~45% of the figure, centered, at least `minSpan` units across —
+ * never zoomed out past the whole-part `fitZoom` (then the target is the
+ * model center).
+ */
+export function spanFraming(
+  view: BoreView,
+  a: Vec3,
+  b: Vec3,
+  px: { width: number; height: number },
+  minSpan: number,
+  fitZoom: number,
+): { zoom: number; target: Vec3 } {
+  const d = sub3(b, a);
+  const sx = Math.max(Math.abs(dot3(d, view.rightVec)), minSpan * FOCUS_FRACTION);
+  const sy = Math.abs(dot3(d, view.upVec));
+  const zoom = Math.min((px.width * FOCUS_FRACTION) / sx, sy > 1e-9 ? (px.height * FOCUS_FRACTION) / sy : Infinity);
+  if (!(zoom > fitZoom)) return { zoom: fitZoom, target: [0, 0, 0] };
+  return { zoom, target: [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2] };
+}
+
+/**
+ * The datum edge in the down-axis view: a segment through the edge point,
+ * perpendicular to edge→hole within the face, spanning the (centered) box.
+ */
+export function edgeLine3D(a: Vec3, b: Vec3, axis: Vec3, size: { x: number; y: number; z: number }): [Vec3, Vec3] {
+  const u = norm3(sub3(b, a));
+  const p = norm3(cross3(axis, u));
+  const corners: Vec3[] = [0, 1, 2, 3, 4, 5, 6, 7].map((i) => [
+    (i & 1 ? 0.5 : -0.5) * size.x,
+    (i & 2 ? 0.5 : -0.5) * size.y,
+    (i & 4 ? 0.5 : -0.5) * size.z,
+  ]);
+  const ts = corners.map((c) => dot3(sub3(c, a), p));
+  const [lo, hi] = [Math.min(...ts), Math.max(...ts)];
+  const at = (t: number): Vec3 => [a[0] + p[0] * t, a[1] + p[1] * t, a[2] + p[2] * t];
+  return [at(lo), at(hi)];
+}
+
 /**
  * Look straight down a hole axis (any direction) at an axis-aligned box. The
  * longer projected side of the part goes horizontal (the figure is wide), +

@@ -64,9 +64,31 @@ Decisions that must stay consistent:
      linear ⌀ beside the view, others as an inside dimension line with the value
      on a leader), coaxial bores + bolt pattern (`6X ⌀.276 THRU` / `EQ SP ON ⌀2.953
      B.C.`, bolt circle as a center line) in RIGHT.
-   - **Other parts** are rotated so the main hole axis is Z: holes called out in the
-     view down their axis (only if visible there), located by ordinates above/left
-     of TOP (bolt circles by their center). Overall L/W/H as before.
+   - **Other parts** are oriented longest extent → X, shallowest → Y (FRONT shows
+     the biggest face: a tube's wide face, a plate's face). A TOP identical to
+     FRONT is kept only if holes are seen from the top.
+   - **Holes are physical "stacks"** (`ModelFeatures.stacks`): coaxial bores across
+     walls are one hole. `throughPart` (ray down the axis meets no material) →
+     "THRU"; open bores that stop at another wall → "THRU ONE WALL"; blind → ↧depth.
+     A hole group is never silently dropped: callouts use the visible stacks, and
+     holes no view shows get a "nX ⌀d HOLES NOT SHOWN…" note.
+   - **Patterns come from the shared API** `services/dimensions/hole-patterns.ts`
+     (`modelHolePatterns` / `dxfHolePatterns`, also used by the verify flow — one
+     source for pitch and edge distance). Per direction: edge distance from the
+     NEARER bounding edge (ties → low end; the far remainder is derivable from the
+     overall), then pitch as "nX .500 (=6.000)" → "nX .500" → ".500 TYP" (first
+     that fits). A direction already dimensioned in another view (same model axis,
+     datum, pitch, count) is not repeated. Irregular sets → ordinates from the view's
+     lower-left (far edges as ordinates instead of linear overall dims).
+   - Edge distances / wall thickness that are exact 64ths but not exact at three
+     decimals add the fraction: ".438 (7/16)", ".063 (1/16) WALL". Decimals stay
+     the sheet standard.
+   - Dimension stacking per side is extent-based: pattern rows nearest the view,
+     the overall outermost; tight horizontal values go in line past the edge/second
+     hole, vertical ones beside the line; overall values break between hole rows.
+   - **Rectangular tubes** (`model-tube.ts`): uniform wall → ".093 WALL" leader on
+     the end view; its inside faces count as dimensioned.
+   - The isometric is dropped rather than shrinking the orthographic scale.
    - THRU only when no bottom face was found; depth (↧, vector glyph) only when
      every hole in the pattern is blind with the same depth; otherwise neither.
    - The `UNDIMENSIONED GEOMETRY PER CAD MODEL` note is dropped only when every
@@ -78,3 +100,10 @@ Decisions that must stay consistent:
    that assumption). The drawing's STEP loader (`step-mesh.ts`) tessellates finer
    than the viewer (0.2 rad) so holes draw round.
 8. PDF parts get no button. Heavy modules load only on click.
+9. **QR code** (`qr.ts`, `qrcode-generator`, EC level M): vector modules (one filled
+   rect per dark run) in a 1.05" cell left of the tolerance block, 0.95" square
+   incl. the 4-module quiet zone, captioned "SCAN FOR PART FILE". It encodes
+   `DrawingSource.url` — built by `components/drawing/part-url.ts` with the OG
+   `metadataBase` origin rule (`NEXT_PUBLIC_SITE_URL`, else
+   https://bearparts.fly.dev): the library part page when the part has one, else
+   the queue part page. No URL → no QR cell (notes keep the width).
