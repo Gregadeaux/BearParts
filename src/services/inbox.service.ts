@@ -9,7 +9,8 @@ export type NotificationKind =
   | "task_assigned"
   | "mention"
   | "part_update"
-  | "task_update";
+  | "task_update"
+  | "part_check_failed";
 
 export interface AppNotification {
   id: string;

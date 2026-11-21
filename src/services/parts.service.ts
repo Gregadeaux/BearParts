@@ -3,6 +3,7 @@ import type { Database } from "@/types/database";
 import type { Part, PartFileType, PartMethod, PartPriority, PartStatus } from "@/types/part";
 import { defaultMethodFor } from "@/types/part";
 import type { DxfAnalysis, Units } from "@/types/analysis";
+import type { ModelSizeCache } from "./dimensions/model-size";
 
 type Client = SupabaseClient<Database>;
 
@@ -29,6 +30,8 @@ export interface NewPartInput {
   thumbPath?: string | null;
   /** fabrication flow — defaults from the file type when omitted */
   method?: PartMethod;
+  /** stock thickness, inches (copied from the source version when queued from the library) */
+  thicknessIn?: number | null;
 }
 
 export async function listParts(
@@ -91,11 +94,31 @@ export async function createPart(supabase: Client, userId: string, input: NewPar
       analysis: (input.analysis ?? null) as never,
       source_version_id: input.sourceVersionId ?? null,
       thumb_path: input.thumbPath ?? null,
+      ...(input.thicknessIn != null ? { thickness_in: input.thicknessIn } : {}),
     })
     .select(PART_SELECT)
     .single();
   if (error) throw new Error(`Could not create part: ${error.message}`);
   return data as unknown as Part;
+}
+
+/** Stock thickness in inches; null clears it. */
+export async function updateThickness(supabase: Client, id: string, thicknessIn: number | null) {
+  const { error } = await supabase.from("parts").update({ thickness_in: thicknessIn }).eq("id", id);
+  if (error) throw new Error(`Could not save thickness: ${error.message}`);
+}
+
+/**
+ * Cache a STEP/STL model's derived geometry (box in inches, plus STEP hole
+ * groups) so it's only computed once. Derived data — a rewrite is harmless,
+ * and it's how a pre-holes row gets upgraded.
+ */
+export async function cacheModelSize(supabase: Client, id: string, cache: ModelSizeCache) {
+  const { error } = await supabase
+    .from("parts")
+    .update({ model_size_in: cache as never })
+    .eq("id", id);
+  if (error) throw new Error(`Could not cache model size: ${error.message}`);
 }
 
 export async function updateStatus(supabase: Client, id: string, status: PartStatus) {

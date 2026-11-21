@@ -9,6 +9,9 @@ measure key dimensions on the actual part (overall length and width, hole
 diameters, etc.) and enter them. This is the check that the part was made
 correctly.
 
+Each step shows the actual part (DXF profile or 3D model) with the feature to
+measure highlighted, alongside the text label.
+
 Open questions:
 
 - Where do the expected dimensions come from: auto-derived from the DXF analysis

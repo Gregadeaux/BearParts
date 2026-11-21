@@ -1,5 +1,6 @@
 import type { Database } from "./database";
 import type { DxfAnalysis } from "./analysis";
+import type { VerificationResult } from "./verification";
 
 export type PartRow = Database["public"]["Tables"]["parts"]["Row"];
 export type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
@@ -19,8 +20,10 @@ export type PartPriority = "low" | "normal" | "high" | "urgent";
 export type PartFileType = "dxf" | "stl" | "pdf" | "step";
 
 /** Part joined with the profiles the UI always needs. */
-export interface Part extends Omit<PartRow, "analysis"> {
+export interface Part extends Omit<PartRow, "analysis" | "verification_result"> {
   analysis: DxfAnalysis | null;
+  /** latest check (trigger-synced from part_verifications); null = never checked */
+  verification_result: VerificationResult | null;
   submitter: Pick<ProfileRow, "id" | "display_name" | "avatar_url"> | null;
   assignee: Pick<ProfileRow, "id" | "display_name" | "avatar_url"> | null;
   source_version: {

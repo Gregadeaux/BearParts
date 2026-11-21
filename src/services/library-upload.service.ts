@@ -32,6 +32,8 @@ export interface LibraryUploadInput {
   /** client-rendered preview PNG, optional */
   thumb?: File | Blob | null;
   note?: string;
+  /** stock thickness, inches */
+  thicknessIn?: number | null;
 }
 
 /**
@@ -41,9 +43,10 @@ export interface LibraryUploadInput {
 export async function createLibraryPartFromFile(
   supabase: Client,
   userId: string,
-  { file, folderId, name, thumb, note }: LibraryUploadInput,
+  { file, folderId, name, thumb, note, thicknessIn }: LibraryUploadInput,
 ) {
   const input = await versionInputFromFile(file, note);
+  input.thicknessIn = thicknessIn ?? null;
   const part = await library.createLibraryPartRow(
     supabase,
     userId,
@@ -83,9 +86,17 @@ export async function addLibraryVersionFromFile(
     file,
     thumb,
     note,
-  }: { libraryPartId: string; file: File; thumb?: File | Blob | null; note?: string },
+    thicknessIn,
+  }: {
+    libraryPartId: string;
+    file: File;
+    thumb?: File | Blob | null;
+    note?: string;
+    thicknessIn?: number | null;
+  },
 ) {
   const input = await versionInputFromFile(file, note);
+  input.thicknessIn = thicknessIn ?? null;
   const versionNumber = await library.nextVersionNumber(supabase, libraryPartId);
   input.filePath = library.versionFilePath(libraryPartId, versionNumber, input.fileType);
   await uploadToPath(supabase, file, input.filePath, input.fileType);
@@ -117,5 +128,6 @@ export async function queueImportedVersion(
     analysis: version.analysis ?? undefined,
     sourceVersionId: version.id,
     thumbPath: version.thumb_path,
+    thicknessIn: version.thickness_in,
   });
 }

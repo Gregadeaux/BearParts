@@ -7,6 +7,8 @@
 export interface StlMesh {
   /** xyz triples, 9 floats per triangle */
   positions: Float32Array;
+  /** STEP only: B-rep face per triangle (-1 unknown) — feeds hole recognition */
+  faceIds?: Int32Array;
   triangleCount: number;
   boundingBox: {
     min: { x: number; y: number; z: number };

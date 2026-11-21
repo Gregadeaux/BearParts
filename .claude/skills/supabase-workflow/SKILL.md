@@ -45,7 +45,8 @@ description: How this repo talks to Supabase — project ref, migrations, auth, 
 - **Realtime:** enabled on `public.parts`, `public.part_comments`,
   `public.tasks`, `public.task_comments`, `public.milestones`,
   `public.notifications` (RLS scopes notification events to the recipient, so
-  no channel filter is needed there), and `public.subsystem_comments`. ALWAYS
+  no channel filter is needed there), and `public.subsystem_comments`
+  (`part_verifications` is deliberately not published). ALWAYS
   subscribe through `useLiveTable` (src/lib/use-live-table.ts) — postgres_changes
   on RLS'd tables silently delivers nothing unless `realtime.setAuth(jwt)` runs
   BEFORE `.subscribe()`; the hook handles that plus token refresh, focus refetch,
@@ -58,3 +59,13 @@ description: How this repo talks to Supabase — project ref, migrations, auth, 
   call `sendPush` directly from actions.
 - `parts.analysis` stores the `DxfAnalysis` JSON computed at upload; treat it as a
   cache — the client can always recompute from the DXF.
+- **Verification** (0028): `part_verifications` rows are **immutable** — select
+  open, insert only as yourself (`verified_by = auth.uid()`), **no update
+  policy**, delete lead-only (`deleteVerificationAction` → `requireLead()`).
+  Per-dimension results live in the `dimensions` jsonb array. The
+  `part_verifications_sync` trigger recomputes `parts.verification_result` /
+  `verified_at` from the newest remaining row on insert/delete (board badge, no
+  join). A FAIL notifies the submitter with kind `part_check_failed`.
+  `thickness_in` (numeric inches) exists on both `parts` and `part_versions`
+  and is copied version → queue part; `parts.model_size_in` caches a STEP/STL
+  bounding box. Smoke test: `node scripts/test-verifications.mjs`.

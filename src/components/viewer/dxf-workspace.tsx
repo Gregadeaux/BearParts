@@ -22,10 +22,12 @@ interface Props {
   onAnnotate?: (snap: SnapResult) => void;
   draftAnnotation?: Point | null;
   focusTarget?: { x: number; y: number; size?: number; nonce: number } | null;
+  /** saved stock thickness, inches — defaults the G-code generator */
+  thicknessIn?: number | null;
 }
 
 /** Viewer + analysis side by side (stacked on phones). */
-export function DxfWorkspace({ dxfText, unitOverride, onAnalyzed, ...viewerProps }: Props) {
+export function DxfWorkspace({ dxfText, unitOverride, onAnalyzed, thicknessIn, ...viewerProps }: Props) {
   const { result, error } = useMemo(() => {
     try {
       return { result: analyzeDxfText(dxfText, unitOverride), error: null };
@@ -63,7 +65,7 @@ export function DxfWorkspace({ dxfText, unitOverride, onAnalyzed, ...viewerProps
         <AnalysisPanel analysis={result.analysis} />
       </div>
       {/* TEMPORARY experiment — remove with generate-gcode-dialog.tsx */}
-      <GenerateGcodeDialog entities={result.entities} />
+      <GenerateGcodeDialog entities={result.entities} thicknessIn={thicknessIn} />
     </div>
   );
 }

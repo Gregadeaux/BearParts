@@ -48,6 +48,8 @@ interface Props {
   entities: NormalizedEntity[];
   /** download file base name */
   baseName?: string;
+  /** saved stock thickness, inches — the Thickness default until edited */
+  thicknessIn?: number | null;
 }
 
 /**
@@ -55,9 +57,13 @@ interface Props {
  * holes, pockets bores, offsets contours — outputs an .nc you can preview
  * with the animated toolpath viewer before downloading.
  */
-export function GenerateGcodeDialog({ entities, baseName = "part" }: Props) {
+export function GenerateGcodeDialog({ entities, baseName = "part", thicknessIn }: Props) {
   const [open, setOpen] = useState(false);
-  const [opts, setOpts] = useState<GcodeGenOptions>(DEFAULTS);
+  const [edits, setEdits] = useState<GcodeGenOptions>(DEFAULTS);
+  // the part's saved thickness is the default until the user types their own
+  const [thicknessEdited, setThicknessEdited] = useState(false);
+  const opts: GcodeGenOptions =
+    !thicknessEdited && thicknessIn && thicknessIn > 0 ? { ...edits, thickness: thicknessIn } : edits;
   const [result, setResult] = useState<GcodeGenResult | null>(null);
   // opt-in via Profile → "Enable experimental features"
   const [enabled, setEnabled] = useState(false);
@@ -86,7 +92,8 @@ export function GenerateGcodeDialog({ entities, baseName = "part" }: Props) {
 
   const setField = (key: keyof GcodeGenOptions, raw: string) => {
     const value = Number(raw);
-    if (Number.isFinite(value)) setOpts((o) => ({ ...o, [key]: value }));
+    if (key === "thickness") setThicknessEdited(true);
+    if (Number.isFinite(value)) setEdits((o) => ({ ...o, [key]: value }));
     setResult(null); // inputs changed — stale program
   };
 

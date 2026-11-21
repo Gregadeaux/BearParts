@@ -3,7 +3,7 @@
 import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { AtSign, Bell, CheckCheck, ListTodo, RefreshCw, Wrench } from "lucide-react";
+import { AtSign, Bell, CheckCheck, ListTodo, RefreshCw, Ruler, Wrench } from "lucide-react";
 import type { AppNotification, NotificationKind } from "@/services/inbox.service";
 import { listNotifications } from "@/services/inbox.service";
 import { markAllNotificationsReadAction, markNotificationReadAction } from "@/app/actions/inbox";
@@ -20,6 +20,7 @@ const KIND_ICONS: Record<NotificationKind, typeof Bell> = {
   mention: AtSign,
   part_update: RefreshCw,
   task_update: RefreshCw,
+  part_check_failed: Ruler,
 };
 
 interface Props {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import type { StlMesh } from "@/services/stl/stl-parser";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -12,17 +12,32 @@ const StlViewer = dynamic(() => import("./stl-viewer").then((m) => m.StlViewer),
 });
 
 /** 3D preview for STEP models — OpenCascade tessellates, the STL viewer renders. */
-export function StepWorkspace({ stepBuffer }: { stepBuffer: ArrayBuffer }) {
+export function StepWorkspace({
+  stepBuffer,
+  onMesh,
+}: {
+  stepBuffer: ArrayBuffer;
+  /** hands the parsed mesh to the page (verify figure) so nobody parses twice */
+  onMesh?: (mesh: StlMesh) => void;
+}) {
   const [state, setState] = useState<{ mesh: StlMesh | null; error: string | null }>({
     mesh: null,
     error: null,
+  });
+  const onMeshRef = useRef(onMesh);
+  useEffect(() => {
+    onMeshRef.current = onMesh;
   });
 
   useEffect(() => {
     let stale = false;
     import("@/services/step/step-parser")
       .then(({ parseStep }) => parseStep(stepBuffer))
-      .then((mesh) => !stale && setState({ mesh, error: null }))
+      .then((mesh) => {
+        if (stale) return;
+        setState({ mesh, error: null });
+        onMeshRef.current?.(mesh);
+      })
       .catch(
         (e) =>
           !stale &&

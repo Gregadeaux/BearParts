@@ -15,6 +15,8 @@ export interface NewVersionInput {
   analysis?: DxfAnalysis;
   note?: string;
   thumbPath?: string;
+  /** stock thickness, inches (Onshape panel imports) */
+  thicknessIn?: number | null;
 }
 
 /** Parts in a folder, each with its latest version attached. */
@@ -203,6 +205,7 @@ export async function insertVersion(
       note: input.note?.trim() || null,
       thumb_path: input.thumbPath ?? null,
       uploaded_by: userId,
+      ...(input.thicknessIn != null ? { thickness_in: input.thicknessIn } : {}),
     })
     .select(VERSION_SELECT)
     .single();

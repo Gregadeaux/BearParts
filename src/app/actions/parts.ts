@@ -7,6 +7,8 @@ import * as storageService from "@/services/storage.service";
 import { sendPush } from "@/services/notifications.service";
 import { notifyUsers } from "@/services/notify.service";
 import type { NewPartInput } from "@/services/parts.service";
+import { parseThicknessIn } from "@/services/dimensions/thickness";
+import { asModelSizeCache, type ModelSizeCache } from "@/services/dimensions/model-size";
 import { methodMeta, PART_STATUSES, type PartMethod, type PartStatus } from "@/types/part";
 
 export async function createPartAction(input: NewPartInput) {
@@ -86,6 +88,27 @@ export async function updateMethodAction(partId: string, method: PartMethod) {
   revalidatePath("/");
   revalidatePath("/board");
   revalidatePath(`/parts/${partId}`);
+}
+
+/** Stock thickness (inches) — anyone can set or clear it. */
+export async function updateThicknessAction(partId: string, thicknessIn: number | null) {
+  const { supabase } = await requireUser();
+  const value = thicknessIn === null ? null : parseThicknessIn(thicknessIn);
+  if (thicknessIn !== null && value === null) throw new Error("Thickness must be 0–24 in");
+  await partsService.updateThickness(supabase, partId, value);
+  revalidatePath(`/parts/${partId}`);
+}
+
+/**
+ * Cache a STEP/STL box (+ STEP hole groups) computed client-side the first
+ * time Verify opens. Validated and trimmed server-side. No revalidate: the
+ * open flow already holds the value, and re-rendering mid-check buys nothing.
+ */
+export async function cacheModelSizeAction(partId: string, cache: ModelSizeCache) {
+  const { supabase } = await requireUser();
+  const clean = asModelSizeCache(cache);
+  if (!clean) throw new Error("Invalid model size");
+  await partsService.cacheModelSize(supabase, partId, clean);
 }
 
 /** Archive and restore are both lead-only (DB trigger enforces it too). */

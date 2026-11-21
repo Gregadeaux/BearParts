@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/context-menu";
 import { MethodBadge, PriorityBadge, StatusBadge } from "./status-badge";
 import { PartThumb } from "./part-thumb";
+import { VerificationBadge } from "@/components/verify/verification-badge";
 import { formatDate, formatInches, initials } from "@/lib/format";
 
 interface Props {
@@ -56,6 +57,7 @@ export function KanbanCard({ part, showMethod, onDragStart, onArchive, onRequest
             {showMethod && <MethodBadge method={part.method} />}
             <PriorityBadge priority={part.priority as never} />
             {part.status === "rejected" && <StatusBadge status="rejected" />}
+            <VerificationBadge result={part.verification_result} compact />
             <span className="ml-auto text-xs text-muted-foreground">{formatDate(part.created_at)}</span>
           </div>
         </Card>

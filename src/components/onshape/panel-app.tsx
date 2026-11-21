@@ -316,7 +316,11 @@ export function PanelApp() {
       if (!linked && subsystem) fd.set("folderId", subsystem.folderId);
       if (thumb) fd.set("thumb", new File([thumb], "thumb.png", { type: "image/png" }));
       const noteBits = [`From Onshape: ${studio?.documentName ?? "document"} / ${studio?.elementName ?? "tab"}`];
-      if (thickness.trim()) noteBits.push(`${thickness.trim()} in thick`);
+      if (thickness.trim()) {
+        noteBits.push(`${thickness.trim()} in thick`);
+        // structured copy — the server parses it into thickness_in
+        fd.set("thicknessIn", thickness.trim());
+      }
       fd.set("note", noteBits.join(" — "));
       if (queue) {
         fd.set("queue", "1");

@@ -144,6 +144,7 @@ export async function queueFromVersionAction(
     analysis: version.analysis ?? undefined,
     sourceVersionId: version.id,
     thumbPath: version.thumb_path,
+    thicknessIn: version.thickness_in,
   });
   revalidatePath(`/library/parts/${version.library_part_id}`);
   return result;

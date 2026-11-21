@@ -7,6 +7,7 @@ import { methodMeta, PART_STATUSES } from "@/types/part";
 import { getPart } from "@/services/parts.service";
 import { getFileUrl } from "@/services/storage.service";
 import { listVersionDocuments } from "@/services/version-documents.service";
+import { listVerifications } from "@/services/verifications.service";
 import { getAncestry } from "@/services/folders.service";
 import { listSubsystems } from "@/services/subsystems.service";
 import type { Crumb } from "@/components/layout/page-breadcrumb";
@@ -56,10 +57,11 @@ export default async function PartPage({ params }: { params: Promise<{ id: strin
   ]);
   if (!part) notFound();
 
-  const [fileUrl, documents] = await Promise.all([
+  const [fileUrl, documents, verifications] = await Promise.all([
     getFileUrl(supabase, part.file_path),
     // library-sourced parts surface their version's drawings + G-code
     listVersionDocuments(supabase, part.source_version_id ? [part.source_version_id] : []),
+    listVerifications(supabase, part.id),
   ]);
   const versionDocs = part.source_version_id ? (documents[part.source_version_id] ?? []) : [];
 
@@ -105,6 +107,7 @@ export default async function PartPage({ params }: { params: Promise<{ id: strin
           fileUrl={fileUrl}
           versionDocs={versionDocs}
           crumbs={crumbs}
+          verifications={verifications}
         />
       </main>
     </AppShell>

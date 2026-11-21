@@ -7,6 +7,7 @@ import {
 } from "@/services/library-upload.service";
 import { sendPush } from "@/services/notifications.service";
 import { createFolder } from "@/services/folders.service";
+import { parseThicknessIn } from "@/services/dimensions/thickness";
 import { PART_METHODS, PART_PRIORITIES, type PartMethod, type PartPriority } from "@/types/part";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database";
@@ -46,6 +47,8 @@ export async function POST(request: Request) {
   }
   const thumb = formData.get("thumb");
   const note = ((formData.get("note") as string) || "").trim() || undefined;
+  // structured stock thickness (the note/material strings keep the free text too)
+  const thicknessIn = parseThicknessIn(formData.get("thicknessIn"));
   // Onshape identity — lets the panel recognize this part on later visits
   const onshapeDocId = ((formData.get("onshapeDocumentId") as string) || "").trim() || null;
   const onshapeElementId = ((formData.get("onshapeElementId") as string) || "").trim() || null;
@@ -68,6 +71,7 @@ export async function POST(request: Request) {
         file,
         thumb: thumb instanceof File ? thumb : null,
         note,
+        thicknessIn,
       });
       libraryPartId = linkedPartId;
       version = added.version;
@@ -79,6 +83,7 @@ export async function POST(request: Request) {
         name,
         thumb: thumb instanceof File ? thumb : null,
         note,
+        thicknessIn,
       });
       libraryPartId = created.part.id;
       version = created.version;

@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import dynamic from "next/dynamic";
-import { parseStl } from "@/services/stl/stl-parser";
+import { parseStl, type StlMesh } from "@/services/stl/stl-parser";
 import { Skeleton } from "@/components/ui/skeleton";
 
 // three.js is heavy — only load it when an STL is actually on screen
@@ -12,7 +12,14 @@ const StlViewer = dynamic(() => import("./stl-viewer").then((m) => m.StlViewer),
 });
 
 /** 3D preview for STL parts. No machining analysis — printers don't care. */
-export function StlWorkspace({ stlBuffer }: { stlBuffer: ArrayBuffer }) {
+export function StlWorkspace({
+  stlBuffer,
+  onMesh,
+}: {
+  stlBuffer: ArrayBuffer;
+  /** hands the parsed mesh to the page (verify figure) so nobody parses twice */
+  onMesh?: (mesh: StlMesh) => void;
+}) {
   const result = useMemo(() => {
     try {
       return { mesh: parseStl(stlBuffer), error: null };
@@ -20,6 +27,12 @@ export function StlWorkspace({ stlBuffer }: { stlBuffer: ArrayBuffer }) {
       return { mesh: null, error: e instanceof Error ? e.message : "Could not read this STL" };
     }
   }, [stlBuffer]);
+
+  useEffect(() => {
+    if (result.mesh) onMesh?.(result.mesh);
+    // report once per parse, not per callback identity
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [result.mesh]);
 
   if (result.error) {
     return (

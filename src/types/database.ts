@@ -431,6 +431,51 @@ export type Database = {
           },
         ]
       }
+      part_verifications: {
+        Row: {
+          created_at: string
+          dimensions: Json
+          id: string
+          note: string | null
+          part_id: string
+          result: string
+          verified_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          dimensions: Json
+          id?: string
+          note?: string | null
+          part_id: string
+          result: string
+          verified_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          dimensions?: Json
+          id?: string
+          note?: string | null
+          part_id?: string
+          result?: string
+          verified_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "part_verifications_part_id_fkey"
+            columns: ["part_id"]
+            isOneToOne: false
+            referencedRelation: "parts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "part_verifications_verified_by_fkey"
+            columns: ["verified_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       part_versions: {
         Row: {
           analysis: Json | null
@@ -440,6 +485,7 @@ export type Database = {
           id: string
           library_part_id: string
           note: string | null
+          thickness_in: number | null
           thumb_path: string | null
           units: string
           uploaded_by: string | null
@@ -453,6 +499,7 @@ export type Database = {
           id?: string
           library_part_id: string
           note?: string | null
+          thickness_in?: number | null
           thumb_path?: string | null
           units?: string
           uploaded_by?: string | null
@@ -466,6 +513,7 @@ export type Database = {
           id?: string
           library_part_id?: string
           note?: string | null
+          thickness_in?: number | null
           thumb_path?: string | null
           units?: string
           uploaded_by?: string | null
@@ -500,15 +548,19 @@ export type Database = {
           id: string
           material: string | null
           method: string
+          model_size_in: Json | null
           name: string
           priority: string
           quantity: number
           source_version_id: string | null
           status: string
           submitted_by: string
+          thickness_in: number | null
           thumb_path: string | null
           units: string
           updated_at: string
+          verification_result: string | null
+          verified_at: string | null
         }
         Insert: {
           analysis?: Json | null
@@ -521,15 +573,19 @@ export type Database = {
           id?: string
           material?: string | null
           method?: string
+          model_size_in?: Json | null
           name: string
           priority?: string
           quantity?: number
           source_version_id?: string | null
           status?: string
           submitted_by: string
+          thickness_in?: number | null
           thumb_path?: string | null
           units?: string
           updated_at?: string
+          verification_result?: string | null
+          verified_at?: string | null
         }
         Update: {
           analysis?: Json | null
@@ -542,15 +598,19 @@ export type Database = {
           id?: string
           material?: string | null
           method?: string
+          model_size_in?: Json | null
           name?: string
           priority?: string
           quantity?: number
           source_version_id?: string | null
           status?: string
           submitted_by?: string
+          thickness_in?: number | null
           thumb_path?: string | null
           units?: string
           updated_at?: string
+          verification_result?: string | null
+          verified_at?: string | null
         }
         Relationships: [
           {
